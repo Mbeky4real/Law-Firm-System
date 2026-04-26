@@ -4,8 +4,8 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f2440"/>
-<link rel="manifest" href="/assets/manifest-C5X1EeXB.webmanifest"/>
-<title>MOLMS v16 v8 — M&O Law Office</title>
+<link rel="manifest" href="manifest.webmanifest"/>
+<title>MOLMS v17 v8 — M&O Law Office</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{--navy:#0f2440;--gold:#c9973a;--cream:#faf8f4;--white:#fff;--border:#ded6cb;--muted:#65738a;--red:#9b1c1f;--green:#1a6b3c;--amber:#92590a;--blue:#1a3a5c;--shadow:0 8px 22px rgba(15,36,64,.08)}
@@ -29,7 +29,7 @@ input,select,textarea{width:100%;padding:12px;border:1px solid var(--border);bor
 <body>
 <div id="setup" class="setup hidden">
   <div class="card">
-    <h1>M&O Law Office Management System</h1><p class='small muted'>v16 Change Password</p>
+    <h1>M&O Law Office Management System</h1><p class='small muted'>v17 Real Members Only</p>
     <p class="muted">Connect to Supabase or continue in local mode. The system is structured around Cause List, Non-Litigations, Daily Reports, Diary, Documents and Chat.</p>
     <label>Supabase Project URL</label><input id="supabaseUrl" placeholder="https://xxxxx.supabase.co"/>
     <label>Supabase anon public key</label><textarea id="supabaseKey" rows="4" placeholder="Paste anon public key"></textarea>
@@ -236,7 +236,7 @@ input,select,textarea{width:100%;padding:12px;border:1px solid var(--border);bor
 
             <p>
               <button class="btn gold" onclick="addMemberSecure()">Add Member With Password</button>
-              <button class="btn out" onclick="reloadRoles()">Refresh Members</button>
+              <button class="btn out" onclick="reloadRoles()">Refresh Members</button>\n              <button class="btn out" onclick="clearMemberCache()">Clear Member Cache</button>
             </p>
 
             <div id="memberCreateMsg"></div>
@@ -399,6 +399,7 @@ async function init(){
   seedMembers();
   loadLocal();
   await reload();
+  if(sb){ await reloadRoles(); }
   populateAllSelects();
   go('dashboard');
 }
@@ -481,7 +482,14 @@ async function logout(){
   authUser=null; authRole=null; authFullName=null;
   showLogin();
 }
-function seedMembers(){let m=read(LS.members);if(!m.length){m=[{id:uid(),name:'Mwombeki Kabyemela',role:'partner',position:'Partner / Admin',created_at:new Date().toISOString()},{id:uid(),name:'Fatma Omary Munguia',role:'partner',position:'Partner / Admin',created_at:new Date().toISOString()},{id:uid(),name:'Julie Njoka',role:'ordinary',position:'Associate',created_at:new Date().toISOString()},{id:uid(),name:'Irine Rashidi',role:'ordinary',position:'Associate',created_at:new Date().toISOString()}];write(LS.members,m);localStorage.setItem(LS.current,m[0].id)}}
+function seedMembers(){
+  // v17: No hardcoded default members.
+  // Members must come from Supabase roles table only.
+  const existing = read(LS.members);
+  if(!existing.length){
+    write(LS.members, []);
+  }
+}
 function loadLocal(){cases=read(LS.cases);nonlits=read(LS.nonlits);diary=read(LS.diary);docs=read(LS.docs);msgs=read(LS.msgs);members=read(LS.members);reports=read(LS.reports);viewed=readObj(LS.viewed);currentMemberId=localStorage.getItem(LS.current)||(members[0]&&members[0].id)}
 function saveLocal(){write(LS.cases,cases);write(LS.nonlits,nonlits);write(LS.diary,diary);write(LS.docs,docs);write(LS.msgs,msgs);write(LS.members,members);write(LS.reports,reports)}
 function me(){ if(authUser) return {id:authUser.id,name:authFullName||authUser.email,role:authRole==='partner'?'partner':'ordinary',position:authRole==='partner'?'Partner / Admin':'Staff'}; return members.find(m=>m.id===currentMemberId)||members[0]||{role:'partner',name:'Admin'} } function isAdmin(){return authRole?authRole==='partner':me().role==='partner'}
@@ -720,6 +728,101 @@ async function updatePassword(){
   }catch(e){
     if(msg) msg.innerHTML='<div class="notice err">Password update failed: '+esc(e.message)+'</div>';
   }
+}
+
+
+// v17 override: Members must come only from Supabase roles table.
+async function reloadRoles(){
+  if(!sb){
+    notice('Supabase is not connected.','err');
+    return;
+  }
+
+  const { data, error } = await sb
+    .from('roles')
+    .select('*')
+    .order('created_at',{ascending:false});
+
+  if(error){
+    notice('Could not load members: '+error.message,'err');
+    return;
+  }
+
+  members = (data || [])
+    .filter(r => r.user_id)
+    .map(r => ({
+      id: r.user_id,
+      name: r.full_name || r.email || 'Unnamed',
+      email: r.email || '',
+      role: r.role === 'partner' ? 'partner' : 'ordinary',
+      position: r.position || (r.role === 'partner' ? 'Partner / Admin' : 'Ordinary Member'),
+      created_at: r.created_at
+    }));
+
+  write(LS.members, members);
+  populateAllSelects();
+  renderMembers();
+}
+
+function renderMembers(){
+  const admin=isAdmin();
+  if($('adminOnly')) $('adminOnly').classList.toggle('hidden',!admin);
+  if($('ordinaryMsg')) $('ordinaryMsg').classList.toggle('hidden',admin);
+
+  const box=$('memberList');
+  if(!box) return;
+
+  if(!members || !members.length){
+    box.innerHTML='<p class="muted">No real members found in Supabase roles table. Add members through Supabase Auth and insert their role record.</p>';
+    return;
+  }
+
+  box.innerHTML=members.map(m=>`
+    <div class="item">
+      <span class="pill ${m.role==='partner'?'green':'gold'}">${m.role==='partner'?'Partner/Admin':'Ordinary Member'}</span>
+      <div class="item-title">${esc(m.name)}</div>
+      <div class="item-meta">${esc(m.position||'')}<br>${esc(m.email||'')}</div>
+      ${admin?`<button class="btn red small" onclick="removeMemberRole('${m.id}')">Remove</button>`:''}
+    </div>
+  `).join('');
+}
+
+async function removeMemberRole(userId){
+  if(!isAdmin()){
+    notice('Only partners/admins can remove members.','err');
+    return;
+  }
+
+  if(!confirm('Remove this member from the system roles list?')){
+    return;
+  }
+
+  if(!sb){
+    notice('Supabase is not connected.','err');
+    return;
+  }
+
+  const { error } = await sb
+    .from('roles')
+    .delete()
+    .eq('user_id', userId);
+
+  if(error){
+    notice('Remove failed: '+error.message,'err');
+    return;
+  }
+
+  members = members.filter(m => m.id !== userId);
+  write(LS.members, members);
+  renderMembers();
+  notice('Member removed from system roles.');
+}
+
+function clearMemberCache(){
+  members=[];
+  write(LS.members, []);
+  renderMembers();
+  reloadRoles();
 }
 
 window.addEventListener('load',()=>{let d=$('repDate'); if(d)d.value=today(); init()});
