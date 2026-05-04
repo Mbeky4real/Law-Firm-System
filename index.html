@@ -131,7 +131,11 @@ if(sb){
   renderCases();
   notice('Cause List item saved locally (offline mode).');
   ['caseTitle','caseNumber','caseClient','caseCourt','caseJudge','caseNature','caseDate','caseTime','caseOrder'].forEach(clear);
-  return;
+  return;<label>Case Nature</label>
+<input id="caseNature" placeholder="e.g. Civil, Criminal">
+
+<label>Hearing Time</label>
+<input id="caseTime" type="time">
 }
 await loadCases();
 populateMatterSelects();
