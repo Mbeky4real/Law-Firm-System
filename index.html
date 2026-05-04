@@ -497,9 +497,43 @@ function populateAllSelects(){let users=members.map(m=>`<option value="${m.id}">
 function populateMatterSelects(){let opts='<option value="">-- Select linked matter --</option>'+cases.map(c=>`<option value="case:${c.id}">Cause List: ${esc(c.title)}</option>`).join('')+nonlits.map(n=>`<option value="nonlit:${n.id}">Non-Litigation: ${esc(n.title)}</option>`).join('');['repLinked','diaryLinked','docLinked'].forEach(id=>{let e=$(id);if(e)e.innerHTML=opts})}
 function switchUser(){currentMemberId=$('currentUser').value;localStorage.setItem(LS.current,currentMemberId);populateAllSelects();render()}
 async function safe(p){try{return await p}catch(e){online=false;return {error:e}}}
-async function reload(){loadLocal(); await ensureRoom(); await loadMessages(); render()}
+async function reload(){loadLocal(); await loadCases(); await ensureRoom(); await loadMessages(); render()}
 async function ensureRoom(){if(!sb)return;let r=await safe(sb.from('chat_rooms').select('*').eq('type','general').limit(1));if(!r.error&&r.data&&r.data[0]){roomId=r.data[0].id;return}let c=await safe(sb.from('chat_rooms').insert({name:'General Chat',type:'general'}).select().single());if(!c.error&&c.data)roomId=c.data.id}
 async function loadMessages(){if(!sb||!roomId)return;let r=await safe(sb.from('messages').select('*').eq('room_id',roomId).order('created_at',{ascending:true}));if(!r.error&&r.data){msgs=r.data;write(LS.msgs,msgs)}}
+async function loadCases(){
+  if(!sb) return;
+  const r=await safe(sb.from('cause_list').select('*').order('created_at',{ascending:false}));
+  if(r.error){
+    notice('Cause List sync failed: '+r.error.message,'err');
+    return;
+  }
+  cases=(r.data||[]).map(c=>({
+    ...c,
+    next_date:c.next_date||null
+  }));
+  write(LS.cases,cases);
+}
+async function addCaseOnline(o){
+  if(!sb) return {error:new Error('Supabase unavailable')};
+  return await safe(sb.from('cause_list').insert({
+    id:o.id,
+    title:o.title,
+    case_number:o.case_number,
+    client_name:o.client_name,
+    opponent:o.opponent,
+    court:o.court,
+    judge:o.judge,
+    stage:o.stage,
+    next_date:o.next_date,
+    responsible_id:o.responsible_id||null,
+    partner_id:o.partner_id||null,
+    priority:o.priority,
+    status:o.status,
+    last_order:o.last_order,
+    created_at:o.created_at,
+    created_by:authUser?authUser.id:null
+  }).select().single());
+}
 function go(p){ if(p==='members' && !isAdmin()){notice('Only partners/admins can access Members.','err'); return;} page=p;viewed[p]=countFor(p);writeObj(LS.viewed,viewed);document.querySelectorAll('section[id^="page-"]').forEach(s=>s.classList.add('hidden'));$('page-'+p).classList.remove('hidden');document.querySelectorAll('[data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===p));const names={dashboard:'Dashboard',cause:'Cause List (Court Matters)',nonlit:'Non-Litigations',reports:'Daily Work Reports',diary:'Legal Diary & Calendar',documents:'Document Management',chat:'Internal Communication',members:'Admin / Members & Access Control'};$('title').textContent=names[p]||p;render()}
 function filter(arr,fields){const q=($('search').value||'').toLowerCase();return !q?arr:arr.filter(x=>fields.some(f=>(x[f]||'').toString().toLowerCase().includes(q)))}
 function countFor(p){let map={dashboard:cases.length+nonlits.length+reports.length+diary.length+docs.length+msgs.length,cause:cases.length,nonlit:nonlits.length,reports:reports.length,diary:diary.length,documents:docs.length,chat:msgs.length,members:members.length};return map[p]||0}
@@ -523,7 +557,28 @@ function allCalendarEvents(){return [...cases.filter(c=>c.next_date).map(c=>({da
 function linkedLabel(v){if(!v)return 'Not linked';let [type,id]=v.split(':');if(type==='case'){let x=cases.find(c=>c.id===id);return x?'Cause List: '+x.title:'Cause List'}if(type==='nonlit'){let x=nonlits.find(n=>n.id===id);return x?'Non-Litigation: '+x.title:'Non-Litigation'}return v}
 function memberName(id){return (members.find(m=>m.id===id)||{}).name||'Not assigned'}
 async function insertLocalOnly(name,obj){notice('Saved locally.');}
-function addCase(){let o={id:uid(),title:val('caseTitle'),case_number:val('caseNumber'),client_name:val('caseClient'),opponent:val('caseOpponent'),court:val('caseCourt'),judge:val('caseJudge'),stage:val('caseStage'),next_date:val('caseDate')||null,responsible_id:val('caseResponsible'),partner_id:val('casePartner'),priority:val('casePriority'),status:val('caseStatus'),last_order:val('caseOrder'),created_at:new Date().toISOString()};cases.unshift(o);saveLocal();populateMatterSelects();renderCases();notice('Cause List item saved.');['caseTitle','caseNumber','caseClient','caseOpponent','caseCourt','caseJudge','caseDate','caseOrder'].forEach(clear)}
+async function addCase(){let o={id:uid(),title:val('caseTitle'),case_number:val('caseNumber'),client_name:val('caseClient'),opponent:val('caseOpponent'),court:val('caseCourt'),judge:val('caseJudge'),stage:val('caseStage'),next_date:val('caseDate')||null,responsible_id:val('caseResponsible'),partner_id:val('casePartner'),priority:val('casePriority'),status:val('caseStatus'),last_order:val('caseOrder'),created_at:new Date().toISOString()};
+if(!o.title)return notice('Case Title is required.','err');
+if(sb){
+  const r=await addCaseOnline(o);
+  if(r.error){
+    notice('Supabase save failed: '+r.error.message,'err');
+    return;
+  }
+  o=r.data||o;
+}else{
+  cases.unshift(o);
+  saveLocal();
+  populateMatterSelects();
+  renderCases();
+  notice('Cause List item saved locally (offline mode).');
+  ['caseTitle','caseNumber','caseClient','caseOpponent','caseCourt','caseJudge','caseDate','caseOrder'].forEach(clear);
+  return;
+}
+await loadCases();
+populateMatterSelects();
+renderCases();
+notice('Cause List item saved to Supabase.');['caseTitle','caseNumber','caseClient','caseOpponent','caseCourt','caseJudge','caseDate','caseOrder'].forEach(clear)}
 function addNonLitigation(){let o={id:uid(),title:val('nlTitle'),client_name:val('nlClient'),institution:val('nlInstitution'),nature:val('nlNature'),stage:val('nlStage'),next_action:val('nlNext'),responsible_id:val('nlResponsible'),partner_id:val('nlPartner'),priority:val('nlPriority'),deadline:val('nlDeadline')||null,status:val('nlStatus'),created_at:new Date().toISOString()};nonlits.unshift(o);saveLocal();populateMatterSelects();renderNonLit();notice('Non-Litigation matter saved.');['nlTitle','nlClient','nlInstitution','nlNature','nlNext','nlDeadline'].forEach(clear)}
 function addReport(){let memberId=val('repMember')||currentMemberId;if(!isAdmin()&&memberId!==currentMemberId)return notice('Ordinary members can only submit their own report.','err');let o={id:uid(),report_date:val('repDate')||today(),member_id:memberId,client:val('repClient'),linked_matter:val('repLinked'),task:val('repTask'),status:val('repStatus'),notes:val('repNotes'),created_at:new Date().toISOString()};if(!o.task)return notice('Task Description is required.','err');reports.unshift(o);saveLocal();renderReports();notice('Daily report saved.');['repClient','repTask','repNotes'].forEach(clear)}
 function addDiary(){let o={id:uid(),title:val('diaryTitle'),type:val('diaryType'),linked_matter:val('diaryLinked'),event_date:val('diaryDate')||null,event_time:val('diaryTime'),responsible_id:val('diaryResponsible'),reminder:val('diaryReminder'),created_at:new Date().toISOString()};diary.unshift(o);saveLocal();renderDiary();renderCalendar();notice('Diary entry saved.');['diaryTitle','diaryDate','diaryTime'].forEach(clear)}
