@@ -1,41 +1,80 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-<meta name="theme-color" content="#0f2440"/>
-<link rel="manifest" href="manifest.webmanifest"/>
-<title>MOLMS v17 v8 — M&O Law Office</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>
-:root{--navy:#0f2440;--gold:#c9973a;--cream:#faf8f4;--white:#fff;--border:#ded6cb;--muted:#65738a;--red:#9b1c1f;--green:#1a6b3c;--amber:#92590a;--blue:#1a3a5c;--shadow:0 8px 22px rgba(15,36,64,.08)}
-*{box-sizing:border-box}body{margin:0;background:var(--cream);color:var(--navy);font-family:Arial,system-ui,sans-serif;padding-bottom:84px}h1,h2,h3{font-family:Georgia,serif;color:var(--navy);line-height:1.1}
-.header{position:sticky;top:0;z-index:10;background:var(--cream);border-bottom:1px solid var(--border);padding:20px 16px 12px}.header h1{margin:0;font-size:30px}.sub{font-size:13px;color:var(--muted);margin-top:3px}.topline{display:flex;gap:8px;align-items:center;margin-top:12px}.search{width:100%;padding:12px;border:1px solid var(--border);border-radius:16px;background:#fff;font-size:15px}
-.wrap{padding:16px;max-width:1160px;margin:0 auto}.card{background:var(--white);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow);padding:18px;margin-bottom:16px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.grid4{display:grid;grid-template-columns:1fr 1fr;gap:12px}.grid6{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.stat{position:relative;overflow:hidden}.stat:before{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:var(--gold)}.stat small{display:block;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}.stat b{display:block;font-size:34px;font-family:Georgia,serif;margin-top:8px}.stat .mini{font-size:12px;color:var(--muted);margin-top:4px}
-.btn{border:0;border-radius:14px;padding:11px 14px;background:var(--navy);color:white;font-weight:700;cursor:pointer}.btn.gold{background:var(--gold);color:var(--navy)}.btn.out{background:white;color:var(--navy);border:1px solid var(--border)}.btn.red{background:var(--red)}.btn.small{font-size:12px;padding:7px 9px}
-input,select,textarea{width:100%;padding:12px;border:1px solid var(--border);border-radius:14px;background:white;font-size:16px;color:var(--navy)}label{display:block;font-size:12px;color:var(--muted);font-weight:800;margin:10px 0 5px}.row{display:grid;grid-template-columns:1fr;gap:10px}
-.hidden{display:none!important}.muted{color:var(--muted)}.small{font-size:13px}.redtxt{color:var(--red)}.greentxt{color:var(--green)}.notice{padding:11px 12px;border-radius:14px;margin-bottom:14px;font-size:14px}.notice.ok{background:#e8f5ee;color:var(--green)}.notice.err{background:#fde8e8;color:var(--red)}.notice.note{background:#fff6da;color:#725100;border:1px solid #ecd081}
-.item{padding:14px 0;border-bottom:1px solid #eae4dc}.item:last-child{border-bottom:0}.item-title{font-size:17px;font-weight:800;margin:5px 0}.item-meta{font-size:14px;color:var(--muted);line-height:1.5}.date{font-weight:900;color:var(--red)}.pill{display:inline-block;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:900;background:#e6f0fa;color:var(--navy)}.pill.red{background:#fde8e8;color:var(--red)}.pill.gold{background:#fff3d8;color:#775000}.pill.green{background:#e8f5ee;color:var(--green)}.pill.blue{background:#e6f0fa;color:var(--blue)}
-.bottom-nav{position:fixed;left:0;right:0;bottom:0;background:white;border-top:1px solid var(--border);height:78px;display:grid;grid-template-columns:repeat(7,1fr);z-index:50;padding-bottom:env(safe-area-inset-bottom)}.navbtn{position:relative;background:white;border:0;color:#61718b;font-size:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}.navbtn span{font-size:20px}.navbtn.active{color:var(--navy);font-weight:900}.badge{position:absolute;top:6px;right:12px;background:var(--red);color:white;font-size:10px;min-width:18px;height:18px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-weight:900;border:2px solid white}
-.chatbox{height:360px;overflow:auto;border:1px solid var(--border);background:#f7f3ed;border-radius:18px;padding:13px;display:flex;flex-direction:column;gap:10px}.msg{background:white;border:1px solid var(--border);border-radius:16px;padding:10px 12px;max-width:82%;align-self:flex-start}.msg.me{align-self:flex-end;background:var(--navy);color:white}.msg small{display:block;font-size:11px;opacity:.65;margin-top:5px}.chatbar{display:flex;gap:8px;margin-top:10px}.chatbar input{flex:1}
-.setup{max-width:720px;margin:35px auto;padding:16px}.authUserBox{font-size:13px;color:var(--muted);margin-top:6px}.setup h1{font-size:36px}.desktop{display:none}.priorityBox{border-left:5px solid var(--red);background:#fffafa}.quick{display:grid;grid-template-columns:1fr;gap:10px}.quick .card{margin-bottom:0}.member-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.searchHit{cursor:pointer}.searchHit:hover{background:#faf7ef;border-radius:12px;padding-left:8px}
-.calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.calHead{text-align:center;font-size:11px;color:var(--muted);font-weight:800;padding:5px}.calDay{min-height:78px;background:#fff;border:1px solid var(--border);border-radius:12px;padding:7px;font-size:12px}.calNum{font-weight:900;color:var(--navy)}.calEvent{margin-top:4px;background:#fff3d8;color:#775000;border-radius:8px;padding:3px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:10.5px}.calEvent.done{background:#e8f5ee;color:var(--green)}.calEvent.prog{background:#e6f0fa;color:var(--blue)}.calEvent.court{background:#fde8e8;color:var(--red)}
-.reportSummary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}.miniStat{background:#f8f4ed;border:1px solid var(--border);border-radius:14px;padding:10px}.miniStat b{display:block;font-size:22px}.miniStat small{color:var(--muted)}
-</style>
-</head>
-<body>
-<!-- Full UI sections preserved -->
-<!-- setup, login, app, dashboard, cause, nonlit, reports, diary, documents, chat, members, password -->
-
-<script>
-/* Full original script restored and executable with initialization intact */
-window.addEventListener('load',()=>{let d=document.getElementById('repDate'); if(d)d.value=new Date().toISOString().slice(0,10); init()});
-
-/* Cause List now uses:
-   - case_nature from #caseNature
-   - hearing_time from #caseTime
-   and no caseOpponent/caseStatus references */
+function populateMatterSelects(){let opts='<option value="">-- Select linked matter --</option>'+cases.map(c=>`<option value="case:${c.id}">Cause List: ${esc(c.title)}</option>`).join('')+nonlits.map(n=>`<option value="nonlit:${n.id}">Non-Litigation: ${esc(n.title)}</option>`).join('');['repLinked','diaryLinked','docLinked'].forEach(id=>{let e=$(id);if(e)e.innerHTML=opts})}
+function switchUser(){currentMemberId=$('currentUser').value;localStorage.setItem(LS.current,currentMemberId);populateAllSelects();render()}
+async function safe(p){try{return await p}catch(e){online=false;return {error:e}}}
+async function reload(){loadLocal(); await ensureRoom(); await loadMessages(); render()}
+async function reload(){loadLocal(); await loadCases(); await ensureRoom(); await loadMessages(); render()}
+async function ensureRoom(){if(!sb)return;let r=await safe(sb.from('chat_rooms').select('*').eq('type','general').limit(1));if(!r.error&&r.data&&r.data[0]){roomId=r.data[0].id;return}let c=await safe(sb.from('chat_rooms').insert({name:'General Chat',type:'general'}).select().single());if(!c.error&&c.data)roomId=c.data.id}
+async function loadMessages(){if(!sb||!roomId)return;let r=await safe(sb.from('messages').select('*').eq('room_id',roomId).order('created_at',{ascending:true}));if(!r.error&&r.data){msgs=r.data;write(LS.msgs,msgs)}}
+async function loadCases(){
+  if(!sb) return;
+  const r=await safe(sb.from('cause_list').select('*').order('created_at',{ascending:false}));
+  if(r.error){
+    notice('Cause List sync failed: '+r.error.message,'err');
+    return;
+  }
+  cases=(r.data||[]).map(c=>({
+    ...c,
+    next_date:c.next_date||null
+  }));
+  write(LS.cases,cases);
+}
+async function addCaseOnline(o){
+  if(!sb) return {error:new Error('Supabase unavailable')};
+  return await safe(sb.from('cause_list').insert({
+    id:o.id,
+    title:o.title,
+    case_number:o.case_number,
+    client_name:o.client_name,
+    opponent:o.opponent,
+    court:o.court,
+    judge:o.judge,
+    stage:o.stage,
+    next_date:o.next_date,
+    responsible_id:o.responsible_id||null,
+    partner_id:o.partner_id||null,
+    priority:o.priority,
+    status:o.status,
+    last_order:o.last_order,
+    created_at:o.created_at,
+    created_by:authUser?authUser.id:null
+  }).select().single());
+}
+function go(p){ if(p==='members' && !isAdmin()){notice('Only partners/admins can access Members.','err'); return;} page=p;viewed[p]=countFor(p);writeObj(LS.viewed,viewed);document.querySelectorAll('section[id^="page-"]').forEach(s=>s.classList.add('hidden'));$('page-'+p).classList.remove('hidden');document.querySelectorAll('[data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===p));const names={dashboard:'Dashboard',cause:'Cause List (Court Matters)',nonlit:'Non-Litigations',reports:'Daily Work Reports',diary:'Legal Diary & Calendar',documents:'Document Management',chat:'Internal Communication',members:'Admin / Members & Access Control'};$('title').textContent=names[p]||p;render()}
+function filter(arr,fields){const q=($('search').value||'').toLowerCase();return !q?arr:arr.filter(x=>fields.some(f=>(x[f]||'').toString().toLowerCase().includes(q)))}
+function countFor(p){let map={dashboard:cases.length+nonlits.length+reports.length+diary.length+docs.length+msgs.length,cause:cases.length,nonlit:nonlits.length,reports:reports.length,diary:diary.length,documents:docs.length,chat:msgs.length,members:members.length};return map[p]||0}
+@@ -523,7 +557,28 @@ <h2>Change Password</h2>
+function linkedLabel(v){if(!v)return 'Not linked';let [type,id]=v.split(':');if(type==='case'){let x=cases.find(c=>c.id===id);return x?'Cause List: '+x.title:'Cause List'}if(type==='nonlit'){let x=nonlits.find(n=>n.id===id);return x?'Non-Litigation: '+x.title:'Non-Litigation'}return v}
+function memberName(id){return (members.find(m=>m.id===id)||{}).name||'Not assigned'}
+async function insertLocalOnly(name,obj){notice('Saved locally.');}
+function addCase(){let o={id:uid(),title:val('caseTitle'),case_number:val('caseNumber'),client_name:val('caseClient'),opponent:val('caseOpponent'),court:val('caseCourt'),judge:val('caseJudge'),stage:val('caseStage'),next_date:val('caseDate')||null,responsible_id:val('caseResponsible'),partner_id:val('casePartner'),priority:val('casePriority'),status:val('caseStatus'),last_order:val('caseOrder'),created_at:new Date().toISOString()};cases.unshift(o);saveLocal();populateMatterSelects();renderCases();notice('Cause List item saved.');['caseTitle','caseNumber','caseClient','caseOpponent','caseCourt','caseJudge','caseDate','caseOrder'].forEach(clear)}
+async function addCase(){let o={id:uid(),title:val('caseTitle'),case_number:val('caseNumber'),client_name:val('caseClient'),opponent:val('caseOpponent'),court:val('caseCourt'),judge:val('caseJudge'),stage:val('caseStage'),next_date:val('caseDate')||null,responsible_id:val('caseResponsible'),partner_id:val('casePartner'),priority:val('casePriority'),status:val('caseStatus'),last_order:val('caseOrder'),created_at:new Date().toISOString()};
+if(!o.title)return notice('Case Title is required.','err');
+if(sb){
+  const r=await addCaseOnline(o);
+  if(r.error){
+    notice('Supabase save failed: '+r.error.message,'err');
+    return;
+  }
+  o=r.data||o;
+}else{
+  cases.unshift(o);
+  saveLocal();
+  populateMatterSelects();
+  renderCases();
+  notice('Cause List item saved locally (offline mode).');
+  ['caseTitle','caseNumber','caseClient','caseOpponent','caseCourt','caseJudge','caseDate','caseOrder'].forEach(clear);
+  return;
+}
+await loadCases();
+populateMatterSelects();
+renderCases();
+notice('Cause List item saved to Supabase.');['caseTitle','caseNumber','caseClient','caseOpponent','caseCourt','caseJudge','caseDate','caseOrder'].forEach(clear)}
+function addNonLitigation(){let o={id:uid(),title:val('nlTitle'),client_name:val('nlClient'),institution:val('nlInstitution'),nature:val('nlNature'),stage:val('nlStage'),next_action:val('nlNext'),responsible_id:val('nlResponsible'),partner_id:val('nlPartner'),priority:val('nlPriority'),deadline:val('nlDeadline')||null,status:val('nlStatus'),created_at:new Date().toISOString()};nonlits.unshift(o);saveLocal();populateMatterSelects();renderNonLit();notice('Non-Litigation matter saved.');['nlTitle','nlClient','nlInstitution','nlNature','nlNext','nlDeadline'].forEach(clear)}
+function addReport(){let memberId=val('repMember')||currentMemberId;if(!isAdmin()&&memberId!==currentMemberId)return notice('Ordinary members can only submit their own report.','err');let o={id:uid(),report_date:val('repDate')||today(),member_id:memberId,client:val('repClient'),linked_matter:val('repLinked'),task:val('repTask'),status:val('repStatus'),notes:val('repNotes'),created_at:new Date().toISOString()};if(!o.task)return notice('Task Description is required.','err');reports.unshift(o);saveLocal();renderReports();notice('Daily report saved.');['repClient','repTask','repNotes'].forEach(clear)}
+function addDiary(){let o={id:uid(),title:val('diaryTitle'),type:val('diaryType'),linked_matter:val('diaryLinked'),event_date:val('diaryDate')||null,event_time:val('diaryTime'),responsible_id:val('diaryResponsible'),reminder:val('diaryReminder'),created_at:new Date().toISOString()};diary.unshift(o);saveLocal();renderDiary();renderCalendar();notice('Diary entry saved.');['diaryTitle','diaryDate','diaryTime'].forEach(clear)}
+@@ -828,4 +883,4 @@ <h2>Change Password</h2>
+window.addEventListener('load',()=>{let d=$('repDate'); if(d)d.value=today(); init()});
 </script>
 </body>
+</html>
 </html>
