@@ -500,7 +500,31 @@ async function safe(p){try{return await p}catch(e){online=false;return {error:e}
 async function reload(){loadLocal(); await loadCases(); await ensureRoom(); await loadMessages(); render()}
 async function ensureRoom(){if(!sb)return;let r=await safe(sb.from('chat_rooms').select('*').eq('type','general').limit(1));if(!r.error&&r.data&&r.data[0]){roomId=r.data[0].id;return}let c=await safe(sb.from('chat_rooms').insert({name:'General Chat',type:'general'}).select().single());if(!c.error&&c.data)roomId=c.data.id}
 async function loadMessages(){if(!sb||!roomId)return;let r=await safe(sb.from('messages').select('*').eq('room_id',roomId).order('created_at',{ascending:true}));if(!r.error&&r.data){msgs=r.data;write(LS.msgs,msgs)}}
-async function loadCases(){
+async function loadCases(){async function loadNonLitigations(){
+  if(!sb) return;
+  const r=await safe(sb.from('non_litigation_matters').select('*').order('created_at',{ascending:false}));
+  if(r.error){
+    notice('Non-Litigation sync failed: '+r.error.message,'err');
+    return;
+  }
+  nonlits=(r.data||[]).map(n=>({
+    ...n,
+    deadline:n.deadline||null
+  }));
+  write(LS.nonlits,nonlits);
+}
+  if(!sb) return;
+  const r=await safe(sb.from('non_litigation_matters').select('*').order('created_at',{ascending:false}));
+  if(r.error){
+    notice('Non-Litigation sync failed: '+r.error.message,'err');
+    return;
+  }
+  nonlits=(r.data||[]).map(n=>({
+    ...n,
+    deadline:n.deadline||null
+  }));
+  write(LS.nonlits,nonlits);
+}
   if(!sb) return;
   const r=await safe(sb.from('cause_list').select('*').order('created_at',{ascending:false}));
   if(r.error){
@@ -513,7 +537,25 @@ async function loadCases(){
   }));
   write(LS.cases,cases);
 }
-async function addCaseOnline(o){
+async function addCaseOnline(o){async async function addNonLitigation(){let o={id:uid(),title:val('nlTitle'),client_name:val('nlClient'),institution:val('nlInstitution'),nature:val('nlNature'),stage:val('nlStage'),next_action:val('nlNext'),responsible_id:val('nlResponsible'),partner_id:val('nlPartner'),priority:val('nlPriority'),deadline:val('nlDeadline')||null,status:val('nlStatus'),created_at:new Date().toISOString()}; if(!o.title)return notice('Matter Title is required.','err'); if(sb){   const r=await addNonLitigationOnline(o);   if(r.error){     notice('Supabase save failed: '+r.error.message,'err');     return;   }   o=r.data||o; }else{   nonlits.unshift(o);   saveLocal();   populateMatterSelects();   renderNonLit();   notice('Non-Litigation matter saved locally (offline mode).');   ['nlTitle','nlClient','nlInstitution','nlNature','nlNext','nlDeadline'].forEach(clear);   return; } await loadNonLitigations(); populateMatterSelects(); renderNonLit(); notice('Non-Litigation matter saved to Supabase.'); ['nlTitle','nlClient','nlInstitution','nlNature','nlNext','nlDeadline'].forEach(clear)}Online(o){
+  if(!sb) return {error:new Error('Supabase unavailable')};
+  return await safe(sb.from('non_litigation_matters').insert({
+    id:o.id,
+    title:o.title,
+    client_name:o.client_name,
+    institution:o.institution,
+    nature:o.nature,
+    stage:o.stage,
+    next_action:o.next_action,
+    responsible_id:o.responsible_id||null,
+    partner_id:o.partner_id||null,
+    priority:o.priority,
+    deadline:o.deadline,
+    status:o.status,
+    created_at:o.created_at,
+    created_by:authUser?authUser.id:null
+  }).select().single());
+}
   if(!sb) return {error:new Error('Supabase unavailable')};
   return await safe(sb.from('cause_list').insert({
     id:o.id,
@@ -787,7 +829,7 @@ async function updatePassword(){
 
 
 // v17 override: Members must come only from Supabase roles table.
-async function reloadRoles(){
+async function reload(){loadLocal(); await loadCases(); await loadNonLitigations(); await ensureRoom(); await loadMessages(); render()}Roles(){
   if(!sb){
     notice('Supabase is not connected.','err');
     return;
