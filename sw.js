@@ -1,5 +1,5 @@
 const CACHE = 'molms-cache-v1';
-const ASSETS = ['/', '/index.html', '/manifest.webmanifest', '/icon.svg'];
+const ASSETS = ['/', '/index-working-backup-phase-1.html', '/manifest.webmanifest', '/icon.svg'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));
   self.skipWaiting();
