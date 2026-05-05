@@ -500,7 +500,39 @@ async function safe(p){try{return await p}catch(e){online=false;return {error:e}
 async function reload(){loadLocal(); await loadCases(); await ensureRoom(); await loadMessages(); render()}
 async function ensureRoom(){if(!sb)return;let r=await safe(sb.from('chat_rooms').select('*').eq('type','general').limit(1));if(!r.error&&r.data&&r.data[0]){roomId=r.data[0].id;return}let c=await safe(sb.from('chat_rooms').insert({name:'General Chat',type:'general'}).select().single());if(!c.error&&c.data)roomId=c.data.id}
 async function loadMessages(){if(!sb||!roomId)return;let r=await safe(sb.from('messages').select('*').eq('room_id',roomId).order('created_at',{ascending:true}));if(!r.error&&r.data){msgs=r.data;write(LS.msgs,msgs)}}
-async function loadCases(){
+async function loadCases(){async function loadNonLitigations(){
+  if(!online || !sb) return;
+
+  try{
+    const { data, error } = await sb
+      .from('non_litigations')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if(error) throw error;
+
+    if(data){
+      nonlits = data.map(n => ({
+        id: n.id,
+        title: n.title,
+        client: n.client,
+        institution: n.institution,
+        nature: n.nature,
+        stage: n.stage,
+        next: n.next_action,
+        responsible: n.responsible,
+        partner: n.partner,
+        priority: n.priority,
+        deadline: n.deadline,
+        status: n.status
+      }));
+
+      write(LS.nonlits, nonlits); // offline fallback sync
+    }
+  }catch(e){
+    console.error('NonLit load error:', e.message);
+  }
+}
   if(!sb) return;
   const r=await safe(sb.from('cause_list').select('*').order('created_at',{ascending:false}));
   if(r.error){
@@ -579,7 +611,65 @@ await loadCases();
 populateMatterSelects();
 renderCases();
 notice('Cause List item saved to Supabase.');['caseTitle','caseNumber','caseClient','caseOpponent','caseCourt','caseJudge','caseDate','caseOrder'].forEach(clear)}
-function addNonLitigation(){let o={id:uid(),title:val('nlTitle'),client_name:val('nlClient'),institution:val('nlInstitution'),nature:val('nlNature'),stage:val('nlStage'),next_action:val('nlNext'),responsible_id:val('nlResponsible'),partner_id:val('nlPartner'),priority:val('nlPriority'),deadline:val('nlDeadline')||null,status:val('nlStatus'),created_at:new Date().toISOString()};nonlits.unshift(o);saveLocal();populateMatterSelects();renderNonLit();notice('Non-Litigation matter saved.');['nlTitle','nlClient','nlInstitution','nlNature','nlNext','nlDeadline'].forEach(clear)}
+async function addNonLitigation(){
+  const item = {
+    id: uid(),
+    title: val('nlTitle'),
+    client: val('nlClient'),
+    institution: val('nlInstitution'),
+    nature: val('nlNature'),
+    stage: val('nlStage'),
+    next: val('nlNext'),
+    responsible: val('nlResponsible'),
+    partner: val('nlPartner'),
+    priority: val('nlPriority'),
+    deadline: val('nlDeadline'),
+    status: val('nlStatus')
+  };
+
+  if(!item.title || !item.client){
+    notice('Matter title and client name are required.', 'err');
+    return;
+  }
+
+  if(online && sb && authUser){
+    try{
+      const { data, error } = await sb
+        .from('non_litigations')
+        .insert([{
+          title: item.title,
+          client: item.client,
+          institution: item.institution,
+          nature: item.nature,
+          stage: item.stage,
+          next_action: item.next,
+          responsible: item.responsible,
+          partner: item.partner,
+          priority: item.priority,
+          deadline: item.deadline || null,
+          status: item.status,
+          created_by: authUser.id
+        }])
+        .select()
+        .single();
+
+      if(error) throw error;
+
+      item.id = data.id;
+    }catch(e){
+      console.error('NonLit save error:', e.message);
+      notice('Online save failed. Saved locally instead.', 'err');
+    }
+  }
+
+  nonlits.unshift(item);
+  write(LS.nonlits, nonlits);
+
+  ['nlTitle','nlClient','nlInstitution','nlNature','nlNext'].forEach(clear);
+
+  await reload();
+  notice('Non-Litigation matter saved successfully.');
+}
 function addReport(){let memberId=val('repMember')||currentMemberId;if(!isAdmin()&&memberId!==currentMemberId)return notice('Ordinary members can only submit their own report.','err');let o={id:uid(),report_date:val('repDate')||today(),member_id:memberId,client:val('repClient'),linked_matter:val('repLinked'),task:val('repTask'),status:val('repStatus'),notes:val('repNotes'),created_at:new Date().toISOString()};if(!o.task)return notice('Task Description is required.','err');reports.unshift(o);saveLocal();renderReports();notice('Daily report saved.');['repClient','repTask','repNotes'].forEach(clear)}
 function addDiary(){let o={id:uid(),title:val('diaryTitle'),type:val('diaryType'),linked_matter:val('diaryLinked'),event_date:val('diaryDate')||null,event_time:val('diaryTime'),responsible_id:val('diaryResponsible'),reminder:val('diaryReminder'),created_at:new Date().toISOString()};diary.unshift(o);saveLocal();renderDiary();renderCalendar();notice('Diary entry saved.');['diaryTitle','diaryDate','diaryTime'].forEach(clear)}
 function addDoc(){let o={id:uid(),file_name:val('docName'),linked_matter:val('docLinked'),category:val('docCategory'),file_url:val('docUrl'),uploaded_by:currentMemberId,created_at:new Date().toISOString()};docs.unshift(o);saveLocal();renderDocs();notice('Document registered.');['docName','docUrl'].forEach(clear)}
