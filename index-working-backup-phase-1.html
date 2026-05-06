@@ -631,7 +631,7 @@ async function addNonLitigation(){
     notice('Matter title and client name are required.', 'err');
     return;
   }
-
+alert('NonLit debug: online=' + online + ', sb=' + (!!sb) + ', authUser=' + (!!authUser));
   if(online && sb){
     try{
       const { data, error } = await sb
