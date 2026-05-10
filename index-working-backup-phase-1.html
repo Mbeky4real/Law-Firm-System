@@ -500,7 +500,7 @@ async function safe(p){try{return await p}catch(e){online=false;return {error:e}
 async function reload(){loadLocal(); await loadCases();await loadNonLitigations(); await ensureRoom(); await loadMessages(); render()}
 async function ensureRoom(){if(!sb)return;let r=await safe(sb.from('chat_rooms').select('*').eq('type','general').limit(1));if(!r.error&&r.data&&r.data[0]){roomId=r.data[0].id;return}let c=await safe(sb.from('chat_rooms').insert({name:'General Chat',type:'general'}));if(!c.error&&c.data)roomId=c.data.id}
 async function loadMessages(){if(!sb||!roomId)return;let r=await safe(sb.from('messages').select('*').eq('room_id',roomId).order('created_at',{ascending:true}));if(!r.error&&r.data){msgs=r.data;write(LS.msgs,msgs)}}
-async function loadCases(){async function loadNonLitigations(){
+async function loadNonLitigations(){
   if(!online || !sb) return;
 
   try{
