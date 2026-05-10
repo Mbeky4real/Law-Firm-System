@@ -533,6 +533,7 @@ async function loadCases(){async function loadNonLitigations(){
     console.error('NonLit load error:', e.message);
   }
 }
+async function loadCases(){
   if(!sb) return;
   const r=await safe(sb.from('cause_list').select('*').order('created_at',{ascending:false}));
   if(r.error){
@@ -650,8 +651,7 @@ async function addNonLitigation(){
           status: item.status,
           created_by: authUser?.id || null
         }])
-        .select()
-        .single();
+        
 
       if(error) throw error;
 
