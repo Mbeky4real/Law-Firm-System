@@ -498,7 +498,7 @@ function populateMatterSelects(){let opts='<option value="">-- Select linked mat
 function switchUser(){currentMemberId=$('currentUser').value;localStorage.setItem(LS.current,currentMemberId);populateAllSelects();render()}
 async function safe(p){try{return await p}catch(e){online=false;return {error:e}}}
 async function reload(){loadLocal(); await loadCases();await loadNonLitigations(); await ensureRoom(); await loadMessages(); render()}
-async function ensureRoom(){if(!sb)return;let r=await safe(sb.from('chat_rooms').select('*').eq('type','general').limit(1));if(!r.error&&r.data&&r.data[0]){roomId=r.data[0].id;return}let c=await safe(sb.from('chat_rooms').insert({name:'General Chat',type:'general'}).select().single());if(!c.error&&c.data)roomId=c.data.id}
+async function ensureRoom(){if(!sb)return;let r=await safe(sb.from('chat_rooms').select('*').eq('type','general').limit(1));if(!r.error&&r.data&&r.data[0]){roomId=r.data[0].id;return}let c=await safe(sb.from('chat_rooms').insert({name:'General Chat',type:'general'}));if(!c.error&&c.data)roomId=c.data.id}
 async function loadMessages(){if(!sb||!roomId)return;let r=await safe(sb.from('messages').select('*').eq('room_id',roomId).order('created_at',{ascending:true}));if(!r.error&&r.data){msgs=r.data;write(LS.msgs,msgs)}}
 async function loadCases(){async function loadNonLitigations(){
   if(!online || !sb) return;
@@ -564,7 +564,7 @@ async function addCaseOnline(o){
     last_order:o.last_order,
     created_at:o.created_at,
     created_by:authUser?authUser.id:null
-  }).select().single());
+  }));
 }
 function go(p){ if(p==='members' && !isAdmin()){notice('Only partners/admins can access Members.','err'); return;} page=p;viewed[p]=countFor(p);writeObj(LS.viewed,viewed);document.querySelectorAll('section[id^="page-"]').forEach(s=>s.classList.add('hidden'));$('page-'+p).classList.remove('hidden');document.querySelectorAll('[data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===p));const names={dashboard:'Dashboard',cause:'Cause List (Court Matters)',nonlit:'Non-Litigations',reports:'Daily Work Reports',diary:'Legal Diary & Calendar',documents:'Document Management',chat:'Internal Communication',members:'Admin / Members & Access Control'};$('title').textContent=names[p]||p;render()}
 function filter(arr,fields){const q=($('search').value||'').toLowerCase();return !q?arr:arr.filter(x=>fields.some(f=>(x[f]||'').toString().toLowerCase().includes(q)))}
@@ -631,7 +631,7 @@ async function addNonLitigation(){
     notice('Matter title and client name are required.', 'err');
     return;
   }
-alert('NonLit debug: online=' + online + ', sb=' + (!!sb) + ', authUser=' + (!!authUser));
+
   if(online && sb){
     try{
       const { data, error } = await sb
