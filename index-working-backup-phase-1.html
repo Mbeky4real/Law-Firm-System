@@ -657,10 +657,11 @@ async function addNonLitigation(){
 
       if(data && data.length){   item.id = data[0].id; }
 
-    }catch(e){
-      console.error('NonLit save error:', e.message);
-      notice('Online save failed. Saved locally instead.', 'err');
-    }
+ catch(e){
+  alert('NONLIT ERROR: ' + e.message);
+  console.error('NonLit save error:', e);
+  notice('Online save failed. Saved locally instead.', 'err');
+}
 
     ['nlTitle','nlClient','nlInstitution','nlNature','nlNext'].forEach(clear);
 
