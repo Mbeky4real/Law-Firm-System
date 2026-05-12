@@ -651,12 +651,11 @@ async function addNonLitigation(){
           status:         item.status,
           created_by:     authUser?.id || null
         }])
-        .select()
-        .single();
+        .select();
 
       if(error) throw error;
 
-      item.id = data.id;
+      if(data && data.length){   item.id = data[0].id; }
 
     }catch(e){
       console.error('NonLit save error:', e.message);
