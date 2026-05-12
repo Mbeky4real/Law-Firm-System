@@ -614,18 +614,18 @@ renderCases();
 notice('Cause List item saved to Supabase.');['caseTitle','caseNumber','caseClient','caseOpponent','caseCourt','caseJudge','caseDate','caseOrder'].forEach(clear)}
 async function addNonLitigation(){
   const item = {
-    id: uid(),
-    title: val('nlTitle'),
-    client: val('nlClient'),
+    id:          uid(),
+    title:       val('nlTitle'),
+    client:      val('nlClient'),
     institution: val('nlInstitution'),
-    nature: val('nlNature'),
-    stage: val('nlStage'),
-    next: val('nlNext'),
+    nature:      val('nlNature'),
+    stage:       val('nlStage'),
+    next:        val('nlNext'),
     responsible: val('nlResponsible'),
-    partner: val('nlPartner'),
-    priority: val('nlPriority'),
-    deadline: val('nlDeadline'),
-    status: val('nlStatus')
+    partner:     val('nlPartner'),
+    priority:    val('nlPriority'),
+    deadline:    val('nlDeadline'),
+    status:      val('nlStatus')
   };
 
   if(!item.title || !item.client){
@@ -638,37 +638,48 @@ async function addNonLitigation(){
       const { data, error } = await sb
         .from('non_litigations')
         .insert([{
-          title: item.title,
-          client: item.client,
-          institution: item.institution,
-          nature: item.nature,
-          stage: item.stage,
-          next_action: item.next,
-          responsible: item.responsible,
-          partner: item.partner,
-          priority: item.priority,
-          deadline: item.deadline || null,
-          status: item.status,
-          created_by: authUser?.id || null
+          title:          item.title,
+          client_name:    item.client,
+          institution:    item.institution,
+          nature:         item.nature,
+          stage:          item.stage,
+          next_action:    item.next,
+          responsible_id: item.responsible,
+          partner_id:     item.partner,
+          priority:       item.priority,
+          deadline:       item.deadline || null,
+          status:         item.status,
+          created_by:     authUser?.id || null
         }])
-        
+        .select()
+        .single();
 
       if(error) throw error;
 
       item.id = data.id;
+
     }catch(e){
       console.error('NonLit save error:', e.message);
       notice('Online save failed. Saved locally instead.', 'err');
     }
+
+    ['nlTitle','nlClient','nlInstitution','nlNature','nlNext'].forEach(clear);
+
+    await reload();
+    notice('Non-Litigation matter saved successfully.');
+    return;
   }
 
-  nonlits.unshift(item);
+  if(!nonlits.find(n => n.id === item.id)){
+    nonlits.unshift(item);
+  }
+
   write(LS.nonlits, nonlits);
 
   ['nlTitle','nlClient','nlInstitution','nlNature','nlNext'].forEach(clear);
 
   await reload();
-  notice('Non-Litigation matter saved successfully.');
+  notice('Non-Litigation matter saved locally (offline mode).');
 }
 function addReport(){let memberId=val('repMember')||currentMemberId;if(!isAdmin()&&memberId!==currentMemberId)return notice('Ordinary members can only submit their own report.','err');let o={id:uid(),report_date:val('repDate')||today(),member_id:memberId,client:val('repClient'),linked_matter:val('repLinked'),task:val('repTask'),status:val('repStatus'),notes:val('repNotes'),created_at:new Date().toISOString()};if(!o.task)return notice('Task Description is required.','err');reports.unshift(o);saveLocal();renderReports();notice('Daily report saved.');['repClient','repTask','repNotes'].forEach(clear)}
 function addDiary(){let o={id:uid(),title:val('diaryTitle'),type:val('diaryType'),linked_matter:val('diaryLinked'),event_date:val('diaryDate')||null,event_time:val('diaryTime'),responsible_id:val('diaryResponsible'),reminder:val('diaryReminder'),created_at:new Date().toISOString()};diary.unshift(o);saveLocal();renderDiary();renderCalendar();notice('Diary entry saved.');['diaryTitle','diaryDate','diaryTime'].forEach(clear)}
