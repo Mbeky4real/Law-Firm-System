@@ -639,13 +639,13 @@ async function addNonLitigation(){
         .from('non_litigations')
         .insert([{
           title:          item.title,
-          client_name:    item.client,
+          client: item.client,
           institution:    item.institution,
           nature:         item.nature,
           stage:          item.stage,
           next_action:    item.next,
-          responsible_id: item.responsible,
-          partner_id:     item.partner,
+          responsible: item.responsible,
+          partner: item.partner,
           priority:       item.priority,
           deadline:       item.deadline || null,
           status:         item.status,
