@@ -656,7 +656,7 @@ async function addNonLitigation(){
       if(error) throw error;
 
       if(data && data.length){   item.id = data[0].id; }
-
+}
  catch(e){
   alert('NONLIT ERROR: ' + e.message);
   console.error('NonLit save error:', e);
