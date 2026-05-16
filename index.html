@@ -739,19 +739,18 @@ async function reloadRoles(){
   if(!sb){ notice('Supabase is not connected.','err'); return; }
   const { data, error } = await sb.from('roles').select('*').order('created_at',{ascending:false});
   if(error){ notice('Could not load members: '+error.message,'err'); return; }
-  members = (data||[]).map(r=>({
-    id: r.user_id || r.id,
-    name: r.full_name || r.email || 'Unnamed',
-    email: r.email || '',
-    role: r.role === 'partner' ? 'partner' : 'ordinary',
-    position: r.position || (r.role === 'partner' ? 'Partner / Admin' : 'Ordinary Member'),
-    created_at: r.created_at
+  members=(data||[]).filter(r=>r.user_id).map(r=>({
+    id:r.user_id,
+    name:r.full_name||r.email||'Unnamed',
+    email:r.email||'',
+    role:r.role==='partner'?'partner':'ordinary',
+    position:r.position||(r.role==='partner'?'Partner / Admin':'Ordinary Member'),
+    created_at:r.created_at
   }));
-  saveLocal();
+  write(LS.members,members);
   populateAllSelects();
   renderMembers();
   render();
-  notice('Members refreshed.');
 }
 
 async function addMemberSecure(){
