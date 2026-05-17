@@ -515,13 +515,13 @@ async function loadNonLitigations(){
       nonlits = data.map(n => ({
         id: n.id,
         title: n.title,
-        client: n.client,
+        client: n.client_name,
         institution: n.institution,
         nature: n.nature,
         stage: n.stage,
         next: n.next_action,
-        responsible: n.responsible,
-        partner: n.partner,
+        responsible: n.responsible_id,
+        partner: n.partner_id,
         priority: n.priority,
         deadline: n.deadline,
         status: n.status
