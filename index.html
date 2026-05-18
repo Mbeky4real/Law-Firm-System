@@ -289,7 +289,11 @@ input,select,textarea{width:100%;padding:12px;border:1px solid var(--border);bor
   <button class="navbtn" data-nav="documents" onclick="go('documents')"><span>▣</span>Docs<i class="badge" id="bbDocs">0</i></button>
   <button class="navbtn" data-nav="chat" onclick="go('chat')"><span>💬</span>Chat<i class="badge" id="bbChat">0</i></button>
 </nav>
+<script src="js/constants.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/ui.js"></script>
 
+  
 <script>
 let sb=null, online=false, page='dashboard', roomId=null, calDate=new Date(), authUser=null, authRole=null, authFullName=null;
 let cases=[], nonlits=[], diary=[], docs=[], msgs=[], members=[], reports=[], currentMemberId=null, viewed={};
