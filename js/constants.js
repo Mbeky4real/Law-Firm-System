@@ -1,6 +1,6 @@
 // Centralized app constants/configuration (no runtime logic)
 
-const LS = {
+window.LS = window.LS || {
   cases: 'molms_cases_v8',
   nonlits: 'molms_nonlits_v8',
   diary: 'molms_diary_v8',
