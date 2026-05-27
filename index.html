@@ -295,7 +295,7 @@ input,select,textarea{width:100%;padding:12px;border:1px solid var(--border);bor
 <script>
 let sb=null, online=false, page='dashboard', roomId=null, calDate=new Date(), authUser=null, authRole=null, authFullName=null;
 let cases=[], nonlits=[], diary=[], docs=[], msgs=[], members=[], reports=[], currentMemberId=null, viewed={};
-const LS={cases:'molms_cases_v8',nonlits:'molms_nonlits_v8',diary:'molms_diary_v8',docs:'molms_docs_v8',msgs:'molms_msgs_v8',members:'molms_members_v8',reports:'molms_reports_v8',current:'molms_current_member_v8',viewed:'molms_viewed_badges_v8'};
+
 function $(id){return document.getElementById(id)} function val(id){return $(id).value.trim()} function clear(id){$(id).value=''}
 function esc(x){return (x??'').toString().replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
 function uid(){return crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random())}
