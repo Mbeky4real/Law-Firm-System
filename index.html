@@ -708,7 +708,7 @@ function globalSearch(){
     if(text.includes(q))hits.push({section:'Cause List',page:'cause',title:c.title||'Untitled Case',meta:`${c.client_name||''} · ${c.case_number||''} · ${c.court||''}`});
   });
   nonlits.forEach(n=>{
-    let text=[n.title,n.n.client,n.institution,n.nature,n.stage,n.next_action,n.status,memberName(n.responsible_id),memberName(n.partner_id)].map(searchText).join(' ');
+    let text=[n.title,n.client || n.client_name,n.institution,n.nature,n.stage,n.next || n.next_action,n.status,memberName(n.responsible_id || n.responsible),memberName(n.partner_id || n.partner)].map(searchText).join(' ');
     if(text.includes(q))hits.push({section:'Non-Litigations',page:'nonlit',title:n.title||'Untitled Matter',meta:`${n.client||''} · ${n.institution||''} · ${n.stage||''}`});
   });
   reports.forEach(r=>{
