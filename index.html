@@ -284,10 +284,15 @@ input,select,textarea{width:100%;padding:12px;border:1px solid var(--border);bor
       </section>
 
       <section id="page-chat" class="hidden">
-        <div class="card"><h2>Internal Communication <span class="pill green" id="chatStatus">Ready</span></h2>
-          <p class="muted small">General Chat is active. Matter-based chat is recommended for the next production upgrade.</p>
+        <div class="card">
+          <h2>Internal Communication Centre <span class="pill green" id="chatStatus">Ready</span></h2>
+          <p class="muted small">Firm-wide internal communications. All messages are visible to all members.</p>
           <div class="chatbox" id="chatBox"></div>
-          <div class="chatbar"><input id="chatInput" placeholder="Write a message..." onkeydown="if(event.key==='Enter')sendMsg()"><button class="btn gold" onclick="sendMsg()">Send</button></div>
+          <div class="chatbar" style="flex-wrap:wrap;gap:6px">
+            <select id="chatCategory" style="flex:0 0 auto;width:auto;padding:10px 10px;border-radius:14px;font-size:14px"><option value="General">General</option><option value="Announcement">Announcement</option><option value="Reminder">Reminder</option><option value="Urgent">Urgent</option></select>
+            <input id="chatInput" placeholder="Write a message..." onkeydown="if(event.key==='Enter')sendMsg()" style="flex:1;min-width:120px">
+            <button class="btn gold" onclick="sendMsg()">Send</button>
+          </div>
         </div>
       </section>
 
@@ -371,7 +376,7 @@ input,select,textarea{width:100%;padding:12px;border:1px solid var(--border);bor
 <script>
 let sb=null, online=false, page='dashboard', roomId=null, calDate=new Date(), authUser=null, authRole=null, authFullName=null;
 let cases=[], nonlits=[], diary=[], officeEvents=[], docs=[], msgs=[], members=[], reports=[], currentMemberId=null, viewed={};
-let diaryEditId=null, oeEditId=null, docEditId=null, memberEditId=null, calSelectedDate=null;
+let diaryEditId=null, oeEditId=null, docEditId=null, memberEditId=null, chatChannel=null, calSelectedDate=null;
 const LS={cases:'molms_cases_v8',nonlits:'molms_nonlits_v8',diary:'molms_diary_v8',officeEvents:'molms_oevents_v8',docs:'molms_docs_v8',msgs:'molms_msgs_v8',members:'molms_members_v8',reports:'molms_reports_v8',current:'molms_current_member_v8',viewed:'molms_viewed_badges_v8'};
 function $(id){return document.getElementById(id)} function val(id){return $(id).value.trim()} function clear(id){$(id).value=''}
 function esc(x){return (x??'').toString().replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
@@ -558,6 +563,7 @@ async function login(){
   }
 }
 async function logout(){
+  if(chatChannel){ try{chatChannel.unsubscribe();}catch(e){} chatChannel=null; }
   if(sb){ await sb.auth.signOut(); }
   authUser=null; authRole=null; authFullName=null;
   showLogin();
@@ -578,8 +584,87 @@ function populateMatterSelects(){let opts='<option value="">-- Select linked mat
 function switchUser(){currentMemberId=$('currentUser').value;localStorage.setItem(LS.current,currentMemberId);populateAllSelects();render()}
 async function safe(p){try{return await p}catch(e){online=false;return {error:e}}}
 async function reload(){loadLocal(); await loadMembers(); await loadCases();await loadNonLitigations();await loadReports();await loadOfficeEvents();await loadDocs(); await ensureRoom(); await loadMessages(); render()}
-async function ensureRoom(){if(!sb)return;let r=await safe(sb.from('chat_rooms').select('*').eq('type','general').limit(1));if(!r.error&&r.data&&r.data[0]){roomId=r.data[0].id;return}let c=await safe(sb.from('chat_rooms').insert({name:'General Chat',type:'general'}));if(!c.error&&c.data)roomId=c.data.id}
-async function loadMessages(){if(!sb||!roomId)return;let r=await safe(sb.from('messages').select('*').eq('room_id',roomId).order('created_at',{ascending:true}));if(!r.error&&r.data){msgs=r.data;write(LS.msgs,msgs)}}
+async function ensureRoom(){
+  if(!sb) return;
+  if(chatChannel) return; // already subscribed — skip re-init
+  // Try to find existing general room by new name
+  let r=await safe(sb.from('chat_rooms').select('*').eq('room_name','Internal Communication Centre').limit(1));
+  if(!r.error && r.data && r.data[0]){ roomId=r.data[0].id; subscribeChat(); return; }
+  // Fallback: any existing room
+  let r2=await safe(sb.from('chat_rooms').select('*').limit(1));
+  if(!r2.error && r2.data && r2.data[0]){ roomId=r2.data[0].id; subscribeChat(); return; }
+  // Create room
+  let c=await safe(sb.from('chat_rooms').insert({room_name:'Internal Communication Centre'}).select());
+  if(!c.error && c.data && c.data[0]){ roomId=c.data[0].id; subscribeChat(); return; }
+  // Race condition: another session created it — re-query
+  let r3=await safe(sb.from('chat_rooms').select('*').limit(1));
+  if(!r3.error && r3.data && r3.data[0]){ roomId=r3.data[0].id; subscribeChat(); return; }
+  notice('Chat room unavailable. Please refresh.','err');
+}
+async function loadMessages(){
+  if(!sb||!roomId) return;
+  let r=await safe(sb.from('chat_messages').select('*').eq('room_id',roomId).is('deleted_at',null).order('created_at',{ascending:true}).limit(100));
+  if(!r.error&&r.data){ msgs=r.data; write(LS.msgs,msgs); }
+}
+
+function subscribeChat(){
+  if(!sb||!roomId||chatChannel) return;
+  chatChannel=sb.channel('chat:'+roomId)
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_messages',filter:'room_id=eq.'+roomId},(payload)=>{
+      const m=payload.new;
+      if(!m) return;
+      // Deduplication: check by server id
+      if(msgs.some(x=>x.id===m.id)) return;
+      // Also fuzzy-deduplicate: same sender + message within 2 seconds
+      const twoSec=2000;
+      const isDup=msgs.some(x=>x.sender_id===m.sender_id&&(x.message||x.content)===(m.message||m.content)&&Math.abs(new Date(x.created_at)-new Date(m.created_at))<twoSec);
+      if(isDup){
+        // Update the local optimistic record with server id
+        const idx=msgs.findIndex(x=>x.sender_id===m.sender_id&&(x.message||x.content)===(m.message||m.content));
+        if(idx>-1){ msgs[idx]={...msgs[idx],id:m.id,created_at:m.created_at}; write(LS.msgs,msgs); }
+        return;
+      }
+      if(!m.deleted_at) msgs.push(m);
+      write(LS.msgs,msgs);
+      if(page==='chat') renderChat();
+      else badges(); // increment unread badge
+    })
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'chat_messages',filter:'room_id=eq.'+roomId},(payload)=>{
+      const m=payload.new;
+      if(!m) return;
+      const idx=msgs.findIndex(x=>x.id===m.id);
+      if(idx>-1){
+        if(m.deleted_at){ msgs.splice(idx,1); } // remove from local array when soft-deleted by another user
+        else { msgs[idx]={...msgs[idx],...m}; }
+        write(LS.msgs,msgs);
+        if(page==='chat') renderChat();
+      }
+    })
+    .subscribe();
+}
+
+async function deleteMsg(id){
+  if(!authUser){ notice('You must be logged in.','err'); return; }
+  const m=msgs.find(x=>x.id===id);
+  if(!m){ notice('Message not found.','err'); return; }
+  const canDel=m.sender_id===authUser.id||isAdmin();
+  if(!canDel){ notice('You can only delete your own messages.','err'); return; }
+  if(sb){
+    const {error}=await safe(sb.from('chat_messages').update({deleted_at:new Date().toISOString()}).eq('id',id));
+    if(error){ notice('Delete failed: '+error.message,'err'); return; }
+  }
+  // Update local array in place so it renders as deleted placeholder
+  const idx=msgs.findIndex(x=>x.id===id);
+  if(idx>-1){ msgs[idx]={...msgs[idx],deleted_at:new Date().toISOString()}; }
+  write(LS.msgs,msgs);
+  renderChat();
+}
+
+function getUnreadCount(){
+  const lastSeen=viewed['chat_last_seen']||null;
+  if(!lastSeen) return msgs.filter(m=>!m.deleted_at).length;
+  return msgs.filter(m=>!m.deleted_at && m.created_at > lastSeen).length;
+}
 async function loadNonLitigations(){
   if(!online || !sb) return;
 
@@ -648,10 +733,10 @@ async function addCaseOnline(o){
     created_by:authUser?authUser.id:null
   }));
 }
-function go(p){ if(p!=='diary'&&oeEditId!==null){oeEditId=null;resetOfficeEventForm();} if(p!=='documents'&&docEditId!==null){docEditId=null;resetDocForm();} if(p!=='members'&&memberEditId!==null){memberEditId=null;resetMemberEditForm();} page=p;viewed[p]=countFor(p);writeObj(LS.viewed,viewed);document.querySelectorAll('section[id^="page-"]').forEach(s=>s.classList.add('hidden'));$('page-'+p).classList.remove('hidden');document.querySelectorAll('[data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===p));const names={dashboard:'Dashboard',cause:'Cause List (Court Matters)',nonlit:'Non-Litigations',reports:'Daily Work Reports',diary:'Legal Diary & Calendar',documents:'Document Management',chat:'Internal Communication',members:'Team Members'};$('title').textContent=names[p]||p;render()}
+function go(p){ if(p!=='diary'&&oeEditId!==null){oeEditId=null;resetOfficeEventForm();} if(p!=='documents'&&docEditId!==null){docEditId=null;resetDocForm();} if(p!=='members'&&memberEditId!==null){memberEditId=null;resetMemberEditForm();} if(p==='chat'&&msgs.length){ viewed['chat_last_seen']=msgs[msgs.length-1].created_at; writeObj(LS.viewed,viewed); } page=p;viewed[p]=countFor(p);writeObj(LS.viewed,viewed);document.querySelectorAll('section[id^="page-"]').forEach(s=>s.classList.add('hidden'));$('page-'+p).classList.remove('hidden');document.querySelectorAll('[data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===p));const names={dashboard:'Dashboard',cause:'Cause List (Court Matters)',nonlit:'Non-Litigations',reports:'Daily Work Reports',diary:'Legal Diary & Calendar',documents:'Document Management',chat:'Internal Communication Centre',members:'Team Members'};$('title').textContent=names[p]||p;render()}
 function filter(arr,fields){const q=($('search').value||'').toLowerCase();return !q?arr:arr.filter(x=>fields.some(f=>(x[f]||'').toString().toLowerCase().includes(q)))}
 function countFor(p){let map={dashboard:cases.length+nonlits.length+reports.length+officeEvents.length+docs.length+msgs.length,cause:cases.length,nonlit:nonlits.length,reports:reports.length,diary:officeEvents.length,documents:docs.length,chat:msgs.length,members:members.length};return map[p]||0}
-function badgeVal(p){return Math.max(0,countFor(p)-(viewed[p]||0))}
+function badgeVal(p){if(p==='chat') return Math.max(0,getUnreadCount());return Math.max(0,countFor(p)-(viewed[p]||0))}
 function setBadge(id,v){let e=$(id);if(e){e.textContent=v;e.style.display=v>0?'flex':'none'}}
 function badges(){['dashboard','cause','nonlit','reports','diary','documents','chat','members'].forEach(p=>{let key={dashboard:'Dash',cause:'Cause',nonlit:'NonLit',reports:'Reports',diary:'Diary',documents:'Docs',chat:'Chat',members:'Members'}[p];let v=badgeVal(p);setBadge('bb'+key,v);setBadge('sb'+key,v)});$('sMembers')&&($('sMembers').textContent=members.length)}
 function render(){globalSearch();badges();if($('modeNotice'))$('modeNotice').textContent=(online?'Connected to Supabase. ':'Local/offline mode. ')+'Logged in as '+me().name+' — '+(isAdmin()?'Partner/Admin':'Staff'); if($('currentUser')){$('currentUser').style.display=authUser?'none':'block';}if($('adminMembersBtn')) $('adminMembersBtn').style.display=isAdmin()?'inline-block':'none';renderDashboard();if(page==='cause')renderCases();if(page==='nonlit')renderNonLit();if(page==='reports'){initRepStaffField();renderReports();}if(page==='diary'){renderCalendar();renderDayDetail();renderOfficeEvents();}if(page==='documents')renderDocs();if(page==='chat')renderChat();if(page==='members')renderMembers();populateMatterSelects();}
@@ -681,7 +766,21 @@ function renderDashboard(){let todayReports=reports.filter(r=>r.report_date===to
     const dateVal=x.deadline||x.next_date||'No deadline';
     return `<div class="item"><span class="${sp}">[${esc(x._source)}]</span> <span class="pill ${priCls}" style="margin-left:4px">${esc(x.priority)}</span><div class="item-title">${esc(x.title)}</div><div class="item-meta">${esc(x.client_name||x.client||'')} ${x.client_name||x.client?'· ':''}${esc(memberName(x.responsible_id||x.responsible))} · ${esc(dateVal)}</div></div>`;
   }).join(''):'<p class="muted">No urgent/high priority items yet.</p>';
-  $('reportSnapshot').innerHTML=`<div class="reportSummary" style="grid-template-columns:repeat(4,1fr)"><div class="miniStat"><b>${reports.length}</b><small>Total</small></div><div class="miniStat"><b>${reports.filter(r=>r.status==='completed').length}</b><small>Completed</small></div><div class="miniStat"><b>${reports.filter(r=>r.status==='in_progress').length}</b><small>In Progress</small></div><div class="miniStat"><b>${reports.filter(r=>r.review_status==='open'||r.review_status==='reopened').length}</b><small>Pending Review</small></div></div>`;if($('managementFocus')){$('managementFocus').innerHTML=`<div class="item"><div class="item-title">${pri.length} urgent/high priority items</div><div class="item-meta">Priority matters requiring partner attention.</div></div><div class="item"><div class="item-title">${pending.length} pending activities</div><div class="item-meta">Daily reports marked In Progress.</div></div><div class="item"><div class="item-title">${upcomingItems.length} upcoming items within 7 days</div><div class="item-meta">Court dates, deadlines and report activities.</div></div>`;}$('memberPerformance').innerHTML=members.map(m=>{let c=statusCounts(m.id);return `<div class="item"><b class="redtxt">${esc(initials(m.name))}</b><div class="item-title">${esc(m.name)}</div><div class="item-meta">${c.total} activities · ${c.completed} completed · ${c.progress} in progress</div></div>`}).join('');$('updates').innerHTML=msgs.slice(-3).reverse().map(m=>`<div class="item"><b class="redtxt">${esc(m.sender||'Team')}</b><div class="item-title">${esc(m.content)}</div><div class="item-meta">${new Date(m.created_at||Date.now()).toLocaleString()}</div></div>`).join('')||'<p class="muted">No chat updates yet.</p>'}
+  $('reportSnapshot').innerHTML=`<div class="reportSummary" style="grid-template-columns:repeat(4,1fr)"><div class="miniStat"><b>${reports.length}</b><small>Total</small></div><div class="miniStat"><b>${reports.filter(r=>r.status==='completed').length}</b><small>Completed</small></div><div class="miniStat"><b>${reports.filter(r=>r.status==='in_progress').length}</b><small>In Progress</small></div><div class="miniStat"><b>${reports.filter(r=>r.review_status==='open'||r.review_status==='reopened').length}</b><small>Pending Review</small></div></div>`;if($('managementFocus')){$('managementFocus').innerHTML=`<div class="item"><div class="item-title">${pri.length} urgent/high priority items</div><div class="item-meta">Priority matters requiring partner attention.</div></div><div class="item"><div class="item-title">${pending.length} pending activities</div><div class="item-meta">Daily reports marked In Progress.</div></div><div class="item"><div class="item-title">${upcomingItems.length} upcoming items within 7 days</div><div class="item-meta">Court dates, deadlines and report activities.</div></div>`;}$('memberPerformance').innerHTML=members.map(m=>{let c=statusCounts(m.id);return `<div class="item"><b class="redtxt">${esc(initials(m.name))}</b><div class="item-title">${esc(m.name)}</div><div class="item-meta">${c.total} activities · ${c.completed} completed · ${c.progress} in progress</div></div>`}).join('');  const catPriority={Urgent:1,Announcement:2,Reminder:3,General:4};
+  const catPillDash={Urgent:'pill red',Announcement:'pill gold',Reminder:'pill blue',General:''};
+  const catRolePill={partner:'<span class="pill green" style="font-size:10px;margin-left:4px">Partner</span>',staff:''};
+  const sortedMsgs=msgs.filter(m=>!m.deleted_at).slice().sort((a,b)=>{
+    const pa=catPriority[a.category]||4, pb=catPriority[b.category]||4;
+    if(pa!==pb) return pa-pb;
+    return new Date(b.created_at)-new Date(a.created_at);
+  }).slice(0,10);
+  $('updates').innerHTML=sortedMsgs.length?sortedMsgs.map(m=>{
+    const cat=m.category||'General';
+    const catHtml=cat!=='General'?`<span class="${catPillDash[cat]||'pill'}" style="font-size:10px;margin-right:4px">${esc(cat)}</span>`:'';
+    const preview=(m.message||m.content||'').slice(0,120);
+    return `<div class="item">${catHtml}<b class="redtxt">${esc(m.sender_name||m.sender||'Team')}</b>${catRolePill[m.sender_role]||''}<div class="item-title">${esc(preview)}</div><div class="item-meta">${new Date(m.created_at||Date.now()).toLocaleString()}</div></div>`;
+  }).join(''):'<p class="muted">No internal updates yet.</p>';
+}
 function initials(n){return (n||'').split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase()}
 function renderCases(){
   let arr=filter(cases,['title','case_number','client_name','opponent','court','stage','judge','status','priority','last_order']);
@@ -798,7 +897,29 @@ function renderDocs(){
     return `<div class="item">${docNoHtml}${confPill} <span class="pill gold" style="margin-left:4px">${esc(d.document_type||d.category||'General')}</span><div class="item-title">${esc(d.title||d.file_name||'Untitled')}</div><div class="item-meta">${desc?esc(desc)+'<br>':''}<b>Matter:</b> ${esc(linkedTxt)}<br><b>Uploaded by:</b> ${esc(memberName(d.uploaded_by))}${d.file_url?`<br><a href="${esc(d.file_url)}" target="_blank" rel="noopener">Open document ↗</a>`:''}</div><div class="member-actions">${editBtn}${delBtn}</div></div>`;
   }).join(''):'<p class="muted">No documents yet.</p>';
 }
-function renderChat(){const b=$('chatBox');b.innerHTML=msgs.length?msgs.map((m,i)=>`<div class="msg ${m.sender_id===currentMemberId?'me':''}">${esc(m.content)}<small>${esc(m.sender||'Team')} · ${new Date(m.created_at||Date.now()).toLocaleString()}</small></div>`).join(''):'<p class="muted">No messages yet.</p>';b.scrollTop=b.scrollHeight;$('chatStatus').textContent=online?'Online':'Local'}
+function renderChat(){
+  const b=$('chatBox');
+  if(!msgs.length){ b.innerHTML='<p class="muted" style="padding:12px">No messages yet. Send the first message!</p>'; b.scrollTop=0; $('chatStatus').textContent=online?'Online':'Local'; return; }
+  const catPill={Urgent:'pill red',Announcement:'pill gold',Reminder:'pill blue',General:''};
+  const atBottom = b.scrollHeight - b.scrollTop - b.clientHeight < 60;
+  b.innerHTML=msgs.map(m=>{
+    if(m.deleted_at) return `<div class="msg" style="opacity:0.55"><em>This message was removed by administration.</em></div>`;
+    const isMe=authUser?m.sender_id===authUser.id:m.sender_id===currentMemberId;
+    const cat=m.category||'General';
+    const catHtml=cat!=='General'?`<span class="${catPill[cat]||'pill'}" style="margin-right:6px;font-size:10px">${esc(cat)}</span>`:'';
+    const canDel=authUser&&(m.sender_id===authUser.id||isAdmin());
+    const delBtn=canDel?`<button class="btn red small" onclick="deleteMsg('${m.id}')" style="margin-left:8px;padding:3px 7px;font-size:10px" title="Delete">✕</button>`:'';
+    const role=m.sender_role==='partner'?'<span class="pill green" style="font-size:10px;margin-left:4px">Partner</span>':'';
+    return `<div class="msg ${isMe?'me':''}">${catHtml}${esc(m.message||m.content||'')}<small>${esc(m.sender_name||m.sender||'Team')}${role} · ${new Date(m.created_at||Date.now()).toLocaleString()}${delBtn}</small></div>`;
+  }).join('');
+  if(atBottom) b.scrollTop=b.scrollHeight;
+  $('chatStatus').textContent=online?'Online':'Local';
+  // Update unread badge watermark
+  if(page==='chat' && msgs.length){
+    viewed['chat_last_seen']=msgs[msgs.length-1].created_at;
+    writeObj(LS.viewed,viewed);
+  }
+}
 function renderMembers(){
   const admin=isAdmin();
   // Admin panel visibility
@@ -1499,7 +1620,53 @@ function resetDocForm(){
   if($('docCancelEditBtn')) $('docCancelEditBtn').classList.add('hidden');
   if($('docFormTitle')) $('docFormTitle').textContent='Add Document';
 }
-async function sendMsg(){let content=val('chatInput');if(!content)return;let o={id:uid(),content,room_id:roomId,sender:me().name,sender_id:currentMemberId,created_at:new Date().toISOString()};msgs.push(o);saveLocal();renderChat();clear('chatInput');if(sb&&roomId){let r=await safe(sb.from('messages').insert({content,room_id:roomId}));if(r.error)notice('Message saved locally. Supabase sync failed: '+r.error.message,'err')}}
+async function sendMsg(){
+  const content=val('chatInput');
+  if(!content) return;
+  if(!authUser&&sb){ notice('You must be logged in to send messages.','err'); return; }
+  const category=($('chatCategory')&&$('chatCategory').value)||'General';
+  const sender_name=authFullName||authUser?.email||me().name||'Team';
+  const sender_role=authRole==='partner'?'partner':'staff';
+  const sender_id=authUser?authUser.id:currentMemberId;
+  const o={
+    id:uid(),
+    message:content,
+    content:content, // legacy compat
+    room_id:roomId,
+    sender_name,
+    sender:sender_name, // legacy compat
+    sender_id,
+    sender_role,
+    category,
+    created_at:new Date().toISOString()
+  };
+  msgs.push(o);
+  saveLocal();
+  renderChat();
+  const b=$('chatBox'); b.scrollTop=b.scrollHeight;
+  clear('chatInput');
+  if(sb&&roomId){
+    try{
+      const {data,error}=await sb.from('chat_messages').insert({
+        room_id:roomId,
+        sender_id,
+        sender_name,
+        sender_role,
+        category,
+        message:content
+      }).select();
+      if(error) throw error;
+      if(data&&data.length){
+        // Replace local object with server values for deduplication
+        const idx=msgs.findIndex(m=>m.id===o.id);
+        if(idx>-1){ msgs[idx]={...msgs[idx],id:data[0].id,created_at:data[0].created_at}; }
+        write(LS.msgs,msgs);
+      }
+    }catch(e){
+      notice('Message saved locally. Supabase sync failed: '+e.message,'err');
+    }
+  }
+}
 function addMember(){if(!isAdmin())return notice('Only partners/admins can add members.','err');let o={id:uid(),name:val('memName'),email:val('memEmail'),role:val('memRole'),position:val('memPosition'),created_at:new Date().toISOString()};if(!o.name)return notice('Full Name is required.','err');members.push(o);saveLocal();populateAllSelects();renderMembers();notice('Member added.');['memName','memEmail','memPosition'].forEach(clear)}
 function removeMember(id){if(!isAdmin())return notice('Only partners/admins can remove members.','err');if(id===currentMemberId)return notice('You cannot remove the currently selected user.','err');members=members.filter(m=>m.id!==id);saveLocal();populateAllSelects();renderMembers();notice('Member removed.')}
 
@@ -1538,8 +1705,12 @@ function globalSearch(){
     }
   });
   msgs.forEach(m=>{
-    let text=[m.content,m.sender].map(searchText).join(' ');
-    if(text.includes(q))hits.push({section:'Chat',page:'chat',title:m.content||'Message',meta:`${m.sender||'Team'} · ${new Date(m.created_at||Date.now()).toLocaleString()}`});
+    if(m.deleted_at) return; // exclude soft-deleted from search
+    let text=[m.message,m.content,m.sender_name,m.sender,m.sender_role,m.category].map(searchText).join(' ');
+    if(text.includes(q)){
+      const preview=(m.message||m.content||'').slice(0,80);
+      hits.push({section:'Chat',page:'chat',title:preview||'Message',meta:`${m.sender_name||m.sender||'Team'} (${m.sender_role||'staff'}) · ${m.category||'General'} · ${new Date(m.created_at||Date.now()).toLocaleString()}`});
+    }
   });
   members.forEach(m=>{
     let text=[m.name,m.email,m.role,m.position].map(searchText).join(' ');
