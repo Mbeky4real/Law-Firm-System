@@ -884,12 +884,13 @@ function subscribeChat(){
       const m=payload.new;
       if(!m) return;
       const idx=msgs.findIndex(x=>x.id===m.id);
-      if(idx>-1){
-        if(m.deleted_at){ msgs.splice(idx,1); } // remove from local array when soft-deleted by another user
-        else { msgs[idx]={...msgs[idx],...m}; }
-        write(LS.msgs,msgs);
-        if(page==='chat') renderChat();
-      }
+     if(idx>-1){
+    msgs[idx]={...msgs[idx],...m};
+
+    write(LS.msgs,msgs);
+
+    if(page==='chat') renderChat();
+}
     })
     .subscribe();
 }
@@ -2005,12 +2006,22 @@ async function sendMsg(){
         message:content
       }).select();
       if(error) throw error;
-      if(data&&data.length){
-        // Replace local object with server values for deduplication
-        const idx=msgs.findIndex(m=>m.id===o.id);
-        if(idx>-1){ msgs[idx]={...msgs[idx],id:data[0].id,created_at:data[0].created_at}; }
-        write(LS.msgs,msgs);
-      }
+    if(data&&data.length){
+  // Replace local object with server values for deduplication
+  const idx=msgs.findIndex(m=>m.id===o.id);
+
+  if(idx>-1){
+    msgs[idx]={
+      ...msgs[idx],
+      id:data[0].id,
+      created_at:data[0].created_at
+    };
+  }
+
+  write(LS.msgs,msgs);
+
+  if(page==='chat') renderChat();
+}
     }catch(e){
       notice('Message saved locally. Supabase sync failed: '+e.message,'err');
     }
