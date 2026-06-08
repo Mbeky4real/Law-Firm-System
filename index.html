@@ -2927,8 +2927,9 @@ function exportCSV(dataset){
     rows=[['Title','Type','Document No','Description','Uploaded By'],...docs.map(d=>[d.title||d.file_name||'',d.document_type||'',d.document_no||'',d.description||'',memberName(d.uploaded_by)])];
   }
   if(!rows.length){ notice('No data to export.','err'); return; }
-  const csv=rows.map(r=>r.map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(',')).join('
-');
+ const csv = rows
+  .map(r => r.map(v => '"' + String(v || '').replace(/"/g, '""') + '"').join(','))
+  .join('\n');
   const blob=new Blob([csv],{type:'text/csv'});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
