@@ -15,7 +15,6 @@
 .stat{position:relative;overflow:hidden}.stat:before{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:var(--gold)}.stat small{display:block;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}.stat b{display:block;font-size:34px;font-family:Georgia,serif;margin-top:8px}.stat .mini{font-size:12px;color:var(--muted);margin-top:4px}
 .btn{border:0;border-radius:14px;padding:11px 14px;background:var(--navy);color:white;font-weight:700;cursor:pointer}.btn.gold{background:var(--gold);color:var(--navy)}.btn.out{background:white;color:var(--navy);border:1px solid var(--border)}.btn.red{background:var(--red)}.btn.small{font-size:12px;padding:7px 9px}
 input,select,textarea{width:100%;padding:12px;border:1px solid var(--border);border-radius:14px;background:white;font-size:16px;color:var(--navy)}label{display:block;font-size:12px;color:var(--muted);font-weight:800;margin:10px 0 5px}.row{display:grid;grid-template-columns:1fr;gap:10px}
-/* grid-column:1/-1 works in both 1-col and 2-col grids */
 .hidden{display:none!important}.muted{color:var(--muted)}.small{font-size:13px}.redtxt{color:var(--red)}.greentxt{color:var(--green)}.notice{padding:11px 12px;border-radius:14px;margin-bottom:14px;font-size:14px}.notice.ok{background:#e8f5ee;color:var(--green)}.notice.err{background:#fde8e8;color:var(--red)}.notice.note{background:#fff6da;color:#725100;border:1px solid #ecd081}
 .item{padding:14px 0;border-bottom:1px solid #eae4dc}.item:last-child{border-bottom:0}.item-title{font-size:17px;font-weight:800;margin:5px 0}.item-meta{font-size:14px;color:var(--muted);line-height:1.5}.date{font-weight:900;color:var(--red)}.pill{display:inline-block;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:900;background:#e6f0fa;color:var(--navy)}.pill.red{background:#fde8e8;color:var(--red)}.pill.gold{background:#fff3d8;color:#775000}.pill.green{background:#e8f5ee;color:var(--green)}.pill.blue{background:#e6f0fa;color:var(--blue)}
 .bottom-nav{position:fixed;left:0;right:0;bottom:0;background:white;border-top:1px solid var(--border);height:78px;display:grid;grid-template-columns:repeat(7,1fr);z-index:50;padding-bottom:env(safe-area-inset-bottom)}.navbtn{position:relative;background:white;border:0;color:#61718b;font-size:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}.navbtn span{font-size:20px}.navbtn.active{color:var(--navy);font-weight:900}.badge{position:absolute;top:6px;right:12px;background:var(--red);color:white;font-size:10px;min-width:18px;height:18px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-weight:900;border:2px solid white}
@@ -23,83 +22,8 @@ input,select,textarea{width:100%;padding:12px;border:1px solid var(--border);bor
 .setup{max-width:720px;margin:35px auto;padding:16px}.authUserBox{font-size:13px;color:var(--muted);margin-top:6px}.setup h1{font-size:36px}.desktop{display:none}.priorityBox{border-left:5px solid var(--red);background:#fffafa}.quick{display:grid;grid-template-columns:1fr;gap:10px}.quick .card{margin-bottom:0}.member-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.searchHit{cursor:pointer}.searchHit:hover{background:#faf7ef;border-radius:12px;padding-left:8px}
 .calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.calHead{text-align:center;font-size:11px;color:var(--muted);font-weight:800;padding:5px}.calDay{min-height:78px;background:#fff;border:1px solid var(--border);border-radius:12px;padding:7px;font-size:12px}.calNum{font-weight:900;color:var(--navy)}.calEvent{margin-top:4px;background:#fff3d8;color:#775000;border-radius:8px;padding:3px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:10.5px}.calEvent.done{background:#e8f5ee;color:var(--green)}.calEvent.prog{background:#e6f0fa;color:var(--blue)}.calEvent.court{background:#fde8e8;color:var(--red)}.calEvent.gold{background:#fff3d8;color:#775000}.calDaySelected{border:2px solid var(--navy)!important;background:#f0f4fa}.calEvent.calMore{background:#e8e4dc;color:var(--muted);font-style:italic}
 .reportSummary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}.miniStat{background:#f8f4ed;border:1px solid var(--border);border-radius:14px;padding:10px}.miniStat b{display:block;font-size:22px}.miniStat small{color:var(--muted)}
-/* ── DESKTOP LAYOUT ≥900px ─────────────────────────────────────────────────── */
-@media(min-width:900px){
-body{padding-bottom:0}.layout{display:flex}
-.desktop{display:flex!important;flex-direction:column;position:fixed;top:0;bottom:0;left:0;width:270px;background:var(--navy);color:white;padding:0}
-.brand{padding:0 22px 18px;border-bottom:1px solid rgba(255,255,255,.1)}.brand h2{color:white;margin:0}.brand p{color:#e5b665;font-size:11px;letter-spacing:.08em;text-transform:uppercase}
-.sidebtn{display:block;position:relative;width:100%;text-align:left;background:transparent;color:rgba(255,255,255,.72);border:0;border-left:4px solid transparent;padding:12px 22px}
-.sidebtn.active,.sidebtn:hover{background:rgba(201,151,58,.15);border-left-color:var(--gold);color:white}.sidebtn .badge{right:16px;top:9px}
-.main{margin-left:270px;width:calc(100% - 270px)}.bottom-nav{display:none}
-.grid4{grid-template-columns:repeat(4,1fr)}.grid6{grid-template-columns:repeat(6,1fr)}.grid2{grid-template-columns:1.25fr .75fr}
-.row{grid-template-columns:repeat(2,1fr)}.header{padding:22px 28px}.wrap{padding:24px}.quick{grid-template-columns:repeat(3,1fr)}
-.tb-mobile-search{display:none!important}
-}
-/* ── TABLET 600-899px ──────────────────────────────────────────────────────── */
-@media(min-width:600px) and (max-width:899px){
-.grid4snap{grid-template-columns:repeat(2,1fr)}
-.row{grid-template-columns:repeat(2,1fr)}
-.export-grid{grid-template-columns:repeat(2,1fr)}
-.reportSummary{grid-template-columns:repeat(3,1fr)}
-}
-/* ── MOBILE ≤899px ─────────────────────────────────────────────────────────── */
-@media(max-width:899px){
-.topbar2{padding:10px 14px;gap:8px}
-.tb-title h1{font-size:16px}.tb-title p{display:none}
-.tb-search-wrap{display:none}
-.tb-pname,.tb-prole,.tb-chev{display:none}
-.tb-profile{padding:4px;border-radius:50%}
-.topbar2 .btn.out.small{font-size:11px;padding:6px 8px}
-.topbar2 #adminMembersBtn{display:none!important}
-.tb-mobile-search{display:block;padding:8px 14px 0;background:var(--white);position:relative}
-.tb-mobile-search input{width:100%;padding:9px 14px 9px 36px;border:1px solid var(--border);border-radius:20px;font-size:14px;background:#f8f5f0;outline:none;box-sizing:border-box}
-.tb-mobile-search-icon{position:absolute;left:26px;top:17px;width:14px;height:14px;stroke:var(--muted);fill:none;pointer-events:none}
-.grid4snap{grid-template-columns:repeat(2,1fr);gap:10px}
-.snap-num{font-size:30px}.snap-icon{width:44px;height:44px}.snap-icon svg{width:20px;height:20px}.snap-card{padding:14px 14px 10px}
-.row{grid-template-columns:1fr}
-.calDay{min-height:48px;padding:4px}.calEvent{display:none}.calHead{font-size:10px;padding:3px 1px}.calendar{gap:2px}
-.reportSummary{grid-template-columns:repeat(3,1fr)}
-.export-grid{grid-template-columns:repeat(2,1fr)}
-.settings-tabs{gap:4px}.stab{padding:6px 12px;font-size:12px}
-.wrap{padding:12px}.card{padding:14px;border-radius:16px}
-.member-actions{flex-wrap:wrap;gap:6px}
-}
-/* ── SMALL PHONE ≤480px ────────────────────────────────────────────────────── */
-@media(max-width:480px){
-.header h1{font-size:22px}.stat b{font-size:28px}
-.grid4snap{gap:8px}.snap-num{font-size:26px}.snap-lbl{font-size:11px}.snap-card{padding:12px 10px 8px}.snap-icon{width:38px;height:38px}
-.navbtn{font-size:8px}.navbtn span{font-size:18px}
-#caseSaveBtn,#caseCancelBtn,#repSaveBtn,#repCancelBtn,#oeSaveBtn,#oeCancelEditBtn,#docSaveBtn,#docCancelEditBtn,#memSaveBtn,#memCancelEditBtn{display:block;width:100%;margin-bottom:6px;margin-left:0!important;text-align:center}
-.export-grid{grid-template-columns:1fr}
-.reportSummary{gap:4px}.miniStat{padding:7px 6px}.miniStat b{font-size:18px}
-#resetInput,#wipeInput{max-width:100%!important;display:block;margin-bottom:8px}
-.chatbar{flex-direction:column}.chatbar input,.chatbar select{width:100%}.chatbar .btn{width:100%}
-.ic-bar{flex-wrap:nowrap;overflow-x:auto;padding-bottom:8px;-webkit-overflow-scrolling:touch;scrollbar-width:none}.ic-bar::-webkit-scrollbar{display:none}
-.ic-chip{flex-shrink:0}.ic-isearch{min-width:140px;flex-shrink:0}
-.card h2{font-size:18px}
-.wrap{padding:8px}.card{padding:12px;border-radius:14px}
-.topbar2{padding:8px 10px}
-#calTitle{font-size:13px}
-}
-/* ── MINIMUM 360px ─────────────────────────────────────────────────────────── */
-@media(max-width:380px){
-.navbtn{font-size:7.5px;padding:0 1px}.navbtn span{font-size:16px}
-.grid4snap{gap:6px}.snap-num{font-size:22px}
-.tb-title h1{font-size:14px}
-}
-/* ── DASHBOARD grid3 ───────────────────────────────────────────────────────── */
-@media(min-width:900px){.dash-grid3{grid-template-columns:2fr 1.6fr 1.4fr}}
-/* ── TEAM TABLE: hide extra cols on tiny screens ─────────────────────────── */
-@media(max-width:480px){
-.team-tbl thead th:nth-child(n+5){display:none}.team-tbl td:nth-child(n+5){display:none}
-.t-pos{display:none}.t-name{font-size:11.5px}
-}
-/* ── PARTNER TABLE: scroll OK, hide description col on phones ──────────────── */
-@media(max-width:600px){
-.pt-wrap{-webkit-overflow-scrolling:touch}
-.pt-desc{display:none}
-.pt-matter{max-width:110px}
-}
+@media(min-width:900px){body{padding-bottom:0}.layout{display:flex}.desktop{display:flex!important;flex-direction:column;position:fixed;top:0;bottom:0;left:0;width:270px;background:var(--navy);color:white;padding:0}.brand{padding:0 22px 18px;border-bottom:1px solid rgba(255,255,255,.1)}.brand h2{color:white;margin:0}.brand p{color:#e5b665;font-size:11px;letter-spacing:.08em;text-transform:uppercase}.sidebtn{display:block;position:relative;width:100%;text-align:left;background:transparent;color:rgba(255,255,255,.72);border:0;border-left:4px solid transparent;padding:12px 22px}.sidebtn.active,.sidebtn:hover{background:rgba(201,151,58,.15);border-left-color:var(--gold);color:white}.sidebtn .badge{right:16px;top:9px}.main{margin-left:270px;width:calc(100% - 270px)}.bottom-nav{display:none}.grid4{grid-template-columns:repeat(4,1fr)}.grid6{grid-template-columns:repeat(6,1fr)}.grid2{grid-template-columns:1.25fr .75fr}.row{grid-template-columns:repeat(2,1fr)}.header{padding:22px 28px}.wrap{padding:24px}.quick{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:520px){.row{grid-template-columns:1fr}.header h1{font-size:28px}.stat b{font-size:30px}.calDay{min-height:58px;padding:5px}.calEvent{display:none}.reportSummary{grid-template-columns:1fr 1fr 1fr}}
 /* ── DASHBOARD 2.0 ──────────────────────────────────────────────────────── */
 /* Sidebar brand */
 .brand-row2{display:flex;flex-direction:column;gap:2px;padding:0}
@@ -265,11 +189,6 @@ body{padding-bottom:0}.layout{display:flex}
 .ic-edit-wrap textarea{min-height:64px;font-size:14px;border-radius:10px;padding:8px;resize:vertical;width:100%}
 .ic-edit-btns{display:flex;gap:6px}
 .ic-feed{display:flex;flex-direction:column;max-height:440px;overflow-y:auto;padding-right:2px}
-/* Chat compose bar */
-.chatbar{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch}
-.chat-cat-sel{flex:0 0 auto;width:auto;padding:10px;border-radius:14px;font-size:14px;min-width:0}
-.chat-text-input{flex:1;min-width:120px}
-.chatbar .btn{flex:0 0 auto}
 
 /* ── SETTINGS MODULE ──────────────────────────────────────────────────────── */
 .settings-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px;border-bottom:1px solid var(--border);padding-bottom:12px}
@@ -297,14 +216,6 @@ body{padding-bottom:0}.layout{display:flex}
 .export-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
 .sess-row{padding:8px 0;border-bottom:1px solid #f0ece6;font-size:13px;display:flex;justify-content:space-between;align-items:center}
 .settings-section-label{font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:16px 0 6px;padding-bottom:4px;border-bottom:1px solid #f0ece6}
-/* Form action rows — flex, wrap on mobile */
-.form-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;align-items:center}
-.form-actions .btn{flex:0 0 auto}
-/* Prevent horizontal overflow on the whole page */
-html,body{overflow-x:hidden;max-width:100vw}
-/* Main content area: no horizontal overflow */
-.main{overflow-x:hidden}
-.wrap{overflow-x:hidden}
 </style>
 </head>
 <body>
@@ -391,19 +302,13 @@ html,body{overflow-x:hidden;max-width:100vw}
           </div>
           <span class="tb-chev">▾</span>
         </div>
-        <select id="currentUser" style="max-width:140px;min-width:80px;display:none" onchange="switchUser()"></select>
+        <select id="currentUser" style="max-width:160px;display:none" onchange="switchUser()"></select>
         <button class="btn out small" onclick="reload()" title="Refresh" style="padding:8px 10px">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:block"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
         </button>
         <button class="btn out small" onclick="logout()">Logout</button>
         <button class="btn gold small" id="adminMembersBtn" onclick="go('members')" style="display:none">Members</button>
       </div>
-    </div>
-
-    <!-- Mobile search bar — hidden on desktop via CSS -->
-    <div class="tb-mobile-search">
-      <svg class="tb-mobile-search-icon" viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input placeholder="Search matters, clients, reports..." oninput="$('search').value=this.value;render()" id="mobileSearch"/>
     </div>
 
     <div class="wrap">
@@ -528,7 +433,7 @@ html,body{overflow-x:hidden;max-width:100vw}
             <div><label>Priority Level</label><select id="casePriority"><option>low</option><option>medium</option><option>high</option><option>urgent</option></select></div>
             <div><label>Status</label><select id="caseStatus"><option>Active</option><option>Closed</option><option>On Hold</option></select></div>
             <div style="grid-column:1/-1"><label>Last Court Order</label><textarea id="caseOrder" rows="2"></textarea></div>
-          </div><div class="form-actions"><button class="btn gold" id="caseSaveBtn" onclick="caseEditId?saveCaseUpdate(caseEditId):addCase()">Save Cause List Item</button> <button class="btn out hidden" id="caseCancelBtn" onclick="cancelCaseEdit()">Cancel Edit</button></div>
+          </div><p><button class="btn gold" id="caseSaveBtn" onclick="caseEditId?saveCaseUpdate(caseEditId):addCase()">Save Cause List Item</button> <button class="btn out hidden" id="caseCancelBtn" onclick="cancelCaseEdit()">Cancel Edit</button></p>
         </div><div class="card"><h2>Cause List Register</h2><div id="caseList"></div></div>
       </section>
 
@@ -543,7 +448,7 @@ html,body{overflow-x:hidden;max-width:100vw}
             <div><label>Priority Level</label><select id="nlPriority"><option>low</option><option>medium</option><option>high</option><option>urgent</option></select></div>
             <div><label>Deadline</label><input id="nlDeadline" type="date"></div>
             <div><label>Status</label><select id="nlStatus"><option>Not Started</option><option>In Progress</option><option>Awaiting Client</option><option>Completed</option><option>On Hold</option></select></div>
-          </div><div class="form-actions"><button class="btn gold" onclick="addNonLitigation()">Save Non-Litigation Matter</button></div>
+          </div><p><button class="btn gold" onclick="addNonLitigation()">Save Non-Litigation Matter</button></p>
         </div><div class="card"><h2>Non-Litigations Register</h2><div id="nonLitList"></div></div>
       </section>
 
@@ -629,7 +534,7 @@ html,body{overflow-x:hidden;max-width:100vw}
             <div style="grid-column:1/-1"><label>Review Notes</label><textarea id="repReviewNotes" rows="2" placeholder="Optional notes for partner review"></textarea></div>
 
           </div>
-          <div class="form-actions"><button class="btn gold" id="repSaveBtn" onclick="repEditId?saveReportUpdate(repEditId):addReport()">Save Daily Report</button> <button class="btn out hidden" id="repCancelBtn" onclick="cancelReportEdit()">Cancel Edit</button></div>
+          <p><button class="btn gold" id="repSaveBtn" onclick="repEditId?saveReportUpdate(repEditId):addReport()">Save Daily Report</button> <button class="btn out hidden" id="repCancelBtn" onclick="cancelReportEdit()">Cancel Edit</button></p>
         </div>
         <div class="card"><h2>Daily Reports Summary by Member</h2><div id="reportStats"></div></div>
         <div class="card"><h2>Daily Report Activities</h2><div id="reportList"></div></div>
@@ -662,10 +567,10 @@ html,body{overflow-x:hidden;max-width:100vw}
             <div><label>Date</label><input id="oeDate" type="date"></div>
             <div><label>Time</label><input id="oeTime" type="time"></div>
           </div>
-          <div class="form-actions">
+          <p>
             <button class="btn gold" id="oeSaveBtn" onclick="addOfficeEvent()">Save Office Event</button>
-            <button class="btn out hidden" id="oeCancelEditBtn" onclick="cancelOfficeEventEdit()">Cancel Edit</button>
-          </div>
+            <button class="btn out hidden" id="oeCancelEditBtn" onclick="cancelOfficeEventEdit()" style="margin-left:8px">Cancel Edit</button>
+          </p>
           <h3 style="margin-top:18px">Office Event Register</h3>
           <div id="oeList"></div>
         </div>
@@ -683,10 +588,10 @@ html,body{overflow-x:hidden;max-width:100vw}
             <div><label>Confidentiality</label><select id="docConfidentiality"><option value="internal">Internal</option><option value="public">Public</option><option value="confidential">Confidential (Partners Only)</option></select></div>
             <div><label>File URL / Link</label><input id="docUrl" placeholder="https://..."></div>
           </div>
-          <div class="form-actions">
+          <p>
             <button class="btn gold" id="docSaveBtn" onclick="addDoc()">Save Document</button>
-            <button class="btn out hidden" id="docCancelEditBtn" onclick="cancelDocEdit()">Cancel Edit</button>
-          </div>
+            <button class="btn out hidden" id="docCancelEditBtn" onclick="cancelDocEdit()" style="margin-left:8px">Cancel Edit</button>
+          </p>
         </div>
         <div class="card"><h2>Document Register</h2><div id="docList"></div></div>
       </section>
@@ -712,14 +617,14 @@ html,body{overflow-x:hidden;max-width:100vw}
           <div class="ic-feed" id="chatBox"></div>
 
           <!-- Compose -->
-          <div class="chatbar" style="gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
-            <select id="chatCategory" class="chat-cat-sel">
+          <div class="chatbar" style="flex-wrap:wrap;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+            <select id="chatCategory" style="flex:0 0 auto;width:auto;padding:10px;border-radius:14px;font-size:14px">
               <option value="General">Office Notes</option>
               <option value="Announcement">Announcements</option>
               <option value="Reminder">Reminders</option>
               <option value="Urgent">Urgent Notices</option>
             </select>
-            <input id="chatInput" class="chat-text-input" placeholder="Write a communication…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg();}">
+            <input id="chatInput" placeholder="Write a communication…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg();}" style="flex:1;min-width:120px">
             <button class="btn gold" onclick="sendMsg()">Post</button>
           </div>
         </div>
@@ -745,10 +650,10 @@ html,body{overflow-x:hidden;max-width:100vw}
             <div><label>Position</label><input id="memPosition" placeholder="Associate / Supporting Staff"></div>
             <div><label>Phone</label><input id="memPhone" placeholder="+255 ..."></div>
           </div>
-          <div class="form-actions">
+          <p>
             <button class="btn gold" id="memSaveBtn" onclick="addMemberSecure()">Add Member With Password</button>
-            <button class="btn out hidden" id="memCancelEditBtn" onclick="cancelMemberEdit()">Cancel Edit</button>
-          </div>
+            <button class="btn out hidden" id="memCancelEditBtn" onclick="cancelMemberEdit()" style="margin-left:8px">Cancel Edit</button>
+          </p>
           <div id="memberCreateMsg"></div>
         </div>
 
@@ -1155,20 +1060,26 @@ async function safe(p){try{return await p}catch(e){online=false;return {error:e}
 async function reload(){loadLocal(); await loadMembers(); await loadCases();await loadNonLitigations();await loadReports();await loadOfficeEvents();await loadDocs(); await ensureRoom(); await loadMessages(); await loadSystemSettings(); render()}
 async function ensureRoom(){
   if(!sb) return;
-  if(chatChannel) return; // already subscribed — skip re-init
-  // Try to find existing general room by new name
-  let r=await safe(sb.from('chat_rooms').select('*').eq('room_name','Internal Communication Centre').limit(1));
-  if(!r.error && r.data && r.data[0]){ roomId=r.data[0].id; subscribeChat(); return; }
-  // Fallback: any existing room
-  let r2=await safe(sb.from('chat_rooms').select('*').limit(1));
-  if(!r2.error && r2.data && r2.data[0]){ roomId=r2.data[0].id; subscribeChat(); return; }
-  // Create room
-  let c=await safe(sb.from('chat_rooms').insert({room_name:'Internal Communication Centre'}).select());
-  if(!c.error && c.data && c.data[0]){ roomId=c.data[0].id; subscribeChat(); return; }
-  // Race condition: another session created it — re-query
-  let r3=await safe(sb.from('chat_rooms').select('*').limit(1));
-  if(!r3.error && r3.data && r3.data[0]){ roomId=r3.data[0].id; subscribeChat(); return; }
-  notice('Chat room unavailable. Please refresh.','err');
+  if(chatChannel) return;
+  // Step 1: Try chat_rooms table (exists in some deployments)
+  try{
+    let r=await sb.from('chat_rooms').select('id').eq('room_name','Internal Communication Centre').limit(1);
+    if(!r.error&&r.data&&r.data[0]){roomId=r.data[0].id;subscribeChat();return;}
+    let r2=await sb.from('chat_rooms').select('id').limit(1);
+    if(!r2.error&&r2.data&&r2.data[0]){roomId=r2.data[0].id;subscribeChat();return;}
+    let c=await sb.from('chat_rooms').insert({room_name:'Internal Communication Centre'}).select('id');
+    if(!c.error&&c.data&&c.data[0]){roomId=c.data[0].id;subscribeChat();return;}
+    let r3=await sb.from('chat_rooms').select('id').limit(1);
+    if(!r3.error&&r3.data&&r3.data[0]){roomId=r3.data[0].id;subscribeChat();return;}
+  }catch(e){}
+  // Step 2: chat_rooms table absent — discover room_id from existing messages
+  try{
+    let ex=await sb.from('chat_messages').select('room_id').not('room_id','is',null).limit(1);
+    if(!ex.error&&ex.data&&ex.data[0]&&ex.data[0].room_id){roomId=ex.data[0].room_id;subscribeChat();return;}
+  }catch(e){}
+  // Step 3: No room found anywhere — use a stable well-known id so all clients share one channel
+  roomId='00000000-0000-0000-0000-000000000001';
+  subscribeChat();
 }
 async function loadMessages(){
   if(!sb||!roomId) return;
@@ -1221,9 +1132,15 @@ async function deleteMsg(id){
   if(!canDel){ notice('You can only delete your own communications.','err'); return; }
   if(!confirm('Delete this communication? This cannot be undone.')) return;
   if(sb){
-    const {error}=await safe(sb.from('chat_messages').update({deleted_at:new Date().toISOString()}).eq('id',id));
-    if(error){ notice('Delete failed: '+error.message,'err'); return; }
+    // Try soft-delete first (requires deleted_at column); fall back to hard delete
+    const {error:softErr}=await safe(sb.from('chat_messages').update({deleted_at:new Date().toISOString()}).eq('id',id));
+    if(softErr){
+      // Column may not exist — hard delete instead
+      const {error:hardErr}=await safe(sb.from('chat_messages').delete().eq('id',id));
+      if(hardErr){ notice('Delete failed: '+hardErr.message,'err'); return; }
+    }
   }
+  // Mark locally so renderChat filters it out immediately
   const idx=msgs.findIndex(x=>x.id===id);
   if(idx>-1){ msgs[idx]={...msgs[idx],deleted_at:new Date().toISOString()}; }
   write(LS.msgs,msgs);
@@ -2679,9 +2596,9 @@ async function sendMsg(){
         room_id:roomId,
         sender_id,
         sender_name,
-        sender_role,
-        category,
-        message:content
+        content:content,
+        message:content,
+        created_by:authUser?authUser.id:null
       }).select();
       if(error) throw error;
     if(data&&data.length){
@@ -3196,13 +3113,25 @@ async function archiveModule(tableName){
   const labelMap={daily_reports:'Daily Reports',cause_list:'Cause List',non_litigations:'Non-Litigation',chat_messages:'InterCom Messages',office_events:'Diary Events'};
   const label=labelMap[tableName]||tableName;
   if(!confirm('Archive all current '+label+'? They will be hidden from normal views but preserved in the database.')) return;
+  const now=new Date().toISOString();
+  const archiveMsg=$('archiveMsg');
   try{
-    const {error}=await sb.from(tableName).update({archived_at:new Date().toISOString()}).is('archived_at',null).is('deleted_at',null);
-    if(error) throw error;
-    const msg=$('archiveMsg');
-    if(msg) msg.innerHTML=`<div class="notice ok">${esc(label)} archived successfully.</div>`;
-    setTimeout(()=>{if(msg)msg.innerHTML='';},4000);
-    await reload();
+    // Try archived_at soft-archive first (works on tables that have the column)
+    const {error:e1}=await sb.from(tableName).update({archived_at:now}).is('archived_at',null);
+    if(!e1){
+      if(archiveMsg) archiveMsg.innerHTML=`<div class="notice ok">${esc(label)} archived successfully.</div>`;
+      setTimeout(()=>{if(archiveMsg)archiveMsg.innerHTML='';},4000);
+      await reload(); return;
+    }
+    // archived_at column missing — try deleted_at
+    const {error:e2}=await sb.from(tableName).update({deleted_at:now}).is('deleted_at',null);
+    if(!e2){
+      if(archiveMsg) archiveMsg.innerHTML=`<div class="notice ok">${esc(label)} archived successfully.</div>`;
+      setTimeout(()=>{if(archiveMsg)archiveMsg.innerHTML='';},4000);
+      await reload(); return;
+    }
+    // Neither column exists — report what columns are missing
+    throw new Error('Table '+tableName+' has no archived_at or deleted_at column. Run the schema migration first.');
   }catch(e){
     notice('Archive failed: '+e.message,'err');
   }
@@ -3269,6 +3198,66 @@ async function fullDataWipe(){
   }
   setTimeout(()=>logout(),3000);
 }
+
+// ── INTERCOM DIAGNOSTICS ─────────────────────────────────────────────────────
+// Run window.diagInterCom() from the browser console to get a full audit report.
+window.diagInterCom = async function(){
+  const out = [];
+  const log = (label, value, status) => {
+    out.push({label, value, status});
+    console.log((status==='OK'?'✅':'❌')+' '+label+':', value);
+  };
+  // 1. Supabase connection
+  log('Supabase connected', !!sb, sb?'OK':'FAIL');
+  // 2. roomId
+  log('roomId resolved', roomId, roomId?'OK':'FAIL');
+  // 3. chatChannel
+  log('chatChannel subscribed', !!chatChannel, chatChannel?'OK':'WARN');
+  // 4. msgs array
+  log('msgs in memory', msgs.length, msgs.length>0?'OK':'WARN');
+  if(!sb){ console.table(out); return out; }
+  // 5. Raw row count in chat_messages (no filters)
+  try{
+    const {count,error}=await sb.from('chat_messages').select('*',{count:'exact',head:true});
+    log('chat_messages total rows (no filter)', error?'ERROR: '+error.message:count, (!error&&count>0)?'OK':'WARN');
+  }catch(e){ log('chat_messages total rows', 'EXCEPTION: '+e.message, 'FAIL'); }
+  // 6. Row count filtered by roomId
+  if(roomId){
+    try{
+      const {count,error}=await sb.from('chat_messages').select('*',{count:'exact',head:true}).eq('room_id',roomId);
+      log('chat_messages rows matching roomId', error?'ERROR: '+error.message:count, (!error&&count>0)?'OK':'WARN');
+    }catch(e){ log('chat_messages rows matching roomId','EXCEPTION: '+e.message,'FAIL'); }
+  }
+  // 7. Check for deleted_at column by trying to filter on it
+  try{
+    const {error}=await sb.from('chat_messages').select('id',{count:'exact',head:true}).is('deleted_at',null).limit(1);
+    log('chat_messages.deleted_at column exists', error?'NO: '+error.message:'YES', error?'WARN':'OK');
+  }catch(e){ log('chat_messages.deleted_at column exists','EXCEPTION','WARN'); }
+  // 8. Check for category column
+  try{
+    const {data,error}=await sb.from('chat_messages').select('category').limit(1);
+    log('chat_messages.category column exists', error?'NO: '+error.message:'YES', error?'WARN':'OK');
+  }catch(e){ log('chat_messages.category column exists','EXCEPTION','WARN'); }
+  // 9. Check for archived_at column
+  try{
+    const {error}=await sb.from('chat_messages').select('archived_at').limit(1);
+    log('chat_messages.archived_at column exists', error?'NO: '+error.message:'YES', error?'WARN':'OK');
+  }catch(e){ log('chat_messages.archived_at column exists','EXCEPTION','WARN'); }
+  // 10. Check chat_rooms table exists
+  try{
+    const {data,error}=await sb.from('chat_rooms').select('id').limit(1);
+    log('chat_rooms table exists', error?'NO: '+error.message:('YES, rows: '+(data?data.length:0)), error?'WARN':'OK');
+  }catch(e){ log('chat_rooms table exists','EXCEPTION','WARN'); }
+  // 11. Sample latest message
+  try{
+    const {data,error}=await sb.from('chat_messages').select('id,room_id,content,sender_name,created_at').order('created_at',{ascending:false}).limit(1);
+    log('Latest chat_message', error?'ERROR: '+error.message:JSON.stringify(data&&data[0]), (!error&&data&&data.length)?'OK':'WARN');
+  }catch(e){ log('Latest chat_message','EXCEPTION: '+e.message,'FAIL'); }
+  console.group('InterCom Diagnostics Summary');
+  console.table(out);
+  console.groupEnd();
+  return out;
+};
 
 // ── MIGRATION VALIDATION ──────────────────────────────────────────────────────
 async function runMigrationValidation(){
