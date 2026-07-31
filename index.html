@@ -364,6 +364,7 @@ input,select,textarea{width:100%;padding:12px;border:1px solid var(--border);bor
       <button class="sidebtn" id="sbHR" data-nav="hr" onclick="go('hr')" style="display:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:8px"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="23" y2="8"/><line x1="21" y1="6" x2="21" y2="10"/></svg>HR</button>
       <button class="sidebtn" id="sbPayroll" data-nav="payroll" onclick="go('payroll')" style="display:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:8px"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>Payroll</button>
       <button class="sidebtn" id="sbMyPayroll" data-nav="mypayroll" onclick="go('mypayroll')" style="display:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:8px"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>My Payroll</button>
+      <button class="sidebtn" id="sbExpenses" data-nav="expenses" onclick="go('expenses')" style="display:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:8px"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 10h4.5a1.5 1.5 0 010 3H9"/></svg>Office Expenses</button>
       <div class="side-sep"></div>
       <button class="sidebtn" data-nav="settings" onclick="go('settings')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:8px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Settings</button>
     </nav>
@@ -1069,6 +1070,60 @@ input,select,textarea{width:100%;padding:12px;border:1px solid var(--border);bor
 
 
 <!-- ═══════════════════════════ PAYROLL PAGE ══════════════════ -->
+<section id="page-expenses" class="hidden">
+<div class="card">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">
+    <h2 style="margin:0">Office Expenses</h2>
+    <button class="btn gold" onclick="expensesOpenCreate()">+ New Expense</button>
+  </div>
+
+  <!-- Dashboard KPIs -->
+  <div class="grid4" id="expKpis" style="margin-bottom:18px"></div>
+
+  <!-- Create/Edit form -->
+  <div id="expFormWrap" style="display:none;border:1px solid var(--border);border-radius:16px;padding:18px;margin-bottom:20px;background:#fdfaf7">
+    <h3 id="expFormHeading" style="margin:0 0 14px;color:var(--navy);font-size:16px">New Expense</h3>
+  </div>
+
+  <!-- Search + filters -->
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center">
+    <input class="search" id="expSearch" placeholder="Search reference, description, paid to, receipt no..." oninput="expensesRenderList()" style="max-width:280px">
+    <select id="expFilterCategory" onchange="expensesRenderList()" style="max-width:170px;font-size:13px">
+      <option value="">All Categories</option>
+    </select>
+    <select id="expFilterMethod" onchange="expensesRenderList()" style="max-width:150px;font-size:13px">
+      <option value="">All Payment Methods</option>
+      <option value="cash">Cash</option>
+      <option value="bank_transfer">Bank Transfer</option>
+      <option value="mobile_money">Mobile Money</option>
+      <option value="cheque">Cheque</option>
+    </select>
+    <select id="expFilterStatus" onchange="expensesRender()" style="max-width:140px;font-size:13px">
+      <option value="active">Active</option>
+      <option value="archived">Archived</option>
+      <option value="">All</option>
+    </select>
+    <span id="expCount" class="muted small"></span>
+  </div>
+
+  <!-- Register -->
+  <div id="expList"></div>
+
+</div>
+</section>
+
+<!-- Expense details modal -->
+<div id="expDetailsModal" class="pa-overlay hidden" onclick="if(event.target===this)closeExpDetails()">
+  <div class="pa-modal" style="max-width:600px">
+    <div class="pa-modal-hdr">
+      <h3 class="pa-modal-title">Expense Details</h3>
+      <button class="pa-modal-close" onclick="closeExpDetails()" title="Close">&times;</button>
+    </div>
+    <div id="expDetailsBody"></div>
+  </div>
+</div>
+
 <section id="page-mypayroll" class="hidden">
 <div class="card">
   <h2 style="margin:0 0 16px">My Payroll</h2>
@@ -1372,6 +1427,7 @@ async function init(){
   subscribeNonLitigations();
   subscribeOfficeEvents();
   subscribeLeave();
+  await resolveMyPosition();
   go('dashboard');
 }
 async function loadAuthRole(){
@@ -1463,6 +1519,7 @@ async function login(){
     subscribeNonLitigations();
     subscribeOfficeEvents();
     subscribeLeave();
+    await resolveMyPosition();
     go('dashboard');
   }catch(e){
     msg.innerHTML='<div class="notice err">Login request failed: '+esc(e.message)+'. Tap Change Supabase Connection and re-enter the NEW Supabase details.</div>';
@@ -1724,13 +1781,13 @@ async function addCaseOnline(payload){
     sb.from('cause_list_v2').insert(payload).select()
   );
 }
-function go(p){ if(p!=='diary'&&oeEditId!==null){oeEditId=null;resetOfficeEventForm();} if(p!=='documents'&&docEditId!==null){docEditId=null;resetDocForm();} if(p!=='members'&&memberEditId!==null){memberEditId=null;resetMemberEditForm();} if(p!=='chat'&&icEditingId!==null){icCancelEdit();} if(p!=='cause'&&caseEditId!==null){cancelCaseEdit();} if(p!=='reports'&&repEditId!==null){cancelReportEdit();} if(p!=='nonlit'&&nlEditId!==null){cancelNonLitEdit();} if(p!=='hr'&&_leaveEditId!==null){leaveCancelForm();} if(p==='chat'&&msgs.length){ viewed['chat_last_seen']=msgs[msgs.length-1].created_at; writeObj(LS.viewed,viewed); } page=p;viewed[p]=countFor(p);writeObj(LS.viewed,viewed);document.querySelectorAll('section[id^="page-"]').forEach(s=>s.classList.add('hidden'));$('page-'+p).classList.remove('hidden');document.querySelectorAll('[data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===p));const names={dashboard:'Dashboard',cause:'Cause List (Court Matters)',nonlit:'Non-Litigations',reports:'Daily Work Reports',diary:'Legal Diary & Calendar',documents:'Document Management',chat:'InterCom',members:'Team Members',settings:'Settings',hr:'HR — Employee Management',payroll:'HR — Payroll',mypayroll:'My Payroll'};$('title').textContent=names[p]||p;render()}
+function go(p){ if(p!=='diary'&&oeEditId!==null){oeEditId=null;resetOfficeEventForm();} if(p!=='documents'&&docEditId!==null){docEditId=null;resetDocForm();} if(p!=='members'&&memberEditId!==null){memberEditId=null;resetMemberEditForm();} if(p!=='chat'&&icEditingId!==null){icCancelEdit();} if(p!=='cause'&&caseEditId!==null){cancelCaseEdit();} if(p!=='reports'&&repEditId!==null){cancelReportEdit();} if(p!=='nonlit'&&nlEditId!==null){cancelNonLitEdit();} if(p!=='hr'&&_leaveEditId!==null){leaveCancelForm();} if(p!=='expenses'&&_expEditId!==null){expensesCancelForm();} if(p==='chat'&&msgs.length){ viewed['chat_last_seen']=msgs[msgs.length-1].created_at; writeObj(LS.viewed,viewed); } page=p;viewed[p]=countFor(p);writeObj(LS.viewed,viewed);document.querySelectorAll('section[id^="page-"]').forEach(s=>s.classList.add('hidden'));$('page-'+p).classList.remove('hidden');document.querySelectorAll('[data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===p));const names={dashboard:'Dashboard',cause:'Cause List (Court Matters)',nonlit:'Non-Litigations',reports:'Daily Work Reports',diary:'Legal Diary & Calendar',documents:'Document Management',chat:'InterCom',members:'Team Members',settings:'Settings',hr:'HR — Employee Management',payroll:'HR — Payroll',mypayroll:'My Payroll',expenses:'Office Expenses'};$('title').textContent=names[p]||p;render()}
 function filter(arr,fields){const q=($('search').value||'').toLowerCase();return !q?arr:arr.filter(x=>fields.some(f=>(x[f]||'').toString().toLowerCase().includes(q)))}
 function countFor(p){let map={dashboard:cases.length+nonlits.length+reports.length+officeEvents.length+docs.length+msgs.length,cause:cases.length,nonlit:nonlits.length,reports:reports.length,diary:officeEvents.length,documents:docs.length,chat:msgs.length,members:members.length};return map[p]||0}
 function badgeVal(p){if(p==='chat') return Math.max(0,getUnreadCount());return Math.max(0,countFor(p)-(viewed[p]||0))}
 function setBadge(id,v){let e=$(id);if(e){e.textContent=v;e.style.display=v>0?'flex':'none'}}
 function badges(){['dashboard','cause','nonlit','reports','diary','documents','chat','members'].forEach(p=>{let key={dashboard:'Dash',cause:'Cause',nonlit:'NonLit',reports:'Reports',diary:'Diary',documents:'Docs',chat:'Chat',members:'Members'}[p];let v=badgeVal(p);setBadge('bb'+key,v);setBadge('sb'+key,v)});$('sMembers')&&($('sMembers').textContent=members.length)}
-function render(){globalSearch();badges();renderTopbarProfile();if(clockInterval===null)startSidebarClock();const nm=me().name||'';if($('subTitle')){$('subTitle').textContent=page==='dashboard'?('Welcome back'+(nm?', '+nm:'')):'Interactive snapshot prioritising urgent and important activities';}if($('modeNotice')){const fs=readObj(LS.firmSettings);const ann=fs.dashAnnouncement;const wm=fs.dashWelcome;const modeStr=(online?'Connected to Supabase. ':'Local/offline mode. ')+'Logged in as '+me().name+' — '+(isAdmin()?'Partner/Admin':'Staff');$('modeNotice').innerHTML=esc(ann&&ann.trim()?ann:wm&&wm.trim()?wm:modeStr);} if($('currentUser')){$('currentUser').style.display=authUser?'none':'block';}if($('dropMembersBtn')) $('dropMembersBtn').style.display=isAdmin()?'flex':'none';renderDashboard();if(page==='cause')renderCases();if(page==='nonlit')renderNonLit();if(page==='reports'){initRepStaffField();renderReports();}if(page==='diary'){renderCalendar();renderDayDetail();renderOfficeEvents();}if(page==='documents')renderDocs();if(page==='chat')renderChat();if(page==='members')renderMembers();if(page==='settings')renderSettings();if(page==='hr')hrRender();if(page==='payroll')prRender();if(page==='mypayroll')myPayrollRender();const hrNav=$('sbHR');if(hrNav)hrNav.style.display=authRole?'':'none';/* Sprint 3.2: widened from partner/hr_officer-only so Staff can reach Leave & Availability; the Employees tab inside remains gated by hrCanAccess(). */const prNav=$('sbPayroll');if(prNav)prNav.style.display=(authRole==='partner'||authRole==='hr_officer')?'':'none';const myPrNav=$('sbMyPayroll');if(myPrNav)myPrNav.style.display=(authRole&&authRole!=='partner'&&authRole!=='hr_officer')?'':'none';populateMatterSelects();}
+function render(){globalSearch();badges();renderTopbarProfile();if(clockInterval===null)startSidebarClock();const nm=me().name||'';if($('subTitle')){$('subTitle').textContent=page==='dashboard'?('Welcome back'+(nm?', '+nm:'')):'Interactive snapshot prioritising urgent and important activities';}if($('modeNotice')){const fs=readObj(LS.firmSettings);const ann=fs.dashAnnouncement;const wm=fs.dashWelcome;const modeStr=(online?'Connected to Supabase. ':'Local/offline mode. ')+'Logged in as '+me().name+' — '+(isAdmin()?'Partner/Admin':'Staff');$('modeNotice').innerHTML=esc(ann&&ann.trim()?ann:wm&&wm.trim()?wm:modeStr);} if($('currentUser')){$('currentUser').style.display=authUser?'none':'block';}if($('dropMembersBtn')) $('dropMembersBtn').style.display=isAdmin()?'flex':'none';renderDashboard();if(page==='cause')renderCases();if(page==='nonlit')renderNonLit();if(page==='reports'){initRepStaffField();renderReports();}if(page==='diary'){renderCalendar();renderDayDetail();renderOfficeEvents();}if(page==='documents')renderDocs();if(page==='chat')renderChat();if(page==='members')renderMembers();if(page==='settings')renderSettings();if(page==='hr')hrRender();if(page==='payroll')prRender();if(page==='mypayroll')myPayrollRender();if(page==='expenses')expensesRender();const hrNav=$('sbHR');if(hrNav)hrNav.style.display=authRole?'':'none';/* Sprint 3.2: widened from partner/hr_officer-only so Staff can reach Leave & Availability; the Employees tab inside remains gated by hrCanAccess(). */const prNav=$('sbPayroll');if(prNav)prNav.style.display=(authRole==='partner'||authRole==='hr_officer')?'':'none';const myPrNav=$('sbMyPayroll');if(myPrNav)myPrNav.style.display=(authRole&&authRole!=='partner'&&authRole!=='hr_officer')?'':'none';const expNav=$('sbExpenses');if(expNav)expNav.style.display=canAccessOfficeExpenses()?'':'none';populateMatterSelects();}
 function statusCounts(memberId){
   // Uses the in-memory `reports` array (90-day Supabase data, already filtered).
   // This is acceptable for badge counts; dashboard stats use the fresh service layer.
@@ -6387,6 +6444,31 @@ async function leaveResolveMyEmployeeId(){
   return _myEmployeeId;
 }
 
+// ── CENTRALIZED EMPLOYEE POSITION RESOLVER (Sprint 4.1b) ─────────────────────
+// Frozen architecture: roles.role stays partner/staff only. Business/module
+// permissions beyond that come from hr_employees.position. This is the ONE
+// place that resolves "what is my position" -- every module's visibility
+// check should call myPosition()/isOfficeManager(), not query hr_employees
+// directly, so a future position-based permission never gets duplicated
+// or drifts between call sites.
+let _myPosition = undefined; // undefined = not yet resolved, null = no position on file
+
+async function resolveMyPosition(){
+  if(_myPosition!==undefined) return _myPosition;
+  await leaveResolveMyEmployeeId(); // reuse -- resolves _myEmployeeId first
+  if(!sb||!_myEmployeeId){ _myPosition=null; return null; }
+  const {data,error}=await safe(
+    sb.from('hr_employees').select('position').eq('id',_myEmployeeId).maybeSingle()
+  );
+  _myPosition=(!error&&data&&data.position)?data.position.trim().toLowerCase():null;
+  return _myPosition;
+}
+
+// Position-check helpers -- add one of these per position-gated module,
+// rather than comparing myPosition() to a literal string at every call site.
+function isOfficeManager(){ return _myPosition==='office manager'; }
+function canAccessOfficeExpenses(){ return authRole==='partner' || isOfficeManager(); }
+
 // ── LOAD ──────────────────────────────────────────────────────────────────────
 async function leaveLoad(){
   if(!sb){ _leaveRequests=[]; return; }
@@ -7166,6 +7248,365 @@ async function myPayrollRender(){
 // STOP. Sprint 3.3 concludes here. Reused leaveResolveMyEmployeeId() and
 // prPrintPayslip() unchanged -- no Payroll calculation, generation, approval,
 // locking, or cancellation logic was touched.
+// ══════════════════════════════════════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════════════════════════
+// SPRINT 4.1b — OFFICE EXPENSES (APPLICATION LAYER)
+// Module 4.1. Operational expense register only -- no accounting ledger, no
+// journal entries. Access is Partner (full) or Office Manager (own-record
+// write, full read), via canAccessOfficeExpenses()/isOfficeManager() -- see
+// the centralized position resolver above. Reuses .item/.team-tbl/
+// .pa-overlay/.pill and the members[] cache already loaded for Members --
+// no new CSS, no new user-lookup query.
+// ══════════════════════════════════════════════════════════════════════════
+
+const EXP_CATEGORIES = {
+  rent:'Rent', electricity:'Electricity', water:'Water', internet:'Internet',
+  cleaning:'Cleaning', office_supplies:'Office Supplies', stationery:'Stationery',
+  printing:'Printing', transport:'Transport', fuel:'Fuel',
+  office_maintenance:'Office Maintenance', marketing:'Marketing',
+  professional_fees:'Professional Fees', bank_charges:'Bank Charges',
+  miscellaneous:'Miscellaneous'
+};
+const EXP_METHODS = { cash:'Cash', bank_transfer:'Bank Transfer', mobile_money:'Mobile Money', cheque:'Cheque' };
+
+let _expExpenses = [];
+let _expEditId   = null;
+
+async function expensesLoad(){
+  if(!sb){ _expExpenses=[]; return; }
+  const statusFilter = val('expFilterStatus');
+  let q = sb.from('office_expenses')
+    .select('id,reference_number,expense_date,category,description,paid_to,amount,payment_method,receipt_number,receipt_url,remarks,created_by,updated_by,created_at,updated_at,archived_at,archived_by')
+    .order('expense_date',{ascending:false});
+  if(statusFilter==='active')   q = q.is('archived_at', null);
+  if(statusFilter==='archived') q = q.not('archived_at','is', null);
+  const {data,error} = await safe(q);
+  if(error){ console.error('[Expenses] load error:',error.message); notice('Office expenses sync failed: '+error.message,'err'); _expExpenses=[]; return; }
+  _expExpenses = data||[];
+}
+
+function expensesPopulateCategoryFilter(){
+  const sel=$('expFilterCategory'); if(!sel||sel.dataset.populated) return;
+  Object.entries(EXP_CATEGORIES).forEach(([v,label])=>{
+    const o=document.createElement('option'); o.value=v; o.textContent=label; sel.appendChild(o);
+  });
+  sel.dataset.populated='1';
+}
+
+function expensesRenderKpis(){
+  const el=$('expKpis'); if(!el) return;
+  const t=today();
+  const monthPrefix=t.slice(0,7);
+  const active=_expExpenses.filter(e=>!e.archived_at);
+  const todayTotal=active.filter(e=>e.expense_date===t).reduce((s,e)=>s+Number(e.amount),0);
+  const monthRows=active.filter(e=>(e.expense_date||'').slice(0,7)===monthPrefix);
+  const monthTotal=monthRows.reduce((s,e)=>s+Number(e.amount),0);
+
+  const byCat={};
+  monthRows.forEach(e=>{ byCat[e.category]=(byCat[e.category]||0)+Number(e.amount); });
+  const catEntries=Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
+  const topCatLabel=catEntries.length ? (EXP_CATEGORIES[catEntries[0][0]]||catEntries[0][0]) : '—';
+
+  const missingReceipts=active.filter(e=>!e.receipt_number && !e.receipt_url).length;
+
+  el.innerHTML=`
+    <div class="card stat"><small>Expenses Today</small><b>TZS ${todayTotal.toLocaleString()}</b></div>
+    <div class="card stat"><small>Expenses This Month</small><b>TZS ${monthTotal.toLocaleString()}</b></div>
+    <div class="card stat"><small>Top Category (Month)</small><b style="font-size:15px">${esc(topCatLabel)}</b></div>
+    <div class="card stat"><small>Missing Receipts</small><b>${missingReceipts}</b><div class="mini">active records</div></div>
+  `;
+}
+
+// Three states, not two: a receipt can be viewable (URL), on-file-but-not-
+// linked (number only), or absent entirely -- each needs a distinct signal,
+// not just "has a receipt number."
+function expensesReceiptBadge(e){
+  if(e.receipt_url)    return '<span class="pill green">Receipt Available</span>';
+  if(e.receipt_number) return '<span class="pill gold">Receipt Number Only</span>';
+  return '<span class="pill red">No Receipt</span>';
+}
+
+function expensesRenderList(){
+  const el=$('expList'); if(!el) return;
+  const q=(val('expSearch')||'').toLowerCase();
+  const catF=val('expFilterCategory');
+  const methodF=val('expFilterMethod');
+
+  let rows=_expExpenses;
+  if(catF)    rows=rows.filter(e=>e.category===catF);
+  if(methodF) rows=rows.filter(e=>e.payment_method===methodF);
+  if(q) rows=rows.filter(e=>
+    (e.reference_number||'').toLowerCase().includes(q) ||
+    (e.description||'').toLowerCase().includes(q) ||
+    (e.paid_to||'').toLowerCase().includes(q) ||
+    (e.receipt_number||'').toLowerCase().includes(q)
+  );
+
+  const cnt=$('expCount'); if(cnt) cnt.textContent=rows.length+' record'+(rows.length===1?'':'s');
+  if(!rows.length){ el.innerHTML='<p class="muted small" style="padding:10px 0">No expenses found.</p>'; return; }
+
+  el.innerHTML=rows.map(e=>{
+    const creator=members.find(m=>m.id===e.created_by);
+    const isOwn=e.created_by===authUser?.id;
+    const canEdit    = !e.archived_at && (authRole==='partner' || (isOfficeManager()&&isOwn));
+    const canArchive = !e.archived_at && (authRole==='partner' || (isOfficeManager()&&isOwn));
+    const canRestore = !!e.archived_at && authRole==='partner';
+    return `<div class="item${e.archived_at?' muted':''}">
+      <div class="item-title">${esc(e.reference_number)} — ${esc(EXP_CATEGORIES[e.category]||e.category)}</div>
+      <div class="item-meta">
+        <b>${esc(e.expense_date)}</b> · ${esc(e.description)}${e.paid_to?' · Paid to '+esc(e.paid_to):''}<br>
+        <b>TZS ${Number(e.amount).toLocaleString()}</b> · ${esc(EXP_METHODS[e.payment_method]||e.payment_method)}
+        · ${expensesReceiptBadge(e)}
+        ${e.archived_at?' · <span class="pill red">Archived</span>':''}<br>
+        <span class="muted">Created by ${esc(creator?creator.name:'—')}</span>
+      </div>
+      <div class="member-actions">
+        <button class="btn out small" onclick="expensesViewDetails('${e.id}')">View</button>
+        ${canEdit?`<button class="btn out small" onclick="expensesOpenEdit('${e.id}')">Edit</button>`:''}
+        ${canArchive?`<button class="btn red small" onclick="expensesArchive('${e.id}')">Archive</button>`:''}
+        ${canRestore?`<button class="btn gold small" onclick="expensesRestore('${e.id}')">Restore</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function expensesRender(){
+  if(!canAccessOfficeExpenses()){ go('dashboard'); return; }
+  await resolveMyPosition();
+  await expensesLoad();
+  expensesPopulateCategoryFilter();
+  expensesRenderKpis();
+  expensesRenderList();
+}
+
+function expensesFormMarkup(x){
+  x=x||{};
+  const catOpt=Object.entries(EXP_CATEGORIES).map(([v,l])=>`<option value="${v}" ${x.category===v?'selected':''}>${l}</option>`).join('');
+  const methodOpt=Object.entries(EXP_METHODS).map(([v,l])=>`<option value="${v}" ${x.payment_method===v?'selected':''}>${l}</option>`).join('');
+  return `
+    <div class="row" style="grid-template-columns:1fr 1fr">
+      <div><label>Expense Date</label><input type="date" id="expfDate" value="${esc(x.expense_date||today())}" max="${today()}"></div>
+      <div><label>Category</label><select id="expfCategory"><option value="">-- Select --</option>${catOpt}</select></div>
+    </div>
+    <div class="row">
+      <div><label>Description</label><input id="expfDescription" placeholder="What was this expense for?" value="${esc(x.description||'')}"></div>
+    </div>
+    <div class="row" style="grid-template-columns:1fr 1fr">
+      <div><label>Paid To</label><input id="expfPaidTo" placeholder="Vendor / recipient (optional)" value="${esc(x.paid_to||'')}"></div>
+      <div><label>Amount (TZS)</label><input type="number" id="expfAmount" min="0.01" step="0.01" value="${x.amount||''}"></div>
+    </div>
+    <div class="row" style="grid-template-columns:1fr 1fr">
+      <div><label>Payment Method</label><select id="expfMethod"><option value="">-- Select --</option>${methodOpt}</select></div>
+      <div><label>Receipt Number (optional)</label><input id="expfReceiptNo" maxlength="100" value="${esc(x.receipt_number||'')}"></div>
+    </div>
+    <div class="row">
+      <div><label>Receipt URL (optional link, not a file upload)</label><input id="expfReceiptUrl" placeholder="https://..." value="${esc(x.receipt_url||'')}">
+        <span class="small muted">Paste a link to wherever the receipt already exists — email, phone photo, shared drive.</span>
+      </div>
+    </div>
+    <div class="row">
+      <div><label>Remarks</label><textarea id="expfRemarks" maxlength="500">${esc(x.remarks||'')}</textarea></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn gold" onclick="expensesSubmitForm()">${x.id?'Save Changes':'Save Expense'}</button>
+      <button class="btn out" onclick="expensesCancelForm()">Cancel</button>
+    </div>
+  `;
+}
+
+function expensesOpenCreate(){
+  if(!canAccessOfficeExpenses()){ notice('Permission denied.','err'); return; }
+  _expEditId=null;
+  const h=$('expFormHeading'); if(h) h.textContent='New Expense';
+  const w=$('expFormWrap'); if(w){ w.innerHTML=expensesFormMarkup({}); w.style.display=''; w.scrollIntoView({behavior:'smooth',block:'nearest'}); }
+}
+
+function expensesOpenEdit(id){
+  const e=_expExpenses.find(x=>x.id===id);
+  if(!e){ notice('Expense not found.','err'); return; }
+  if(e.archived_at){ notice('Archived expenses cannot be edited.','err'); return; }
+  const isOwn=e.created_by===authUser?.id;
+  if(!(authRole==='partner' || (isOfficeManager()&&isOwn))){ notice('Permission denied.','err'); return; }
+  _expEditId=id;
+  const h=$('expFormHeading'); if(h) h.textContent='Edit Expense — '+e.reference_number;
+  const w=$('expFormWrap'); if(w){ w.innerHTML=expensesFormMarkup(e); w.style.display=''; w.scrollIntoView({behavior:'smooth',block:'nearest'}); }
+}
+
+function expensesCancelForm(){
+  _expEditId=null;
+  const w=$('expFormWrap'); if(w) w.style.display='none';
+}
+
+// Genuinely parses the URL rather than just checking a prefix -- rejects
+// things a regex would wrongly accept, like "https://" with nothing after it.
+function isValidReceiptUrl(str){
+  if(!str) return true; // empty is allowed -- receipt URL is optional
+  try{
+    const u=new URL(str);
+    return (u.protocol==='http:'||u.protocol==='https:') && !!u.hostname;
+  }catch(e){ return false; }
+}
+
+function expensesValidate(){
+  const expense_date=val('expfDate');
+  const category=val('expfCategory');
+  const description=(val('expfDescription')||'').trim();
+  const paid_to=(val('expfPaidTo')||'').trim();
+  const amount=parseFloat(val('expfAmount'));
+  const payment_method=val('expfMethod');
+  const receipt_number=(val('expfReceiptNo')||'').trim();
+  const receipt_url=(val('expfReceiptUrl')||'').trim();
+  const remarks=(val('expfRemarks')||'').trim();
+
+  if(!expense_date){ notice('Expense date is required.','err'); return null; }
+  if(expense_date>today()){ notice('Expense date cannot be in the future.','err'); return null; }
+  if(!category){ notice('Select a category.','err'); return null; }
+  if(!description){ notice('Description is required.','err'); return null; }
+  if(!(amount>0)){ notice('Amount must be greater than zero.','err'); return null; }
+  if(!payment_method){ notice('Select a payment method.','err'); return null; }
+  if(!isValidReceiptUrl(receipt_url)){ notice('Receipt URL is not a valid http:// or https:// link.','err'); return null; }
+
+  return {
+    expense_date, category, description,
+    paid_to: paid_to||null, amount, payment_method,
+    receipt_number: receipt_number||null,
+    receipt_url: receipt_url||null,
+    remarks: remarks||null
+  };
+}
+
+async function expensesSubmitForm(){
+  const payload=expensesValidate();
+  if(!payload) return;
+  if(_expEditId) await expensesUpdate(_expEditId,payload);
+  else await expensesCreate(payload);
+}
+
+async function expensesCreate(payload){
+  if(!sb){ notice('Supabase connection required.','err'); return; }
+  const {data,error}=await safe(
+    sb.from('office_expenses').insert({...payload, created_by:authUser?.id}).select('id,reference_number')
+  );
+  if(error){ notice('Save failed: '+error.message,'err'); return; }
+  if(!data||!data.length){ notice('Save failed: permission denied.','err'); return; }
+  await logExpenseAudit(data[0].id,'created',null,payload);
+  expensesCancelForm();
+  notice('Expense recorded as '+data[0].reference_number+'.');
+  await expensesRender();
+}
+
+async function expensesUpdate(id,payload){
+  const before=_expExpenses.find(x=>x.id===id);
+  const {data,error}=await safe(
+    sb.from('office_expenses').update({...payload, updated_by:authUser?.id})
+      .eq('id',id).is('archived_at',null).select()
+  );
+  if(error){ notice('Update failed: '+error.message,'err'); return; }
+  if(!data||!data.length){ notice('Update failed: permission denied, or the record is archived.','err'); return; }
+  await logExpenseAudit(id,'updated',before,payload);
+  expensesCancelForm();
+  notice('Expense updated.');
+  await expensesRender();
+}
+
+async function expensesArchive(id){
+  const e=_expExpenses.find(x=>x.id===id);
+  if(!e||e.archived_at) return;
+  const isOwn=e.created_by===authUser?.id;
+  if(!(authRole==='partner' || (isOfficeManager()&&isOwn))){ notice('Permission denied.','err'); return; }
+  if(!confirm('Archive expense '+e.reference_number+'? It will remain visible but read-only.')) return;
+  const {data,error}=await safe(
+    sb.from('office_expenses').update({archived_at:new Date().toISOString(),archived_by:authUser?.id})
+      .eq('id',id).is('archived_at',null).select()
+  );
+  if(error){ notice('Archive failed: '+error.message,'err'); return; }
+  if(!data||!data.length){ notice('Archive failed: permission denied or already archived.','err'); return; }
+  await logExpenseAudit(id,'archived',{archived_at:null},{archived_at:data[0].archived_at});
+  notice('Expense archived.');
+  await expensesRender();
+}
+
+async function expensesRestore(id){
+  if(authRole!=='partner'){ notice('Only Partners can restore archived expenses.','err'); return; }
+  const {data,error}=await safe(
+    sb.from('office_expenses').update({archived_at:null,archived_by:null})
+      .eq('id',id).select()
+  );
+  if(error){ notice('Restore failed: '+error.message,'err'); return; }
+  if(!data||!data.length){ notice('Restore failed.','err'); return; }
+  await logExpenseAudit(id,'restored',{archived_at:'(previous timestamp)'},{archived_at:null});
+  notice('Expense restored.');
+  await expensesRender();
+}
+
+function expensesReceiptDetailLine(e){
+  const parts=[];
+  if(e.receipt_number) parts.push(esc(e.receipt_number));
+  if(e.receipt_url){
+    // rel="noopener" -- opening an external link safely, no window.opener handed to it.
+    parts.push('<a href="'+esc(e.receipt_url)+'" target="_blank" rel="noopener" class="btn out small" style="display:inline-block;margin-left:6px">View Receipt</a>');
+    return parts.join(' ');
+  }
+  if(e.receipt_number) return parts.join(' ');
+  return '<span class="muted">No Receipt Available</span>';
+}
+
+function expensesViewDetails(id){
+  const e=_expExpenses.find(x=>x.id===id);
+  if(!e){ notice('Expense not found.','err'); return; }
+  const creator=members.find(m=>m.id===e.created_by);
+  const updater=members.find(m=>m.id===e.updated_by);
+  const archiver=members.find(m=>m.id===e.archived_by);
+  $('expDetailsBody').innerHTML=`
+    <p><b>Reference:</b> ${esc(e.reference_number)}</p>
+    <p><b>Date:</b> ${esc(e.expense_date)}</p>
+    <p><b>Category:</b> ${esc(EXP_CATEGORIES[e.category]||e.category)}</p>
+    <p><b>Description:</b> ${esc(e.description)}</p>
+    ${e.paid_to?`<p><b>Paid To:</b> ${esc(e.paid_to)}</p>`:''}
+    <p><b>Amount:</b> TZS ${Number(e.amount).toLocaleString()}</p>
+    <p><b>Payment Method:</b> ${esc(EXP_METHODS[e.payment_method]||e.payment_method)}</p>
+    <p><b>Receipt:</b> ${expensesReceiptDetailLine(e)}</p>
+    ${e.remarks?`<p><b>Remarks:</b> ${esc(e.remarks)}</p>`:''}
+    <p><b>Status:</b> ${e.archived_at?'<span class="pill red">Archived</span>':'<span class="pill green">Active</span>'}</p>
+    <hr style="border:none;border-top:1px solid var(--border);margin:10px 0">
+    <p class="small muted" style="margin:2px 0"><b>Created By:</b> ${esc(creator?creator.name:'—')} · ${esc((e.created_at||'').slice(0,16).replace('T',' '))}</p>
+    ${e.updated_at&&e.updated_at!==e.created_at?'<p class="small muted" style="margin:2px 0"><b>Last Updated:</b> '+esc(updater?updater.name:'—')+' · '+esc((e.updated_at||'').slice(0,16).replace('T',' '))+'</p>':''}
+    ${e.archived_at?'<p class="small muted" style="margin:2px 0"><b>Archived By:</b> '+esc(archiver?archiver.name:'—')+' · '+esc((e.archived_at||'').slice(0,16).replace('T',' '))+'</p>':''}
+    <div id="expAuditHistory" class="small muted" style="margin-top:8px"></div>
+  `;
+  $('expDetailsModal').classList.remove('hidden');
+  expensesLoadAuditHistory(id);
+}
+
+function closeExpDetails(){ $('expDetailsModal').classList.add('hidden'); }
+
+async function expensesLoadAuditHistory(id){
+  const box=$('expAuditHistory'); if(!box) return;
+  if(authRole!=='partner'){ box.innerHTML=''; return; }
+  const {data,error}=await safe(
+    sb.from('office_expenses_audit').select('action,performed_by_name,performed_at')
+      .eq('expense_id',id).order('performed_at',{ascending:true})
+  );
+  if(error||!data||!data.length){ box.innerHTML=''; return; }
+  box.innerHTML='<b>History:</b><br>'+data.map(a=>
+    esc(a.action)+' — '+esc(a.performed_by_name||'—')+' ('+esc((a.performed_at||'').slice(0,16).replace('T',' '))+')'
+  ).join('<br>');
+}
+
+async function logExpenseAudit(expenseId,action,oldValues,newValues){
+  if(!sb) return;
+  await safe(sb.from('office_expenses_audit').insert({
+    expense_id:expenseId,
+    action,
+    old_values:oldValues?JSON.parse(JSON.stringify(oldValues)):null,
+    new_values:newValues?JSON.parse(JSON.stringify(newValues)):null,
+    performed_by:authUser?.id,
+    performed_by_name:authFullName||authUser?.email
+  }));
+}
+// STOP. Sprint 4.1b concludes here. Sprint 4.1c (Receipt Strategy / Storage)
+// begins only after System Architect review and approval.
 // ══════════════════════════════════════════════════════════════════════════
 
 window.addEventListener('load',()=>{let d=$('repDate'); if(d)d.value=today(); init()});
