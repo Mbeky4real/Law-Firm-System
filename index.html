@@ -1436,68 +1436,6 @@ input,select,textarea{width:100%;padding:12px;border:1px solid var(--border);bor
     <div id="bdApprovedList"></div>
   </div>
 
-  <!-- MANUAL TRANSACTION MODAL -->
-  <div id="fdManualModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:500;align-items:center;justify-content:center">
-    <div style="background:#fff;border-radius:14px;padding:24px;width:480px;max-width:95vw;max-height:90vh;overflow-y:auto">
-      <h3 id="fdManualModalTitle" style="margin:0 0 16px;font-size:15px;color:var(--navy)">Record Manual Transaction</h3>
-      <input type="hidden" id="fdManualId">
-      <input type="hidden" id="fdManualTxType">
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <div>
-            <label style="font-size:11px;font-weight:700;color:var(--muted)">Date *</label>
-            <input id="fdManualDate" type="date" class="search" style="width:100%;margin-top:4px;font-size:12px">
-          </div>
-          <div>
-            <label style="font-size:11px;font-weight:700;color:var(--muted)">Category *</label>
-            <select id="fdManualCategory" style="width:100%;margin-top:4px;font-size:12px;border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text)"></select>
-          </div>
-        </div>
-        <div>
-          <label style="font-size:11px;font-weight:700;color:var(--muted)">Description *</label>
-          <input id="fdManualDesc" class="search" placeholder="Brief description of transaction" style="width:100%;margin-top:4px;font-size:12px">
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <div>
-            <label style="font-size:11px;font-weight:700;color:var(--muted)">Amount (TZS) *</label>
-            <input id="fdManualAmount" type="number" min="0" step="0.01" class="search" placeholder="0" style="width:100%;margin-top:4px;font-size:12px">
-          </div>
-          <div>
-            <label style="font-size:11px;font-weight:700;color:var(--muted)">Payment Method</label>
-            <select id="fdManualMethod" style="width:100%;margin-top:4px;font-size:12px;border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text)">
-              <option value="Cash">Cash</option>
-              <option value="Bank Transfer">Bank Transfer</option>
-              <option value="Cheque">Cheque</option>
-              <option value="Mobile Money">Mobile Money</option>
-              <option value="Other">Other</option>
-            </select>
-          </div>
-        </div>
-        <div>
-          <label style="font-size:11px;font-weight:700;color:var(--muted)">Received From / Paid To</label>
-          <input id="fdManualCounterparty" class="search" placeholder="Name of person or organisation" style="width:100%;margin-top:4px;font-size:12px">
-        </div>
-        <div>
-          <label style="font-size:11px;font-weight:700;color:var(--muted)">Approved By</label>
-          <select id="fdManualApprovedBy" style="width:100%;margin-top:4px;font-size:12px;border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text)">
-            <option value="MK">MK — Mwombeki Kabyemela</option>
-            <option value="FM">FM — Fatma Mungia</option>
-          </select>
-        </div>
-        <div>
-          <label style="font-size:11px;font-weight:700;color:var(--muted)">Remarks</label>
-          <textarea id="fdManualRemarks" style="width:100%;margin-top:4px;min-height:60px;border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:12px;font-family:inherit;resize:vertical" placeholder="Any additional notes…"></textarea>
-        </div>
-        <div style="background:#fefce8;border-radius:8px;padding:8px 10px;font-size:10px;color:#92400e">
-          ⚠ Reference number will be automatically generated on save following M&O reference convention.
-        </div>
-      </div>
-      <div style="display:flex;gap:10px;margin-top:16px">
-        <button class="btn gold" onclick="fdSaveManual()" style="flex:1">Save Transaction</button>
-        <button class="btn out" onclick="document.getElementById('fdManualModal').style.display='none'" style="flex:1">Cancel</button>
-      </div>
-    </div>
-  </div>
 
 </section>
 
@@ -2007,7 +1945,7 @@ input,select,textarea{width:100%;padding:12px;border:1px solid var(--border);bor
         <span id="fdStatusText">Financial Status: Healthy</span>
       </div>
       <span id="fdLastUpdated" style="font-size:11px;color:var(--muted)">Last updated: —</span>
-      <button onclick="_fdLoading=false;fdRender()" style="border:1px solid var(--border);background:#fff;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:14px" title="Refresh">↻</button>
+      <button id="fdRefreshBtn" onclick="fdRefresh()" style="border:1px solid var(--border);background:#fff;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:14px" title="Reload financial data" aria-label="Reload financial data">↻</button>
     </div>
   </div>
 
@@ -2238,7 +2176,7 @@ input,select,textarea{width:100%;padding:12px;border:1px solid var(--border);bor
 
     <!-- ── Row 4: Top Clients ── -->
     <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:12px">
-      <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:10px">TOP CLIENTS</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div style="font-size:12px;font-weight:700;color:var(--navy)">TOP CLIENTS</div><button onclick="fdViewAll('topclients')" class="btn out" style="font-size:11px;padding:4px 10px">View All</button></div>
       <div style="overflow-x:auto">
         <table style="width:100%;border-collapse:collapse;font-size:11px">
           <thead><tr style="border-bottom:2px solid var(--border)">
@@ -2260,7 +2198,7 @@ input,select,textarea{width:100%;padding:12px;border:1px solid var(--border);bor
 
       <!-- MATTER REVENUE LEADERBOARD -->
       <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px">
-        <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:10px">MATTER REVENUE LEADERBOARD</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div style="font-size:12px;font-weight:700;color:var(--navy)">MATTER REVENUE LEADERBOARD</div><button onclick="fdViewAll('matters')" class="btn out" style="font-size:11px;padding:4px 10px">View All</button></div>
         <div style="overflow-x:auto">
           <table style="width:100%;border-collapse:collapse;font-size:11px">
             <thead><tr style="border-bottom:2px solid var(--border)">
@@ -11089,11 +11027,11 @@ let _fdMembers     = [];   // members rows (for partner name resolution)
 let _fdLoading     = false;
 
 // Manual transaction categories (module-level constants)
-const FD_REVENUE_CATS  =['Cash Receipt','Gift Received','Interest Earned','Refund',
-  'Sale of Assets','Training Income','Capital Contribution','Other Revenue'];
-const FD_EXPENSE_CATS  =['Bank Loan Repayment','Partner Drawing','Bank Charges',
-  'Government Penalty','Donation','Capital Returned','Other Expenditure'];
-const FD_LIABILITY_CATS=['Loan Received'];
+const FD_REVENUE_CATS  =['Cash Client Payment','Gift','Donation Received','Interest Income',
+  'Insurance Claim','Asset Sale','Capital Contribution','Refund','Loan Received','Other'];
+const FD_EXPENSE_CATS  =['Partner Drawings','Loan Repayment','Government Penalty','Bank Charges',
+  'Donation','Capital Purchase','Refund','Tax Settlement','Other'];
+const FD_LIABILITY_CATS=[]; // Loan Received is already part of the approved revenue list.
 const FD_REF_CODES     ={revenue:'REV',expenditure:'OEX',loan:'LOA',drawing:'DRW',capital:'CAP'};
 
 // ── RBAC ──────────────────────────────────────────────────────────────────────
@@ -11323,7 +11261,7 @@ function fdRenderRegister(){
   // Get collection records for follow-up data
   const today2=today;
 
-  tbody.innerHTML=invs.map(inv=>{
+  tbody.innerHTML=invs.slice(0,5).map(inv=>{
     const bal=Number(inv.total_due||0)-Number(inv.amount_paid||0);
     const col=STATUS_C[inv.status]||'#64748b';
     const lbl=STATUS_L[inv.status]||inv.status;
@@ -11779,7 +11717,7 @@ function fdRenderTopClients(){
     byClient[c].count++;
   });
 
-  const clients=Object.entries(byClient).sort((a,b)=>b[1].rev-a[1].rev).slice(0,10);
+  const clients=Object.entries(byClient).sort((a,b)=>b[1].rev-a[1].rev).slice(0,5);
   if(!clients.length){
     tbody.innerHTML='<tr><td colspan="6" style="padding:12px;text-align:center;color:var(--muted)">No client data</td></tr>';
     return;
@@ -11830,7 +11768,7 @@ function fdRenderMatterLeaderboard(){
   // Sort by total revenue descending, take top 10
   const matters=Object.values(byMatter)
     .sort((a,b)=>b.totalRev-a.totalRev)
-    .slice(0,10);
+    .slice(0,5);
 
   // Determine display status (worst status wins)
   function matterStatus(statuses){
@@ -11898,7 +11836,8 @@ function fdRenderPracticePerformance(){
 // ── FINANCIAL TIMELINE ────────────────────────────────────────────────────────
 function fdRenderTimeline(){
   const el=$('fdTimeline'); if(!el) return;
-  const now=new Date();
+  // Anchor the historical window to the authoritative month selector, not today.
+  const now=new Date((val('fdMonth')||new Date().toISOString().slice(0,7))+'-01T00:00:00');
   const months=[];
   for(let i=5;i>=0;i--){
     const d=new Date(now.getFullYear(),now.getMonth()-i,1);
@@ -12247,8 +12186,129 @@ function fdPrintReport(){
   notice('Financial report sent to printer.');
 }
 
-function fdExportExcel(){ notice('Excel export — Sprint 4.2.6.'); }
-function fdExportPDF(){   notice('PDF export — Sprint 4.2.6.'); }
+/* Sprint 4.2.5E UAT repair.  These helpers deliberately remain in the fd*
+   namespace: the selected period is resolved once and every consumer uses it. */
+let _fdAllInvoices=[],_fdAllEntries=[],_fdAllBudgets=[],_fdAllPayroll=[],_fdAllManual=[];
+
+function fdInPeriod(value){
+  if(!value) return false;
+  const {start,end}=fdGetPeriodDates();
+  return String(value).slice(0,10)>=start&&String(value).slice(0,10)<=end;
+}
+function fdPeriodLabel(){
+  const {start,end}=fdGetPeriodDates(), kind=val('fdPeriod')||'month';
+  if(kind==='all') return 'All Time';
+  const fmt=d=>new Date(d+'T00:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+  return kind==='month'?new Date(start+'T00:00:00').toLocaleDateString('en-US',{month:'long',year:'numeric'}):`${fmt(start)} – ${fmt(end)}`;
+}
+function fdPayrollDate(p){ return p.payroll_month||p.month||p.pay_date||p.payment_date||p.created_at||''; }
+function fdManualStatus(t){ return String(t.status||(t.is_approved?'approved':'pending')).toLowerCase(); }
+function fdApprovedManual(type){
+  return _fdManualTx.filter(t=>fdInPeriod(t.date)&&fdManualStatus(t)==='approved'&&(!type||t.tx_type===type));
+}
+function fdMetrics(){
+  const issued=['issued','paid','part_paid','overdue'];
+  const invoices=_fdAllInvoices.filter(i=>fdInPeriod(i.invoice_date)&&issued.includes(i.status));
+  const entries=_fdAllEntries.filter(e=>fdInPeriod(e.date));
+  const payroll=_fdAllPayroll.filter(p=>fdInPeriod(fdPayrollDate(p)));
+  const manualRev=fdApprovedManual('revenue').reduce((s,t)=>s+Number(t.amount||0),0);
+  const manualExp=fdApprovedManual('expenditure').reduce((s,t)=>s+Number(t.amount||0),0);
+  const revenue=invoices.reduce((s,i)=>s+Number(i.total_due||0),0)+manualRev;
+  const collected=invoices.reduce((s,i)=>s+Number(i.amount_paid||0),0)+manualRev;
+  const expenses=entries.reduce((s,e)=>s+Number(e.amount||0),0)+payroll.reduce((s,p)=>s+Number(p.net_pay||p.total_net||p.gross_pay||p.amount||p.total_amount||0),0)+manualExp;
+  const outstanding=invoices.reduce((s,i)=>s+Math.max(0,Number(i.total_due||0)-Number(i.amount_paid||0)),0);
+  return {invoices,entries,payroll,manualRev,manualExp,revenue,collected,expenses,outstanding,net:revenue-expenses,cash:collected-expenses};
+}
+function fdHealth(){
+  const m=fdMetrics(), overdue=m.invoices.filter(i=>i.status==='overdue'), overdueValue=overdue.reduce((s,i)=>s+Math.max(0,Number(i.total_due||0)-Number(i.amount_paid||0)),0);
+  const budgets=_fdAllBudgets.filter(b=>fdInPeriod((b.budget_month||'')+'-01'));
+  const approved=budgets.reduce((s,b)=>s+Number(b.total_approved||0),0), utilisation=approved?m.expenses/approved:0;
+  const payrollCost=m.payroll.reduce((s,p)=>s+Number(p.net_pay||p.total_net||p.gross_pay||p.amount||0),0);
+  const reasons=[]; let level='Healthy';
+  if(m.cash<0||(payrollCost>0&&m.collected<payrollCost)||(m.revenue>0&&m.net/m.revenue<-.5)) level='Critical';
+  else if(m.net<0||utilisation>=1||overdueValue>m.collected*.5) level='Warning';
+  else if(utilisation>=.85||overdueValue>m.collected*.2||m.cash<Math.max(payrollCost,1)) level='Stable';
+  reasons.push(m.net>=0?'Selected-period result is positive.':'Selected-period expenses exceed revenue.');
+  reasons.push(m.cash>=0?'Selected-period cash position is positive.':'Selected-period cash position is negative.');
+  if(overdue.length) reasons.push(`${overdue.length} selected-period invoice${overdue.length===1?' is':'s are'} overdue (${fdFmt(overdueValue)}).`);
+  if(approved) reasons.push(`Selected-period budget utilisation is ${Math.round(utilisation*100)}%.`);
+  const action={Healthy:'Maintain collection discipline and monitor budget utilisation.',Stable:'Accelerate outstanding collections and review near-limit budgets.',Warning:'Prioritise collections and defer non-essential selected-period spending.',Critical:'Escalate cash recovery and payroll coverage to the Partners immediately.'}[level];
+  return {level,reasons,action,utilisation};
+}
+
+async function fdRefresh(){ return fdRender(true); }
+async function fdRender(force=false){
+  if(!fdCanAccess()||!sb||(_fdLoading&&!force)) return;
+  _fdLoading=true; fdInitMonthSelector();
+  const btn=$('fdRefreshBtn'); if(btn){btn.disabled=true;btn.textContent='⟳';btn.style.opacity='.55';}
+  try{
+    const results=await Promise.all([
+      sb.from('invoices').select('*').not('status','eq','void'),
+      sb.from('expense_entries').select('date,amount,category,status,expense_register_id').not('status','eq','cancelled'),
+      sb.from('budget_documents_summary').select('reference_number,budget_month,total_approved,computed_status,department').eq('computed_status','Approved'),
+      sb.from('payroll').select('*').order('created_at',{ascending:false}).limit(120),
+      sb.from('fd_collections').select('*'),sb.from('cause_list_v2').select('id,title,case_number,partner_id,responsible_id,client_name').is('deleted_at',null),
+      sb.from('non_litigations').select('id,title,client,nature,partner,responsible').is('deleted_at',null),sb.from('members').select('id,name,full_name'),
+      sb.from('fd_manual_transactions').select('*').order('date',{ascending:false})
+    ]);
+    const failed=results.find(r=>r.error); if(failed) throw failed.error;
+    [_fdAllInvoices,_fdAllEntries,_fdAllBudgets,_fdAllPayroll,_fdCollections,_fdLitMatters,_fdNlMatters,_fdMembers,_fdAllManual]=results.map(r=>r.data||[]);
+    _fdManualTx=_fdAllManual; _fdInvoices=_fdAllInvoices.filter(i=>fdInPeriod(i.invoice_date)); _fdEntries=_fdAllEntries.filter(e=>fdInPeriod(e.date));
+    _fdBudgets=_fdAllBudgets.filter(b=>fdInPeriod((b.budget_month||'')+'-01')); _fdPayroll=_fdAllPayroll.filter(p=>fdInPeriod(fdPayrollDate(p)));
+    [fdRenderKpi,fdRenderAvailablePosition,fdRenderRegister,fdRenderRevenueAnalytics,fdRenderExpenditureAnalytics,fdRenderExpenses,fdRenderBudget,fdRenderSummary,fdRenderAlerts,fdRenderTopClients,fdRenderMatterLeaderboard,fdRenderPracticePerformance,fdRenderTimeline,fdUpdateStatusIndicator,fdRenderManual].forEach(fn=>fn());
+    const stamp=$('fdLastUpdated'); if(stamp) stamp.textContent='Last updated: '+new Date().toLocaleString('en-GB');
+    if(force) notice(`Financial dashboard refreshed for ${fdPeriodLabel()}.`,'ok');
+  }catch(e){console.error('[fdRefresh]',e);notice('Dashboard refresh failed: '+e.message,'err');}
+  finally{_fdLoading=false;if(btn){btn.disabled=false;btn.textContent='↻';btn.style.opacity='1';}}
+}
+function fdRenderKpi(){
+  const el=$('fdKpiRow');if(!el)return;const m=fdMetrics(), label=fdPeriodLabel();
+  const cards=[['SELECTED PERIOD REVENUE',m.revenue,'#16a34a'],['SELECTED PERIOD EXPENSES',m.expenses,'#dc2626'],['SELECTED PERIOD BALANCE',m.net,m.net>=0?'#16a34a':'#dc2626'],['COLLECTIONS RECEIVED',m.collected,'#065f46'],['OUTSTANDING',m.outstanding,'#d97706'],['AVAILABLE CASH',m.cash,m.cash>=0?'#1e40af':'#dc2626']];
+  el.innerHTML=cards.map(c=>`<div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:8px 10px"><div style="font-size:9px;font-weight:700;color:var(--muted);margin-bottom:3px">${c[0]}</div><div style="font-size:16px;font-weight:900;line-height:1;color:${c[2]}">${fdShort(c[1])}</div><div style="font-size:9px;color:var(--muted);margin-top:2px">${label}</div></div>`).join('');
+}
+function fdRenderAvailablePosition(){const el=$('fdAvailablePosition');if(!el)return;const m=fdMetrics();el.innerHTML=[['Revenue Generated',m.revenue,'#16a34a'],['Collections Received',m.collected,'#065f46'],['Outstanding Receivables',m.outstanding,'#d97706'],['Total Expenses',m.expenses,'#dc2626'],['Available Cash Position',m.cash,m.cash>=0?'#1e40af':'#dc2626']].map(x=>`<div style="text-align:center;padding:6px;border-radius:8px;background:#f8f6f2"><div style="font-size:9px;font-weight:700;color:var(--muted)">${x[0]}</div><div style="font-size:13px;font-weight:900;color:${x[2]}">${fdFmt(x[1])}</div></div>`).join('');}
+function fdUpdateStatusIndicator(){const h=fdHealth(),styles={Healthy:['🟢','#f0fdf4','#bbf7d0','#16a34a'],Stable:['🟡','#fefce8','#fde68a','#92400e'],Warning:['🟠','#fff7ed','#fed7aa','#c2410c'],Critical:['🔴','#fef2f2','#fecaca','#dc2626']}[h.level],c=$('fdStatusIndicator');if(!c)return;$('fdStatusDot').textContent=styles[0];$('fdStatusText').textContent=`Financial Status: ${h.level} · ${fdPeriodLabel()}`;c.style.background=styles[1];c.style.borderColor=styles[2];c.style.color=styles[3];const intel=$('fdIntelligence');if(intel)intel.innerHTML=`<b>${h.level}:</b> ${h.reasons.join(' ')}<br><b>Recommended action:</b> ${h.action}`;}
+
+function fdRenderManual(){
+  const tbody=$('fdManualBody');if(!tbody)return;const rows=_fdManualTx.filter(t=>fdInPeriod(t.date));if(!rows.length){tbody.innerHTML='<tr><td colspan="10" style="padding:8px;text-align:center;color:var(--muted)">No manual transactions in selected period</td></tr>';return;}
+  tbody.innerHTML=rows.slice(0,5).map(t=>{const s=fdManualStatus(t),col={approved:'#16a34a',rejected:'#dc2626',cancelled:'#64748b',pending:'#d97706'}[s]||'#64748b';return `<tr><td style="padding:5px;font:10px monospace;color:#1e40af">${esc(t.reference||'—')}</td><td>${(t.date||'').slice(0,10)}</td><td>${esc(t.tx_type||'—')}</td><td>${esc(t.category||'—')}</td><td>${esc(t.description||'—')}</td><td style="text-align:right;font-weight:700">${Number(t.amount||0).toLocaleString()}</td><td>${esc(t.counterparty||'—')}</td><td>${esc(t.approved_by||'—')}</td><td><span style="color:${col};font-weight:700">${s}</span></td><td>${s==='pending'?`<button onclick="fdSetManualStatus('${t.id}','approved')" title="Approve">✓</button><button onclick="fdSetManualStatus('${t.id}','rejected')" title="Reject">✕</button><button onclick="fdSetManualStatus('${t.id}','cancelled')" title="Cancel">⊘</button>`:''}</td></tr>`}).join('');
+}
+async function fdSetManualStatus(id,status){if(!fdCanAccess())return;const payload={status,is_approved:status==='approved',approved_by:status==='approved'?(authFullName||authRole):null,approved_at:status==='approved'?new Date().toISOString():null};const {error}=await sb.from('fd_manual_transactions').update(payload).eq('id',id);if(error){notice('Status update failed: '+error.message,'err');return;}notice(`Transaction ${status}.`,'ok');await fdRefresh();}
+
+async function fdSaveManual(){
+  if(!fdCanAccess()){notice('Only Partners and Administrators can save manual transactions.','err');return;}const date=val('fdManualDate'),category=val('fdManualCategory'),desc=val('fdManualDesc').trim(),amount=Number(val('fdManualAmount'));if(!date||!category||!desc||amount<=0){notice('Date, category, description and a positive amount are required.','err');return;}
+  const baseType=val('fdManualTxType')||'revenue',txType=category==='Loan Received'?'loan':category==='Partner Drawings'?'drawing':baseType,code=FD_REF_CODES[txType]||'OEX',marker=val('fdManualApprovedBy')||'MK',parts=date.split('-'),prefix=`MOL/${code}/`;
+  const {data,error:qerr}=await sb.from('fd_manual_transactions').select('reference').like('reference',`${prefix}%/${parts[1]}/${parts[2]}/${parts[0].slice(-2)}/%`);if(qerr){notice('Reference generation failed: '+qerr.message,'err');return;}const seq=String((data||[]).length+1).padStart(2,'0'),reference=`${prefix}${seq}/${parts[1]}/${parts[2]}/${parts[0].slice(-2)}/${marker}`;
+  const payload={reference,tx_type:txType,date,category,description:desc,amount,payment_method:val('fdManualMethod')||'Cash',counterparty:val('fdManualCounterparty').trim()||null,remarks:val('fdManualRemarks').trim()||null,status:'pending',is_approved:false,created_by:authUser?.id};
+  const {error}=await sb.from('fd_manual_transactions').insert(payload);if(error){notice('Save failed: '+error.message,'err');return;}$('fdManualModal').style.display='none';notice(`Transaction created as Pending: ${reference}`,'ok');await fdRefresh();
+}
+
+function fdXml(value){return String(value??'').replace(/[<>&'\"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;',"'":'&apos;','\"':'&quot;'}[c]));}
+function fdDownload(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);}
+function fdExportRows(){const m=fdMetrics(),h=fdHealth();return {
+  'Financial Summary':[['Metric','Value'],['Period',fdPeriodLabel()],['Status',h.level],['Revenue',m.revenue],['Expenses',m.expenses],['Net',m.net],['Recommended Action',h.action]],
+  'Revenue Collections':[['Date','Client','Reference','Total','Paid','Balance','Status'],...m.invoices.map(i=>[i.invoice_date,i.client_name,i.invoice_number,i.total_due,i.amount_paid,Number(i.total_due||0)-Number(i.amount_paid||0),i.status])],
+  'Manual Transactions':[['Reference','Date','Type','Category','Description','Amount','Status'],..._fdManualTx.filter(t=>fdInPeriod(t.date)).map(t=>[t.reference,t.date,t.tx_type,t.category,t.description,t.amount,fdManualStatus(t)])],
+  'Expense Summary':[['Date','Category','Amount'],...m.entries.map(e=>[e.date,e.category,e.amount])],
+  'Budget Summary':[['Reference','Month','Department','Approved'],..._fdBudgets.map(b=>[b.reference_number,b.budget_month,b.department,b.total_approved])],
+  'Top Clients':[['Client','Revenue'],...Object.entries(m.invoices.reduce((a,i)=>(a[i.client_name||'Unknown']=(a[i.client_name||'Unknown']||0)+Number(i.total_due||0),a),{})).sort((a,b)=>b[1]-a[1])],
+  'Matter Revenue':[['Matter','Client','Revenue'],...m.invoices.map(i=>[i.matter_title,i.client_name,i.total_due])],
+  'Executive Ratios':[['Ratio','Value'],['Collection rate',m.revenue?m.collected/m.revenue:0],['Expense-to-revenue',m.revenue?m.expenses/m.revenue:0],['Budget utilisation',h.utilisation]],
+  'Cash Flow Summary':[['Item','Value'],['Cash inflow',m.collected],['Cash outflow',m.expenses],['Net cash flow',m.cash]]};}
+function fdViewAll(section){
+  const m=fdMetrics(); let title='',headers=[],rows=[];
+  if(section==='revenue'||section==='collections'){title='Revenue & Collections Register';headers=['Date','Client','Reference','Amount','Paid','Balance','Status'];rows=m.invoices.map(i=>[i.invoice_date,i.client_name,i.invoice_number,i.total_due,i.amount_paid,Number(i.total_due||0)-Number(i.amount_paid||0),i.status]);}
+  else if(section==='expenses'){title='Selected-Period Expense Data';headers=['Date','Category','Amount'];rows=m.entries.map(e=>[e.date,e.category,e.amount]);}
+  else if(section==='budget'){title='Selected-Period Budget Data';headers=['Reference','Month','Department','Approved'];rows=_fdBudgets.map(b=>[b.reference_number,b.budget_month,b.department,b.total_approved]);}
+  else if(section==='topclients'){title='Full Client Ranking';headers=['Client','Revenue'];rows=fdExportRows()['Top Clients'].slice(1);}
+  else if(section==='matters'){title='Full Matter Revenue Register';headers=['Matter','Client','Revenue'];rows=fdExportRows()['Matter Revenue'].slice(1);}
+  else if(section==='attention'){const h=fdHealth();title='Attention Required';headers=['Selected-period assessment'];rows=[...h.reasons.map(x=>[x]),['Recommended action: '+h.action]];}
+  else {notice('Unknown financial detail view.','err');return;}
+  const w=window.open('','_blank','width=1000,height=700');if(!w){notice('View All was blocked by the browser. Allow pop-ups and retry.','err');return;}
+  w.document.write(`<!doctype html><title>${fdXml(title)}</title><style>body{font:12px system-ui;padding:20px;color:#172033}h1{font-size:18px;border-bottom:2px solid #8b3a0f;padding-bottom:8px}table{width:100%;border-collapse:collapse}th,td{padding:7px;border-bottom:1px solid #ddd;text-align:left}th{background:#f5f0e8}</style><h1>M&O Law Office — ${fdXml(title)}</h1><p>${fdXml(fdPeriodLabel())}</p><table><thead><tr>${headers.map(h=>`<th>${fdXml(h)}</th>`).join('')}</tr></thead><tbody>${rows.length?rows.map(r=>`<tr>${r.map(v=>`<td>${fdXml(v)}</td>`).join('')}</tr>`).join(''):`<tr><td colspan="${headers.length}">No selected-period records.</td></tr>`}</tbody></table>`);w.document.close();
+}
+function fdExportExcel(){try{const sheets=Object.entries(fdExportRows()).map(([name,rows])=>`<Worksheet ss:Name="${fdXml(name.slice(0,31))}"><Table>${rows.map(r=>`<Row>${r.map(v=>`<Cell><Data ss:Type="${typeof v==='number'?'Number':'String'}">${fdXml(v)}</Data></Cell>`).join('')}</Row>`).join('')}</Table></Worksheet>`).join('');const xml=`<?xml version="1.0"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">${sheets}</Workbook>`;fdDownload(new Blob([xml],{type:'application/vnd.ms-excel'}),`MOLMS_Financial_${fdGetPeriodDates().monthStr}.xls`);notice('Excel workbook exported successfully.','ok');}catch(e){notice('Excel export failed: '+e.message,'err');}}
+function fdExportPDF(){try{const J=window.jspdf?.jsPDF;if(!J)throw new Error('PDF library is unavailable');const doc=new J({unit:'mm',format:'a4'}),m=fdMetrics(),h=fdHealth();let y=15;const line=(label,value)=>{if(y>280){doc.addPage();y=15;}doc.setFont('helvetica',label?'bold':'normal');doc.text(String(label||''),15,y);doc.setFont('helvetica','normal');doc.text(String(value??''),70,y,{maxWidth:125});y+=7;};doc.setFontSize(18);doc.text('M&O LAW OFFICE',15,y);y+=8;doc.setFontSize(12);doc.text('Partners Financial Report',15,y);y+=7;doc.setFontSize(9);line('Selected period',fdPeriodLabel());line('Financial status',h.level);line('Revenue',fdFmt(m.revenue));line('Collections',fdFmt(m.collected));line('Expenses',fdFmt(m.expenses));line('Available cash',fdFmt(m.cash));line('Outstanding',fdFmt(m.outstanding));line('Net result',fdFmt(m.net));line('Budget utilisation',Math.round(h.utilisation*100)+'%');line('Collection ratio',Math.round((m.revenue?m.collected/m.revenue:0)*100)+'%');line('Reasons',h.reasons.join(' '));line('Recommended action',h.action);y+=2;line('Revenue & Collections',`${m.invoices.length} selected-period invoice(s)`);m.invoices.slice(0,20).forEach(i=>line((i.invoice_date||'').slice(0,10),`${i.invoice_number||'—'} · ${i.client_name||'—'} · ${fdFmt(i.total_due)}`));line('Manual transactions',`${_fdManualTx.filter(t=>fdInPeriod(t.date)).length} selected-period record(s)`);_fdManualTx.filter(t=>fdInPeriod(t.date)).slice(0,15).forEach(t=>line(t.reference,`${t.category} · ${fdFmt(t.amount)} · ${fdManualStatus(t)}`));doc.save(`MOLMS_Financial_${fdGetPeriodDates().monthStr}.pdf`);notice('PDF report exported successfully.','ok');}catch(e){notice('PDF export failed: '+e.message,'err');}}
 
 // ── END PARTNERS FINANCIAL DASHBOARD ────────────────────────────────────────────────────────────────────────────────
 
