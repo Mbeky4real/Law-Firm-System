@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MOLMS</title>
+</head>
+<body>
+<script>
+(function(){
+  try {
+    if (window.location.hostname === 'admin.molaw.co.tz') {
+      localStorage.setItem('MOLMS_V12_SUPABASE_URL','https://myjkthjgnmzabmuwprqp.supabase.co');
+      localStorage.setItem('MOLMS_V12_SUPABASE_KEY','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im15amt0aGpnbm16YWJtdXdwcnFwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwNjYwNTgsImV4cCI6MjA5MjY0MjA1OH0.eJO2oylABe71_g5FCBDGx7mnWWu5dgHr1Utr3dPOcGI');
+      localStorage.removeItem('MOLMS_V12_LOCAL_ONLY');
+    }
+  } catch (e) {
+    console.error('MOLMS production bootstrap failed:', e);
+  }
+  window.location.replace('/index.html');
+})();
+</script>
+</body>
+</html>
