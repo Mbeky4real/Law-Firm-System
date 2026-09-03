@@ -5781,7 +5781,7 @@ function repRenderRegisterTable(){
     body.innerHTML=`<tr><td colspan="12" class="muted small" style="padding:20px;text-align:center">No reports match the current filters.</td></tr>`;
   } else {
     body.innerHTML=pageRows.map(r=>{
-      const [sCls,sLbl]=statusMap[r.status]||['blue',r.status||''];
+      const [sCls,sLbl]=statusMap[r.status]||['gray',r.status||'Not Recorded'];
       const canActR=authUser&&(r.created_by===authUser.id||r.member_id===authUser.id||isAdmin());
       const editBtn=canActR?`<button class="btn out small" onclick="event.stopPropagation();editReport('${r.id}')" title="Edit">✎</button>`:'';
       const archiveBtn=canActR?`<button class="btn red small" onclick="event.stopPropagation();archiveReport('${r.id}')" title="Archive (soft-delete — retained in the database, hidden from all views)">🗑</button>`:'';
@@ -5843,7 +5843,7 @@ function rdRenderDetails(id){
   const r=reports.find(x=>x.id===id);
   if(!r){notice('Report not found.','err');go('reports');return;}
   const statusMap={completed:['green','Completed'],in_progress:['blue','In Progress'],awaiting_client:['gold','Awaiting Client'],pending_review:['red','Pending Review']};
-  const [sCls,sLbl]=statusMap[r.status]||['blue',r.status||''];
+  const [sCls,sLbl]=statusMap[r.status]||['gray',r.status||'Not Recorded'];
   if($('rdTitle'))$('rdTitle').textContent=r.work_done||r.task||'Daily Report';
   if($('rdRef'))$('rdRef').textContent='Report #'+(r.report_no||'—');
   if($('rdMatter'))$('rdMatter').textContent=r.linked_matter_label||r.matter_type||'';
@@ -7421,6 +7421,7 @@ async function addReport(){
     matter_reference_snapshot:matterRef,
     client_name_snapshot:clientSnap,
     activity_type:activityType,
+    status:val('repStatus')||'in_progress',
     location:val('repLocation')||null,
     work_done:workDone,
     outcome:outcome,
