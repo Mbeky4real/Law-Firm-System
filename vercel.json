@@ -1,12 +1,15 @@
 {
-  "rewrites": [
+  "routes": [
     {
-      "source": "/",
-      "destination": "/production-bootstrap.html"
+      "src": "/",
+      "dest": "/production-bootstrap.html"
     },
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "handle": "filesystem"
+    },
+    {
+      "src": "/.*",
+      "dest": "/index.html"
     }
   ]
 }
