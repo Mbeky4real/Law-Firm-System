@@ -1,0 +1,102 @@
+name: Patch Daily Report Status
+
+on:
+  push:
+    branches:
+      - fix-daily-report-status-20260903
+    paths:
+      - .github/workflows/patch-daily-report-status.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply surgical status fix
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+
+          # Root cause: addReport() reads the selected Activity Status in the form,
+          # but the object sent to Supabase never assigned it. The INSERT therefore
+          # wrote a null/empty status. Editing the same report repairs it because
+          # saveReportUpdate() DOES write val('repStatus') || 'in_progress'.
+          old_create = """    activity_type:activityType,\n    location:val('repLocation')||null,\n    work_done:workDone,"""
+          new_create = """    activity_type:activityType,\n    status:val('repStatus')||'in_progress',\n    location:val('repLocation')||null,\n    work_done:workDone,"""
+          assert text.count(old_create) == 1, f'Expected exactly 1 addReport create anchor, found {text.count(old_create)}'
+          text = text.replace(old_create, new_create, 1)
+
+          # Existing rows created while the bug was present genuinely have no
+          # stored Activity Status. Do not invent a historical state. Render an
+          # explicit neutral label instead of an empty blue pill. This change is
+          # applied to both the register and Report Details.
+          old_fallback = "const [sCls,sLbl]=statusMap[r.status]||['blue',r.status||''];"
+          new_fallback = "const [sCls,sLbl]=statusMap[r.status]||['gray',r.status||'Not Recorded'];"
+          assert text.count(old_fallback) == 2, f'Expected exactly 2 blank-status fallbacks, found {text.count(old_fallback)}'
+          text = text.replace(old_fallback, new_fallback)
+
+          path.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Static verification
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          text = Path('index.html').read_text(encoding='utf-8')
+
+          # There must now be one write in addReport() and one in saveReportUpdate().
+          assert text.count("status:val('repStatus')||'in_progress',") == 2
+          assert text.count("status:           o.status,") == 1
+
+          # No empty status pill fallback remains in either Daily Reports view.
+          assert "statusMap[r.status]||['blue',r.status||'']" not in text
+          assert text.count("statusMap[r.status]||['gray',r.status||'Not Recorded']") == 2
+
+          # Canonical status options must remain unchanged.
+          for option in (
+              '<option value="completed">Completed</option>',
+              '<option value="in_progress">In Progress</option>',
+              '<option value="awaiting_client">Awaiting Client</option>',
+              '<option value="pending_review">Pending Review</option>',
+          ):
+              assert option in text, option
+
+          # Behavioural unit check for the renderer policy.
+          status_map = {
+              'completed': ('green','Completed'),
+              'in_progress': ('blue','In Progress'),
+              'awaiting_client': ('gold','Awaiting Client'),
+              'pending_review': ('red','Pending Review'),
+          }
+          def status_display(value):
+              return status_map.get(value, ('gray', value or 'Not Recorded'))
+          assert status_display('completed') == ('green','Completed')
+          assert status_display('in_progress') == ('blue','In Progress')
+          assert status_display('awaiting_client') == ('gold','Awaiting Client')
+          assert status_display('pending_review') == ('red','Pending Review')
+          assert status_display(None) == ('gray','Not Recorded')
+          assert status_display('') == ('gray','Not Recorded')
+          PY
+          git diff --check
+
+      - name: Commit tested patch only
+        shell: bash
+        run: |
+          git config user.name "MOLMS Production Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git rm .github/workflows/patch-daily-report-status.yml
+          git add index.html
+          git commit -m "fix(reports): persist and render activity status correctly"
+          git push origin HEAD:fix-daily-report-status-20260903
