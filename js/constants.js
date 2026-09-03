@@ -21,13 +21,21 @@ window.LS = window.LS || {
   const PROD_URL = 'https://myjkthjgnmzabmuwprqp.supabase.co';
   const PROD_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im15amt0aGpnbm16YWJtdXdwcnFwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwNjYwNTgsImV4cCI6MjA5MjY0MjA1OH0.eJO2oylABe71_g5FCBDGx7mnWWu5dgHr1Utr3dPOcGI';
 
-  if (!localStorage.getItem('MOLMS_V12_SUPABASE_URL')) {
-    localStorage.setItem('MOLMS_V12_SUPABASE_URL', PROD_URL);
-  }
-  if (!localStorage.getItem('MOLMS_V12_SUPABASE_KEY')) {
-    localStorage.setItem('MOLMS_V12_SUPABASE_KEY', PROD_ANON_KEY);
-  }
-
-  // Production must never fall back to browser-local mode.
+  // The canonical production host must always use the canonical project.
+  // This intentionally replaces stale/missing browser config from older builds.
+  localStorage.setItem('MOLMS_V12_SUPABASE_URL', PROD_URL);
+  localStorage.setItem('MOLMS_V12_SUPABASE_KEY', PROD_ANON_KEY);
   localStorage.removeItem('MOLMS_V12_LOCAL_ONLY');
+
+  // Supabase's CDN script is loaded with `defer` while MOLMS application code
+  // is parsed later in the document. Re-run initialization once the full page
+  // has loaded so production cannot remain on Setup merely because an earlier
+  // init ran before the deferred Supabase client became available.
+  window.addEventListener('load', function productionBootstrapReady(){
+    if (typeof window.init === 'function') {
+      Promise.resolve(window.init()).catch(function(err){
+        console.error('MOLMS production bootstrap initialization failed:', err);
+      });
+    }
+  }, { once: true });
 })();
