@@ -10020,7 +10020,7 @@ let _prLoading    = false;
 
 // ── PAYROLL RBAC ──────────────────────────────────────────────────────────────
 // Consumes the same authRole set by loadAuthRole() in the base application.
-function prCanAccess()  { return authRole==='partner'||authRole==='hr_officer'; }
+function prCanAccess()  { return true; } // all authenticated staff may access own payroll self-service
 function prIsPrivileged(){ return authRole==='partner'||authRole==='hr_officer'; }
 
 // Self-service: get the hr_employees.id for the logged-in user
