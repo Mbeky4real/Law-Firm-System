@@ -1,0 +1,96 @@
+name: Patch Office Manager access
+on:
+  push:
+    branches: [office-manager-access-20260904]
+permissions:
+  contents: write
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply controlled RBAC patch
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          reps=[
+            ('<div><label>Member Type</label><select id="memRole"><option value="staff">Ordinary Member</option><option value="partner">Partner (Admin)</option></select></div>',
+             '<div><label>Member Type</label><select id="memRole"><option value="staff">Ordinary Member</option><option value="office_manager">Office Manager</option><option value="hr_officer">HR Officer</option><option value="partner">Partner (Admin)</option></select></div>'),
+            ("    role:r.role==='partner'?'partner':'ordinary',\n        position:r.position||(r.role==='partner'?'Partner / Admin':'Ordinary Member'),",
+             "    role:r.role==='partner'?'partner':(r.role==='office_manager'||r.role==='hr_officer')?r.role:'ordinary',\n        position:r.position||(r.role==='partner'?'Partner / Admin':r.role==='office_manager'?'Office Manager':r.role==='hr_officer'?'HR Officer':'Ordinary Member'),"),
+            ("if($('memRole')) $('memRole').value=m.role==='partner'?'partner':'staff';",
+             "if($('memRole')) $('memRole').value=['staff','office_manager','hr_officer','partner'].includes(m.role)?m.role:(m.role==='admin'?'partner':'staff');"),
+            ("function prIsPrivileged(){ return authRole==='partner'||authRole==='hr_officer'; }",
+             "function prIsPrivileged(){ return authRole==='partner'||authRole==='hr_officer'||authRole==='office_manager'; }"),
+            ("function prCanGenerate(){ return authRole==='partner'||authRole==='hr_officer'; }",
+             "function prCanGenerate(){ return authRole==='partner'||authRole==='hr_officer'||authRole==='office_manager'; }"),
+            ("function exCanClose(){ return authRole==='partner'||authRole==='office_manager'; }",
+             "function exCanClose(){ return authRole==='partner'; }"),
+          ]
+          for old,new in reps:
+            n=s.count(old)
+            assert n==1, f'Expected exactly one match for {old[:80]!r}, got {n}'
+            s=s.replace(old,new,1)
+          old="""  const memberCard=(m,active)=>{
+    const actions=admin?`<div class="member-actions"><button class="btn out small" onclick="editMember('${m.id}')" style="margin-right:4px">Edit</button><button class="btn ${active?'red':'green'} small" onclick="removeMemberRole('${m.id}')">${active?'Deactivate':'Reactivate'}</button></div>`:'';
+    return `<div class="item"><span class="pill ${m.role==='partner'?'green':'gold'}">${m.role==='partner'?'Partner/Admin':'Ordinary Member'}</span> <span class="pill ${active?'green':'red'}">${active?'Active':'Inactive'}</span><div class="item-title">${esc(m.name)}</div><div class="item-meta"><b>Position:</b> ${esc(m.position||'—')}<br><b>Email:</b> ${esc(m.email||'—')} · <b>Phone:</b> ${esc(m.phone||'—')}</div>${actions}</div>`;
+  };"""
+          new="""  const roleBadge=(role)=>{
+    if(role==='partner') return ['green','Partner/Admin'];
+    if(role==='office_manager') return ['gold','Office Manager'];
+    if(role==='hr_officer') return ['gold','HR Officer'];
+    return ['gold','Ordinary Member'];
+  };
+  const memberCard=(m,active)=>{
+    const actions=admin?`<div class="member-actions"><button class="btn out small" onclick="editMember('${m.id}')" style="margin-right:4px">Edit</button><button class="btn ${active?'red':'green'} small" onclick="removeMemberRole('${m.id}')">${active?'Deactivate':'Reactivate'}</button></div>`:'';
+    const [badgeCol,badgeLabel]=roleBadge(m.role);
+    return `<div class="item"><span class="pill ${badgeCol}">${badgeLabel}</span> <span class="pill ${active?'green':'red'}">${active?'Active':'Inactive'}</span><div class="item-title">${esc(m.name)}</div><div class="item-meta"><b>Position:</b> ${esc(m.position||'—')}<br><b>Email:</b> ${esc(m.email||'—')} · <b>Phone:</b> ${esc(m.phone||'—')}</div>${actions}</div>`;
+  };"""
+          assert s.count(old)==1, f'Member card anchor count {s.count(old)}'
+          s=s.replace(old,new,1)
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Static and RBAC verification
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re, subprocess, tempfile
+          s=Path('index.html').read_text(encoding='utf-8')
+          required=[
+            '<option value="office_manager">Office Manager</option>',
+            '<option value="hr_officer">HR Officer</option>',
+            "function prIsPrivileged(){ return authRole==='partner'||authRole==='hr_officer'||authRole==='office_manager'; }",
+            "function prCanGenerate(){ return authRole==='partner'||authRole==='hr_officer'||authRole==='office_manager'; }",
+            "function prCanApprove() { return authRole==='partner'; }",
+            "function exCanEdit(){ return authRole==='partner'||authRole==='office_manager'; }",
+            "function exCanClose(){ return authRole==='partner'; }",
+            "function invCanAccess(){ return authRole==='partner'||authRole==='office_manager'; }",
+            "function invCanIssue(){  return authRole==='partner'; }",
+            "['staff','office_manager','hr_officer','partner'].includes(m.role)",
+            "role:r.role==='partner'?'partner':(r.role==='office_manager'||r.role==='hr_officer')?r.role:'ordinary'",
+          ]
+          for x in required: assert x in s, x
+          assert "function exCanClose(){ return authRole==='partner'||authRole==='office_manager'; }" not in s
+          scripts=re.findall(r'<script(?:\\s[^>]*)?>(.*?)</script>',s,flags=re.S|re.I)
+          for i,body in enumerate(scripts):
+            f=Path(f'/tmp/molms_{i}.js'); f.write_text(body,encoding='utf-8')
+            r=subprocess.run(['node','--check',str(f)],capture_output=True,text=True)
+            assert r.returncode==0, r.stderr
+          print('RBAC/static checks PASS')
+          PY
+          git diff --check
+      - name: Commit tested application patch
+        shell: bash
+        run: |
+          git config user.name "MOLMS Production Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git rm .github/workflows/patch-office-manager-access.yml
+          git add index.html
+          git commit -m "feat(rbac): complete Office Manager delegated access"
+          git push origin HEAD:office-manager-access-20260904
