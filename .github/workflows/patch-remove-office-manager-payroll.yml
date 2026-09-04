@@ -1,0 +1,28 @@
+name: remove-office-manager-payroll
+on:
+  push:
+    branches:
+      - remove-office-manager-payroll-20260904
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Patch and verify
+        run: python .github/patch-remove-office-manager-payroll.py
+      - name: Syntax check
+        run: |
+          node --check /tmp/molms-inline.js
+          git diff --check
+      - name: Commit
+        run: |
+          git config user.name "MOLMS Production Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git rm .github/workflows/patch-remove-office-manager-payroll.yml .github/patch-remove-office-manager-payroll.py
+          git add index.html
+          git commit -m "fix(rbac): keep HR and payroll with HR role"
+          git push origin HEAD:remove-office-manager-payroll-20260904
