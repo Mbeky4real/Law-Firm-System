@@ -10020,8 +10020,8 @@ let _prLoading    = false;
 
 // ── PAYROLL RBAC ──────────────────────────────────────────────────────────────
 // Consumes the same authRole set by loadAuthRole() in the base application.
-function prCanAccess()  { return true; } // all staff: self-service or management
-function prIsPrivileged(){ return authRole==='partner'||authRole==='hr_officer'||authRole==='office_manager'; }
+function prCanAccess()  { return authRole==='partner'||authRole==='hr_officer'; }
+function prIsPrivileged(){ return authRole==='partner'||authRole==='hr_officer'; }
 
 // Self-service: get the hr_employees.id for the logged-in user
 let _prSelfEmployeeId=null;
@@ -10149,7 +10149,7 @@ async function prRenderSelfService(){
     </table></div>`
     :'<div style="padding:20px;color:var(--muted);text-align:center">No payslips available yet.</div>'}`;
 }
-function prCanGenerate(){ return authRole==='partner'||authRole==='hr_officer'||authRole==='office_manager'; }
+function prCanGenerate(){ return authRole==='partner'||authRole==='hr_officer'; }
 function prCanApprove() { return authRole==='partner'; }  // approve, lock, cancel
 
 // ── STATUS BADGE ──────────────────────────────────────────────────────────────
