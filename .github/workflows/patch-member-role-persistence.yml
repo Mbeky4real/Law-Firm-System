@@ -1,0 +1,28 @@
+name: member-role-persistence-patch
+on:
+  push:
+    branches:
+      - fix-member-role-persistence-20260904
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Patch and verify
+        run: |
+          python .github/patch-member-role-persistence.py
+          node --check /tmp/molms-inline.js
+          git diff --check
+      - name: Commit patch and remove temporary workflow
+        run: |
+          git config user.name "MOLMS Production Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git rm .github/workflows/patch-member-role-persistence.yml .github/patch-member-role-persistence.py
+          git add index.html
+          git commit -m "fix(rbac): persist delegated member roles"
+          git push origin HEAD:fix-member-role-persistence-20260904
