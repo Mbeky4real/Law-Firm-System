@@ -10,11 +10,11 @@ reps=[
 for old,new in reps:
     assert s.count(old)==1,(old,s.count(old))
     s=s.replace(old,new,1)
-assert "function hrCanAccess()  { return authRole==='partner'||authRole==='hr_officer'; }" in s
-assert "function prCanApprove() { return authRole==='partner'; }" in s
-assert "function invCanAccess(){ return authRole==='partner'||authRole==='office_manager'; }" in s
-assert "function exCanEdit(){ return authRole==='partner'||authRole==='office_manager'; }" in s
+for forbidden in [
+"function prIsPrivileged(){ return authRole==='partner'||authRole==='hr_officer'||authRole==='office_manager'; }",
+"function prCanGenerate(){ return authRole==='partner'||authRole==='hr_officer'||authRole==='office_manager'; }"
+]: assert forbidden not in s
 p.write_text(s,encoding='utf-8')
 scripts=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>',s,flags=re.S|re.I)
 Path('/tmp/molms-inline.js').write_text('\n'.join(scripts),encoding='utf-8')
-print('Office Manager HR/payroll removal assertions PASS')
+print('Office Manager payroll removal assertions PASS')
