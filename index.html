@@ -8443,7 +8443,8 @@ async function addMemberSecure(){
   const full_name=val('memName');
   const email=val('memEmail').toLowerCase().trim();
   const password=val('memPassword');
-  const role=val('memRole')==='partner'?'partner':'staff';
+  const role=val('memRole');
+  if(!['staff','office_manager','hr_officer','partner'].includes(role)){ notice('Invalid member role.','err'); return; }
   const position=val('memPosition');
   const phone=val('memPhone');
   const msg=$('memberCreateMsg');
@@ -8490,7 +8491,8 @@ async function saveMemberUpdate(userId){
   const full_name=val('memName');
   const position=val('memPosition');
   const phone=val('memPhone');
-  const role=val('memRole')==='partner'?'partner':'staff';
+  const role=val('memRole');
+  if(!['staff','office_manager','hr_officer','partner'].includes(role)){ notice('Invalid member role.','err'); return; }
   const msg=$('memberCreateMsg');
   if(!full_name){
     if(msg) msg.innerHTML='<div class="notice err">Full name is required.</div>';
