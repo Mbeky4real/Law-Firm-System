@@ -1303,7 +1303,7 @@ input,select,textarea{width:100%;padding:12px;border:1px solid var(--border);bor
             <div><label>Full Name</label><input id="memName" placeholder="Staff full name"></div>
             <div><label>Email</label><input id="memEmail" type="email" placeholder="staff@molaw.co.tz"></div>
             <div><label>Temporary Password</label><input id="memPassword" type="password" placeholder="At least 8 characters (new members only)"></div>
-            <div><label>Member Type</label><select id="memRole"><option value="staff">Ordinary Member</option><option value="partner">Partner (Admin)</option></select></div>
+            <div><label>Member Type</label><select id="memRole"><option value="staff">Ordinary Member</option><option value="office_manager">Office Manager</option><option value="hr_officer">HR Officer</option><option value="partner">Partner (Admin)</option></select></div>
             <div><label>Position</label><input id="memPosition" placeholder="Associate / Supporting Staff"></div>
             <div><label>Phone</label><input id="memPhone" placeholder="+255 ..."></div>
           </div>
@@ -6116,9 +6116,16 @@ function renderMembers(){
   const activeMembers=members.filter(m=>m.active!==false);
   const inactiveMembers=members.filter(m=>m.active===false);
 
+  const roleBadge=(role)=>{
+    if(role==='partner') return ['green','Partner/Admin'];
+    if(role==='office_manager') return ['gold','Office Manager'];
+    if(role==='hr_officer') return ['gold','HR Officer'];
+    return ['gold','Ordinary Member'];
+  };
   const memberCard=(m,active)=>{
     const actions=admin?`<div class="member-actions"><button class="btn out small" onclick="editMember('${m.id}')" style="margin-right:4px">Edit</button><button class="btn ${active?'red':'green'} small" onclick="removeMemberRole('${m.id}')">${active?'Deactivate':'Reactivate'}</button></div>`:'';
-    return `<div class="item"><span class="pill ${m.role==='partner'?'green':'gold'}">${m.role==='partner'?'Partner/Admin':'Ordinary Member'}</span> <span class="pill ${active?'green':'red'}">${active?'Active':'Inactive'}</span><div class="item-title">${esc(m.name)}</div><div class="item-meta"><b>Position:</b> ${esc(m.position||'—')}<br><b>Email:</b> ${esc(m.email||'—')} · <b>Phone:</b> ${esc(m.phone||'—')}</div>${actions}</div>`;
+    const [badgeCol,badgeLabel]=roleBadge(m.role);
+    return `<div class="item"><span class="pill ${badgeCol}">${badgeLabel}</span> <span class="pill ${active?'green':'red'}">${active?'Active':'Inactive'}</span><div class="item-title">${esc(m.name)}</div><div class="item-meta"><b>Position:</b> ${esc(m.position||'—')}<br><b>Email:</b> ${esc(m.email||'—')} · <b>Phone:</b> ${esc(m.phone||'—')}</div>${actions}</div>`;
   };
 
   // Add Member card visibility (was previously misleadingly wrapping the
@@ -8411,8 +8418,8 @@ async function loadMembers(){
         id:r.user_id,
         name:r.full_name||r.email||'Unnamed',
         email:r.email||'',
-        role:r.role==='partner'?'partner':'ordinary',
-        position:r.position||(r.role==='partner'?'Partner / Admin':'Ordinary Member'),
+        role:r.role==='partner'?'partner':(r.role==='office_manager'||r.role==='hr_officer')?r.role:'ordinary',
+        position:r.position||(r.role==='partner'?'Partner / Admin':r.role==='office_manager'?'Office Manager':r.role==='hr_officer'?'HR Officer':'Ordinary Member'),
         phone:r.phone||'',
         active:r.active!==false,
         created_at:r.created_at
@@ -8509,7 +8516,7 @@ function editMember(userId){
   if(!m){ notice('Member not found.','err'); return; }
   if($('memName')) $('memName').value=m.name||'';
   if($('memEmail')) $('memEmail').value=m.email||'';
-  if($('memRole')) $('memRole').value=m.role==='partner'?'partner':'staff';
+  if($('memRole')) $('memRole').value=['staff','office_manager','hr_officer','partner'].includes(m.role)?m.role:(m.role==='admin'?'partner':'staff');
   if($('memPosition')) $('memPosition').value=m.position||'';
   if($('memPhone')) $('memPhone').value=m.phone||'';
   if($('memPassword')) $('memPassword').value='';
@@ -10012,7 +10019,7 @@ let _prLoading    = false;
 // ── PAYROLL RBAC ──────────────────────────────────────────────────────────────
 // Consumes the same authRole set by loadAuthRole() in the base application.
 function prCanAccess()  { return true; } // all staff: self-service or management
-function prIsPrivileged(){ return authRole==='partner'||authRole==='hr_officer'; }
+function prIsPrivileged(){ return authRole==='partner'||authRole==='hr_officer'||authRole==='office_manager'; }
 
 // Self-service: get the hr_employees.id for the logged-in user
 let _prSelfEmployeeId=null;
@@ -10140,7 +10147,7 @@ async function prRenderSelfService(){
     </table></div>`
     :'<div style="padding:20px;color:var(--muted);text-align:center">No payslips available yet.</div>'}`;
 }
-function prCanGenerate(){ return authRole==='partner'||authRole==='hr_officer'; }
+function prCanGenerate(){ return authRole==='partner'||authRole==='hr_officer'||authRole==='office_manager'; }
 function prCanApprove() { return authRole==='partner'; }  // approve, lock, cancel
 
 // ── STATUS BADGE ──────────────────────────────────────────────────────────────
@@ -12596,7 +12603,7 @@ const EX_CATEGORIES = [
 
 // ── RBAC ──────────────────────────────────────────────────────────────────────
 function exCanEdit(){ return authRole==='partner'||authRole==='office_manager'; }
-function exCanClose(){ return authRole==='partner'||authRole==='office_manager'; }
+function exCanClose(){ return authRole==='partner'; }
 
 // ── START EXPENSE REGISTER ────────────────────────────────────────────────────
 // Called when Office Manager presses "Start Expense Register".
