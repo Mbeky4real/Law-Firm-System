@@ -353,14 +353,13 @@ input,select,textarea{width:100%;padding:12px;border:1px solid var(--border);bor
 <div id="login" class="setup hidden">
   <div class="card">
     <h1>M&O Law Login</h1>
-    <p class="muted">Sign in using the email and password created in Supabase.</p>
+    <p class="muted">Sign in using your M&amp;O Law Office account.</p>
     <label>Email Address</label>
     <input id="loginEmail" type="email" placeholder="you@molaw.co.tz"/>
     <label>Password</label>
     <input id="loginPassword" type="password" placeholder="Enter password"/>
     <div id="loginMsg"></div>
     <button class="btn gold" onclick="login()">Login</button>
-    <button class="btn out" onclick="resetConfig()" style="margin-left:8px">Change Supabase Connection</button>
   </div>
 </div>
 
@@ -3304,7 +3303,7 @@ async function login(){
   const msg=$('loginMsg');
 
   if(!sb){
-    msg.innerHTML='<div class="notice err">Supabase is not connected. Tap "Change Supabase Connection" and enter the new Project URL and anon key.</div>';
+    msg.innerHTML='<div class="notice err">The login service is temporarily unavailable. Please contact the system administrator.</div>';
     return;
   }
   if(!email || !password){
@@ -3344,7 +3343,7 @@ async function login(){
     subscribeOfficeEvents();
     go('dashboard');
   }catch(e){
-    msg.innerHTML='<div class="notice err">Login request failed: '+esc(e.message)+'. Tap Change Supabase Connection and re-enter the NEW Supabase details.</div>';
+    msg.innerHTML='<div class="notice err">Login request failed: '+esc(e.message)+'. Please contact the system administrator if the problem continues.</div>';
   }
 }
 async function logout(){
