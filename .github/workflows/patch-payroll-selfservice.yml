@@ -1,0 +1,26 @@
+name: patch-payroll-selfservice
+on:
+  push:
+    branches: [fix-office-manager-payroll-selfservice-20260904]
+    paths: ['.github/patch-payroll-selfservice.py','.github/workflows/patch-payroll-selfservice.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix-office-manager-payroll-selfservice-20260904
+      - name: Patch and verify
+        run: python .github/patch-payroll-selfservice.py
+      - name: Syntax check
+        run: node --check /tmp/molms-inline.js
+      - name: Commit
+        run: |
+          if git diff --quiet -- index.html; then echo 'No change'; exit 0; fi
+          git config user.name 'MOLMS Production Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add index.html
+          git commit -m 'fix(payroll): restore staff self-service for office manager'
+          git push origin HEAD:fix-office-manager-payroll-selfservice-20260904
