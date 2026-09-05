@@ -1,5 +1,6 @@
 from pathlib import Path
 
+# Guarded master firm-profile integration patch.
 p=Path('index.html')
 s=p.read_text(encoding='utf-8')
 
@@ -58,8 +59,6 @@ async function firmProfileEnsureLoaded(force=false){
 function firmProfileLogoUrl(firm=firmProfileGet()){
   const u=String(firm.firmLogo||'').trim();
   if(!u) return '';
-  // Prevent ordinary website pages from being treated as images. Data/blob URLs
-  // and direct image extensions are accepted; anything else falls back to text.
   if(/^data:image\//i.test(u)||/^blob:/i.test(u)||/\.(png|jpe?g|webp|gif|svg)(\?.*)?$/i.test(u)) return u;
   return '';
 }
@@ -151,8 +150,6 @@ new="""      Prepared by ${authFullName||'—'} | Printed: ${new Date().toLocale
 if old not in s: raise SystemExit('expense footer anchor not found')
 s=s.replace(old,new,1)
 
-# Firm Settings should refresh from the server instead of only replaying this
-# browser's localStorage copy.
 old="""function loadFirmFields(){
   const fs=readObj(LS.firmSettings);
 """
@@ -163,19 +160,15 @@ new="""async function loadFirmFields(){
 if old not in s: raise SystemExit('loadFirmFields anchor not found')
 s=s.replace(old,new,1)
 
-# Clarify logo field. There is currently no Storage bucket in production, so do
-# not pretend a file upload exists; accept only a direct image URL and explain it.
 old='<div><label>Firm Logo URL (https://...)</label><input id="sFirmLogo" placeholder="https://..."></div>'
 new='<div><label>Firm Logo (direct image URL)</label><input id="sFirmLogo" placeholder="https://.../logo.png"><div style="font-size:10px;color:var(--muted);margin-top:4px">Use a direct PNG, JPG, WEBP, GIF or SVG image URL. Ordinary website addresses are not treated as logos.</div></div>'
 if old not in s: raise SystemExit('logo field anchor not found')
 s=s.replace(old,new,1)
 
-# Add concise purpose text under Firm Settings heading only once.
 old='<h3>Firm Settings</h3>'
 if old in s:
   s=s.replace(old,'<h3>Firm Settings</h3><p style="margin:0 0 14px;font-size:11px;color:var(--muted)">Official firm identity used by MOLMS-generated invoices and formal printable outputs.</p>',1)
 
-# Structural assertions
 assert 'const INV_FIRM' not in s
 assert 'firmProfileEnsureLoaded' in s
 assert 'firmProfileGet()' in s
