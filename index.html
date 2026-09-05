@@ -16500,5 +16500,32 @@ async function invSubmitPayment(){
   window.fdRenderKpi=function(){baseKpi.apply(this,arguments);const c=fdCashContinuity(),cards=document.querySelectorAll('#fdKpiRow>div');if(cards[5]){const lines=fdCurrencyLines(c.closingByCur,true).map((l,i)=>`<div style="font-size:${i===0?'16px':'12px'};font-weight:900;line-height:1.2;color:${l.value>=0?'#16a34a':'#dc2626'}">${l.text}</div>`).join('');cards[5].innerHTML=`<div style="font-size:9px;font-weight:700;color:var(--muted);margin-bottom:3px">AVAILABLE CASH</div>${lines}<div style="font-size:9px;color:var(--muted);margin-top:2px">Opening balance carried forward · ${fdPeriodLabel()}</div>`;}fdRenderReceivablesCard();};
 })();
 </script>
+
+<script>
+/* MOLMS-INVOICE-PAYMENT-CONTEXT-V3 */
+(function(){
+  const baseRecord=window.invRecordPayment;
+  if(typeof baseRecord==='function'){
+    window.invRecordPayment=async function(){
+      const args=arguments;
+      if(typeof page!=='undefined'&&page!=='invoice'&&typeof go==='function'){
+        go('invoice');
+        await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+      }
+      return baseRecord.apply(this,args);
+    };
+  }
+  const baseSubmit=window.invSubmitPayment;
+  if(typeof baseSubmit==='function'){
+    window.invSubmitPayment=async function(){
+      if(typeof page!=='undefined'&&page!=='invoice'&&typeof go==='function'){
+        go('invoice');
+        await new Promise(resolve=>requestAnimationFrame(resolve));
+      }
+      return baseSubmit.apply(this,arguments);
+    };
+  }
+})();
+</script>
 </body>
 </html>
