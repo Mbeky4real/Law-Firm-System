@@ -1,0 +1,1 @@
+Force redeploy of stable authenticated MOLMS build after rollback from broken V8 injection. Source index.html remains the stable authenticated build at commit 9a382d631c8485b09f78b00b6d51e092c1b5ab28.
