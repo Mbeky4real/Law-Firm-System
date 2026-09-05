@@ -341,10 +341,10 @@ body.mobile-menu-open{overflow:hidden}
 @media(max-width:1199px){
   html,body{max-width:100%;overflow-x:hidden}
   body{padding-bottom:calc(66px + env(safe-area-inset-bottom))}
-  .layout{display:block!important;width:100%!important;max-width:100%!important}
+  .layout{display:block;width:100%!important;max-width:100%!important}
   .desktop{display:none!important}
   .main{margin-left:0!important;width:100%!important;max-width:100%!important;padding-bottom:calc(66px + env(safe-area-inset-bottom))}
-  .bottom-nav{display:grid!important}
+  .bottom-nav{display:grid}
   .main,.wrap,.topbar2,.tb-title,.tb-right,.snap-card,.snap-body,.uc-body,
   .grid2,.grid4,.grid6,.quick,.dash-grid3,.grid4snap,
   section[id^="page-"]{min-width:0;max-width:100%}
@@ -393,7 +393,7 @@ body.mobile-menu-open{overflow:hidden}
    It is intentionally separate from both the phone drawer and desktop layout. */
 @media(min-width:768px) and (max-width:1199px){
   body{padding-bottom:0}
-  .layout{display:flex!important}
+  .layout{display:flex}
   .desktop{display:flex!important;flex-direction:column;position:fixed;inset:0 auto 0 0;width:210px;background:var(--navy);color:#fff;padding:0!important;z-index:60}
   .desktop .brand{padding:18px 16px 15px!important;border-bottom:1px solid rgba(255,255,255,.1)!important}
   .desktop nav{padding:6px 0!important}
@@ -413,6 +413,7 @@ body.mobile-menu-open{overflow:hidden}
   .row{grid-template-columns:repeat(2,minmax(0,1fr))!important}
 }
 @media(max-width:340px){.grid4snap{grid-template-columns:1fr!important}}
+.layout.hidden,.bottom-nav.hidden{display:none!important}
 @media print{.no-print{display:none!important}.print-only{display:block!important}}
 </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js" defer></script>
@@ -3208,7 +3209,7 @@ function businessDateOffset(days){const d=new Date();d.setUTCDate(d.getUTCDate()
 // already correctly anchored via today()/businessDateOffset().
 function dateStrAddDays(dateStr,days){const d=new Date(dateStr+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+days);return d.toISOString().slice(0,10)}
 function notice(m,t='ok'){$('notice').innerHTML=`<div class="notice ${t}">${m}</div>`;setTimeout(()=>$('notice').innerHTML='',3500)}
-function showSetup(){$('setup').classList.remove('hidden');$('login')&&$('login').classList.add('hidden');$('app').classList.add('hidden');document.querySelector('.bottom-nav').style.display='none'} function showLogin(){$('setup').classList.add('hidden');$('login').classList.remove('hidden');$('app').classList.add('hidden');document.querySelector('.bottom-nav').style.display='none'} function showApp(){$('setup').classList.add('hidden');$('login')&&$('login').classList.add('hidden');$('app').classList.remove('hidden');document.querySelector('.bottom-nav').style.display=''}
+function showSetup(){$('setup').classList.remove('hidden');$('login')&&$('login').classList.add('hidden');$('app').classList.add('hidden');document.querySelector('.bottom-nav').classList.add('hidden')} function showLogin(){$('setup').classList.add('hidden');$('login').classList.remove('hidden');$('app').classList.add('hidden');document.querySelector('.bottom-nav').classList.add('hidden')} function showApp(){$('setup').classList.add('hidden');$('login')&&$('login').classList.add('hidden');$('app').classList.remove('hidden');document.querySelector('.bottom-nav').classList.remove('hidden')}
 async function saveConfig(){
   const url=val('supabaseUrl').trim().replace(/\/+$/,'');
   const key=val('supabaseKey').trim().replace(/\s+/g,'');
