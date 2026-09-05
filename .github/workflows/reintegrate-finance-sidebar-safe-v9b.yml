@@ -1,0 +1,77 @@
+name: reintegrate-finance-sidebar-safe-v9b
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/reintegrate-finance-sidebar-safe-v9b.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Apply guarded finance/sidebar refinement
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re, hashlib
+          p=Path('index.html')
+          s=p.read_text(errors='surrogateescape')
+          MARK='MOLMS-FINANCE-SIDEBAR-V9B'
+          if MARK in s:
+              print('Already patched'); raise SystemExit(0)
+          required=['sb.auth.signInWithPassword',"const url='https://myjkthjgnmzabmuwprqp.supabase.co';",'<nav class="bottom-nav hidden">','function _setBottomNavHidden','id="page-findash"','id="fdKpiRow"','class="sb-clock"']
+          for x in required: assert x in s, f'Missing stable marker: {x}'
+          assert s.count('id="page-findash"')==1
+          assert s.count('class="sb-clock"')==1
+
+          payroll_anchor='w.prDownloadPayslipPDF=()=>'
+          payroll_end_anchor='async function prClosePeriod'
+          assert payroll_anchor in s and payroll_end_anchor in s
+          pay_start=s.index(payroll_anchor)
+          pay_end=s.index(payroll_end_anchor,pay_start)
+          payroll_before=hashlib.sha256(s[pay_start:pay_end].encode('utf-8','surrogatepass')).hexdigest()
+
+          sidebar='''\n    <div class="sb-v9b-context" id="sidebarV9BContext">\n      <div class="sb-v9b-photo" aria-hidden="true"></div>\n      <div class="sb-v9b-copy"><div class="sb-v9b-kicker" id="sidebarV9BKicker">M&amp;O MANAGEMENT</div><div class="sb-v9b-message" id="sidebarV9BMessage">See what needs your attention, then act.</div><div class="sb-v9b-note" id="sidebarV9BNote">Clear management information without unnecessary accounting detail.</div></div>\n    </div>\n'''
+          anchor='    <div class="sb-clock">'
+          assert s.count(anchor)==1
+          s=s.replace(anchor,sidebar+anchor,1)
+
+          # Terminal-only insertion: this cannot match the payslip template.
+          m=re.search(r'</body>\s*</html>\s*$',s,re.I|re.S)
+          assert m, 'Terminal document close not found'
+          insert_at=m.start()
+          ui=r'''\n<style>\n/* MOLMS-FINANCE-SIDEBAR-V9B */\n.sb-v9b-context{margin:8px 12px 10px;border:1px solid rgba(255,255,255,.14);border-radius:14px;overflow:hidden;background:rgba(255,255,255,.055)}\n.sb-v9b-photo{height:92px;background:url('assets/molms-office-sidebar.webp') center/cover no-repeat;position:relative}.sb-v9b-photo:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(15,36,64,.03),rgba(15,36,64,.76))}\n.sb-v9b-copy{padding:10px 11px 12px}.sb-v9b-kicker{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);font-weight:900;margin-bottom:4px}.sb-v9b-message{font-family:Georgia,serif;font-size:13px;line-height:1.35;color:#fff}.sb-v9b-note{font-size:10px;line-height:1.35;color:rgba(255,255,255,.58);margin-top:5px}\n#page-findash .fd-v9b-intro{padding:12px 24px 0}.fd-v9b-intro-card{background:linear-gradient(135deg,#0f2440,#183a62);color:#fff;border-radius:16px;padding:16px 18px;display:flex;justify-content:space-between;gap:18px;align-items:center;box-shadow:0 8px 20px rgba(15,36,64,.12)}.fd-v9b-intro h3{margin:0;color:#fff;font-size:17px}.fd-v9b-intro p{margin:4px 0 0;color:rgba(255,255,255,.72);font-size:11px}.fd-v9b-badge{white-space:nowrap;background:rgba(201,151,58,.18);border:1px solid rgba(201,151,58,.45);color:#f2cf84;border-radius:999px;padding:6px 10px;font-size:10px;font-weight:900;letter-spacing:.06em;text-transform:uppercase}\n#page-findash #fdKpiRow{margin-top:10px!important}#page-findash #fdKpiRow>.card,#page-findash #fdKpiRow>[class*="card"]{box-shadow:0 4px 14px rgba(15,36,64,.055)!important;border-radius:14px!important}\n@media(max-width:1199px){.sb-v9b-context{display:none}}@media(max-width:700px){#page-findash .fd-v9b-intro{padding:10px 12px 0}.fd-v9b-intro-card{align-items:flex-start;flex-direction:column;gap:8px}}\n</style>\n<script>\n/* MOLMS-FINANCE-SIDEBAR-V9B runtime */\n(function(){\n const contexts={dashboard:['FIRM OVERVIEW','Start with what needs attention today.','Urgent matters, deadlines and team activity at a glance.'],cause:['LITIGATION','Stay ahead of the next court step.','Hearings, deadlines and matters requiring action.'],nonlit:['NON-LITIGATION','Keep advisory work moving.','Current work, responsible member and next step.'],reports:['DAILY REPORTS','Know what was done and what remains.','Progress without turning MOLMS into an HR system.'],diary:['LEGAL DIARY','Protect every important date.','Hearings, deadlines and commitments in one place.'],documents:['DOCUMENTS','Find the right document quickly.','Keep each matter record organised and accessible.'],chat:['INTERCOM','Keep internal communication inside the work.','Short, relevant and connected to the firm.'],hr:['HR','Manage people without unnecessary complexity.','Employment and leave information only where it helps decisions.'],payroll:['PAYROLL','Complete payroll accurately and move on.','Salary processing with statutory controls, not an accounting suite.'],budget:['OFFICE BUDGET','Approve spending before money moves.','Simple control of requests and commitments.'],expenses:['EXPENSE REGISTER','Know what the office has spent.','Approved expenditure and supporting records.'],invoice:['INVOICES','From agreed fee to collected cash.','Issue, revise and record payment in one continuous workflow.'],findash:['FINANCIAL DASHBOARD','Know the firm’s financial position in 30 seconds.','Summary first, exceptions second, detail only when needed.'],members:['MEMBERS','Know who is responsible for what.','Keep access and responsibilities current.'],settings:['SETTINGS','Keep MOLMS aligned with the firm.','System preferences without disturbing daily work.']};\n function setContext(k){const c=contexts[k]||contexts.dashboard;[['sidebarV9BKicker',0],['sidebarV9BMessage',1],['sidebarV9BNote',2]].forEach(([id,i])=>{const e=document.getElementById(id);if(e)e.textContent=c[i]});}\n function sync(){const a=document.querySelector('.sidebtn.active[data-nav]');if(a)setContext(a.dataset.nav);}\n document.addEventListener('click',e=>{const n=e.target.closest('[data-nav]');if(n)setContext(n.dataset.nav)});\n function financeIntro(){const root=document.getElementById('page-findash'),k=document.getElementById('fdKpiRow');if(!root||!k||document.getElementById('fdV9BIntro'))return;const d=document.createElement('div');d.id='fdV9BIntro';d.className='fd-v9b-intro';d.innerHTML='<div class="fd-v9b-intro-card"><div><h3>Executive financial view</h3><p>Headline position first; receivables and obligations that need attention next.</p></div><div class="fd-v9b-badge">Management view</div></div>';k.parentNode.insertBefore(d,k);}\n function apply(){sync();financeIntro()}\n window.addEventListener('load',()=>{apply();[400,1000,1800,3000].forEach(t=>setTimeout(apply,t));});\n const target=document.querySelector('.desktop')||document.documentElement;new MutationObserver(()=>{sync();financeIntro()}).observe(target,{subtree:true,childList:true,attributes:true,attributeFilter:['class']});\n})();\n</script>\n'''
+          s=s[:insert_at]+ui+s[insert_at:]
+
+          pay_start2=s.index(payroll_anchor); pay_end2=s.index(payroll_end_anchor,pay_start2)
+          payroll_after=hashlib.sha256(s[pay_start2:pay_end2].encode('utf-8','surrogatepass')).hexdigest()
+          assert payroll_before==payroll_after, 'Payslip template changed'
+          assert s.count('MOLMS-FINANCE-SIDEBAR-V9B runtime')==1
+          assert s.count('id="sidebarV9BContext"')==1
+          assert s.count('id="page-findash"')==1
+          assert s.rfind('MOLMS-FINANCE-SIDEBAR-V9B runtime') > pay_end2
+          assert '<nav class="bottom-nav hidden">' in s and 'sb.auth.signInWithPassword' in s
+          p.write_text(s,errors='surrogateescape')
+          print('Safe V9B patch applied')
+          PY
+      - name: Verify scoped diff
+        run: |
+          git diff --stat -- index.html
+          python - <<'PY'
+          import subprocess
+          out=subprocess.check_output(['git','diff','--numstat','--','index.html']).decode().strip().split()
+          assert len(out)>=2
+          a,d=int(out[0]),int(out[1]); print({'additions':a,'deletions':d})
+          assert a < 80 and d < 10
+          PY
+      - name: Commit refined production UI
+        run: |
+          git config user.name 'MOLMS Production Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add index.html
+          git commit -m 'feat(ui): safely refine financial dashboard and contextual sidebar'
+          git push origin HEAD:main
