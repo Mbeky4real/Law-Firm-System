@@ -22,11 +22,11 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           s=Path('index.html').read_text()
-          required=['firmProfileEnsureLoaded','firmProfileGet','async function exPrintReport()','Firm Logo (direct image URL)','Official firm identity used by MOLMS-generated invoices']
-          for x in required:
-              assert x in s, x
+          required=['firmProfileEnsureLoaded','firmProfileGet','async function exPrintReport()','Firm Logo (direct image URL)']
+          for x in required: assert x in s, x
           assert 'const INV_FIRM' not in s
           assert 'INV_FIRM.' not in s
+          assert "sb.from('system_settings').select('value').eq('key','firm_settings')" in s
           print('structural checks passed')
           PY
       - name: Validate inline JavaScript syntax
@@ -35,19 +35,13 @@ jobs:
           import re, pathlib
           s=pathlib.Path('index.html').read_text()
           scripts=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>',s,re.S|re.I)
-          out=[]
-          for x in scripts:
-              if 'src=' not in x[:100]: out.append(x)
-          pathlib.Path('/tmp/molms-inline.js').write_text('\n;\n'.join(out))
-          print('scripts',len(out))
+          pathlib.Path('/tmp/molms-inline.js').write_text('\n;\n'.join(scripts))
+          print('scripts',len(scripts))
           PY
           node --check /tmp/molms-inline.js
       - name: Commit patched index
         run: |
-          if git diff --quiet -- index.html; then
-            echo 'No index changes to commit'
-            exit 0
-          fi
+          if git diff --quiet -- index.html; then echo 'No index changes to commit'; exit 0; fi
           git config user.name 'MOLMS Production Bot'
           git config user.email 'actions@users.noreply.github.com'
           git add index.html
