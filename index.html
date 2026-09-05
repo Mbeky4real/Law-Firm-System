@@ -15956,15 +15956,31 @@ function fdRenderMonthlyObligations(){
     </div>`;
 }
 // ── CANONICAL RECOGNITION + CURRENCY AGGREGATION (single source of truth) ──
-// Policy: Draft/unpaid Proforma/Void/Cancelled are never recognized revenue.
-// Issued/paid/part-paid/overdue Tax Invoices are recognized. No paid-Proforma
-// lifecycle currently exists in this architecture (audited: no code path
-// records a payment against a proforma-type invoice specifically), so that
-// branch is not implemented -- only reported as a future policy question if
-// it ever becomes relevant.
+// Policy: Proforma totals are never recognized revenue. Issued/paid/part-paid/
+// overdue Tax Invoices are recognized. Cash receipts are a separate measure:
+// a payment against any non-void invoice, including a proforma, is a collection.
 function fdIsRecognizedRevenue(inv){
   const recognizedStatuses=['issued','paid','part_paid','overdue'];
   return recognizedStatuses.includes(inv.status) && inv.invoice_type==='tax';
+}
+// Return the cash receipts recorded against an invoice with their actual payment
+// dates. invRecordPayment writes one immutable-looking note line per receipt.
+// For legacy rows without a complete log, retain the stored cumulative cash as
+// one receipt on updated_at (or invoice_date) so cash can never disappear from
+// the dashboard merely because the invoice is a proforma or predates the log.
+function fdInvoiceCashReceipts(inv){
+  const stored=Math.max(0,Number(inv.amount_paid||0));
+  if(!stored) return [];
+  const receipts=[];
+  const re=/\[Payment\s+(\d{4}-\d{2}-\d{2})\]\s+Cash\s+([\d,]+(?:\.\d+)?)/gi;
+  let match;
+  while((match=re.exec(String(inv.notes||'')))!==null){
+    const amount=Number(match[2].replace(/,/g,''));
+    if(Number.isFinite(amount)&&amount>0) receipts.push({date:match[1],amount,currency:inv.currency||'TZS',invoice:inv});
+  }
+  const logged=receipts.reduce((sum,r)=>sum+r.amount,0);
+  if(receipts.length&&Math.abs(logged-stored)<0.01) return receipts;
+  return [{date:String(inv.updated_at||inv.invoice_date||'').slice(0,10),amount:stored,currency:inv.currency||'TZS',invoice:inv}];
 }
 // Groups any array of records by currency and sums the given field. Never
 // adds across currencies. Returns {TZS: n, USD: n, ...} -- callers decide
@@ -15992,6 +16008,7 @@ function fdCurrencyLines(byCur, shortForm){
 function fdMetrics(){
   const allInPeriod=_fdAllInvoices.filter(i=>fdInPeriod(i.invoice_date));
   const invoices=allInPeriod.filter(fdIsRecognizedRevenue); // recognized only, all currencies
+  const invoiceCashReceipts=_fdAllInvoices.flatMap(fdInvoiceCashReceipts).filter(r=>fdInPeriod(r.date));
   const entries=_fdAllEntries.filter(e=>fdInPeriod(e.date));
   const payroll=_fdAllPayroll.filter(p=>fdInPeriod(fdPayrollDate(p)));
   const officeExpenses=(_fdOfficeExpenses||[]);
@@ -16013,7 +16030,9 @@ function fdMetrics(){
   // that currency, not assumed TZS.
   const revenueByCur=fdGroupMoneyByCurrency(invoices,i=>i.total_due);
   Object.entries(manualRevByCur).forEach(([c,v])=>{ revenueByCur[c]=(revenueByCur[c]||0)+v; });
-  const collectedByCur=fdGroupMoneyByCurrency(invoices,i=>i.amount_paid);
+  // Collections follow receipt dates and include cash paid against proformas;
+  // they deliberately do not inherit the tax-invoice revenue-recognition filter.
+  const collectedByCur=fdGroupMoneyByCurrency(invoiceCashReceipts,r=>r.amount);
   Object.entries(manualRevByCur).forEach(([c,v])=>{ collectedByCur[c]=(collectedByCur[c]||0)+v; });
   const nativeExpTZS=entries.reduce((s,e)=>s+Number(e.amount||0),0)
     +payroll.reduce((s,p)=>s+Number(p.net_pay||p.total_net||p.gross_pay||p.amount||p.total_amount||0),0)
@@ -16032,7 +16051,7 @@ function fdMetrics(){
   // callers not yet updated to read the *ByCur objects -- prevents this
   // redesign from silently breaking any function not covered this sprint.
   return {
-    invoices,entries,payroll,officeExpenses,histPayroll,manualRev,manualExp,manualDrawings,
+    invoices,invoiceCashReceipts,entries,payroll,officeExpenses,histPayroll,manualRev,manualExp,manualDrawings,
     revenue:revenueByCur.TZS, collected:collectedByCur.TZS, expenses:expensesTZS,
     outstanding:outstandingByCur.TZS, net:revenueByCur.TZS-expensesTZS, cash:cashByCur.TZS,
     revenueByCur, collectedByCur, expensesByCur, outstandingByCur, balanceByCur, cashByCur,
