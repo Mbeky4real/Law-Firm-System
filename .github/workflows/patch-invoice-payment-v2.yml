@@ -18,6 +18,18 @@ jobs:
         run: python .github/patch-invoice-payment-v2.py
       - name: Verify marker
         run: grep -q 'MOLMS-INVOICE-PAYMENT-V2' index.html
+      - name: Extract and syntax-check injected JavaScript
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          text=Path('index.html').read_text(encoding='utf-8')
+          marker='// MOLMS-INVOICE-PAYMENT-V2'
+          start=text.index(marker)
+          script_start=text.rfind('<script>',0,start)+len('<script>')
+          script_end=text.index('</script>',start)
+          Path('/tmp/invoice-payment-v2.js').write_text(text[script_start:script_end],encoding='utf-8')
+          PY
+          node --check /tmp/invoice-payment-v2.js
       - name: Commit patch
         run: |
           if git diff --quiet -- index.html; then echo 'No change'; exit 0; fi
