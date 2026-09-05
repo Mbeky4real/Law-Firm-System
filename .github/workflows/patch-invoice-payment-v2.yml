@@ -1,0 +1,28 @@
+name: patch-invoice-payment-v2
+on:
+  push:
+    branches: [fix-invoice-proforma-payment-20260905]
+    paths:
+      - '.github/patch-invoice-payment-v2.py'
+      - '.github/workflows/patch-invoice-payment-v2.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix-invoice-proforma-payment-20260905
+      - name: Patch invoice payment workflow
+        run: python .github/patch-invoice-payment-v2.py
+      - name: Verify marker
+        run: grep -q 'MOLMS-INVOICE-PAYMENT-V2' index.html
+      - name: Commit patch
+        run: |
+          if git diff --quiet -- index.html; then echo 'No change'; exit 0; fi
+          git config user.name 'MOLMS Production Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add index.html
+          git commit -m 'fix(invoice): keep proforma conversion and payments inside invoice module'
+          git push origin HEAD:fix-invoice-proforma-payment-20260905
