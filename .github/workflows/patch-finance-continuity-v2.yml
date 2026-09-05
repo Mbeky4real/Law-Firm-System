@@ -1,0 +1,35 @@
+name: patch-finance-continuity-v2
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/patch-finance-continuity-v2.py'
+      - '.github/workflows/patch-finance-continuity-v2.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python .github/patch-finance-continuity-v2.py
+      - name: Verify injected JavaScript
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          marker='MOLMS-FINANCE-CONTINUITY-V2'
+          assert marker in s
+          a=s.index('<script>', s.index(marker)-20)+8
+          b=s.index('</script>', a)
+          Path('/tmp/fd-v2.js').write_text(s[a:b])
+          PY
+          node --check /tmp/fd-v2.js
+      - name: Commit
+        run: |
+          if git diff --quiet -- index.html; then echo 'No change'; exit 0; fi
+          git config user.name 'MOLMS Production Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add index.html
+          git commit -m 'fix(finance): render receivables and carry cash balances forward'
+          git push origin HEAD:main
