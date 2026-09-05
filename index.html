@@ -22,25 +22,30 @@
 input,select,textarea{width:100%;padding:12px;border:1px solid var(--border);border-radius:14px;background:white;font-size:16px;color:var(--navy)}label{display:block;font-size:12px;color:var(--muted);font-weight:800;margin:10px 0 5px}.row{display:grid;grid-template-columns:1fr;gap:10px}
 .hidden{display:none!important}.muted{color:var(--muted)}.small{font-size:13px}.redtxt{color:var(--red)}.greentxt{color:var(--green)}.notice{padding:11px 12px;border-radius:14px;margin-bottom:14px;font-size:14px}.notice.ok{background:#e8f5ee;color:var(--green)}.notice.err{background:#fde8e8;color:var(--red)}.notice.note{background:#fff6da;color:#725100;border:1px solid #ecd081}
 .item{padding:14px 0;border-bottom:1px solid #eae4dc}.item:last-child{border-bottom:0}.item-title{font-size:17px;font-weight:800;margin:5px 0}.item-meta{font-size:14px;color:var(--muted);line-height:1.5}.date{font-weight:900;color:var(--red)}.pill{display:inline-block;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:900;background:#e6f0fa;color:var(--navy)}.pill.red{background:#fde8e8;color:var(--red)}.pill.gold{background:#fff3d8;color:#775000}.pill.green{background:#e8f5ee;color:var(--green)}.pill.blue{background:#e6f0fa;color:var(--blue)}.pill.gray{background:#eef0f2;color:#5b6470}.pill.orange{background:#fdeee0;color:#9a5010}.pill.purple{background:#f1eafc;color:#6b3fa0}
-.bottom-nav{position:fixed;left:0;right:0;bottom:0;background:white;border-top:1px solid var(--border);height:62px;display:grid;grid-template-columns:repeat(7,1fr);z-index:50;padding-bottom:env(safe-area-inset-bottom)}.navbtn{position:relative;background:white;border:0;color:#61718b;font-size:8.5px;font-weight:600;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}.navbtn svg{width:22px;height:22px;stroke:#61718b;stroke-width:2;fill:none;flex-shrink:0}.navbtn.active{color:var(--navy)}.navbtn.active svg{stroke:var(--navy)}.badge{position:absolute;top:4px;right:6px;background:var(--red);color:white;font-size:9px;min-width:16px;height:16px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-weight:900;border:2px solid white}
+.bottom-nav{position:fixed;left:0;right:0;bottom:0;background:white;border-top:1px solid var(--border);height:66px;display:grid;grid-template-columns:repeat(5,1fr);z-index:50;padding-bottom:env(safe-area-inset-bottom)}.navbtn{position:relative;background:white;border:0;color:#61718b;font-size:10px;font-weight:700;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:0;min-width:0;cursor:pointer;-webkit-tap-highlight-color:transparent}.navbtn svg{width:23px;height:23px;stroke:#61718b;stroke-width:2;fill:none;flex-shrink:0}.navbtn.active{color:var(--navy)}.navbtn.active svg{stroke:var(--navy)}.badge{position:absolute;top:4px;right:6px;background:var(--red);color:white;font-size:9px;min-width:16px;height:16px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-weight:900;border:2px solid white}
+.mobile-menu-toggle{display:none;width:42px;height:42px;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:12px;background:#fff;color:var(--navy);padding:0;flex:0 0 42px;cursor:pointer}
+.mobile-menu-toggle svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2}
+.mobile-drawer-layer{position:fixed;inset:0;z-index:400;background:rgba(15,36,64,.45);display:flex;align-items:stretch}
+.mobile-drawer{width:min(86vw,340px);height:100%;background:var(--navy);color:#fff;box-shadow:18px 0 40px rgba(0,0,0,.24);display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom)}
+.mobile-drawer-head{display:flex;align-items:center;justify-content:space-between;padding:20px 18px;border-bottom:1px solid rgba(255,255,255,.14)}
+.mobile-drawer-brand{font-family:Georgia,serif;color:var(--gold);font-size:17px;font-weight:900}.mobile-drawer-sub{font-size:9px;letter-spacing:.13em;color:rgba(255,255,255,.55);margin-top:3px}
+.mobile-drawer-close{width:42px;height:42px;border:0;border-radius:12px;background:rgba(255,255,255,.1);color:#fff;font-size:25px;cursor:pointer}
+.mobile-drawer-items{padding:10px 0;overflow-y:auto;overscroll-behavior:contain}
+.mobile-menu-item{display:flex;align-items:center;width:100%;min-height:48px;padding:11px 20px;border:0;border-left:4px solid transparent;background:transparent;color:rgba(255,255,255,.78);font:700 14px Arial,system-ui,sans-serif;text-align:left;cursor:pointer}
+.mobile-menu-item svg{width:20px;height:20px;margin-right:12px!important;flex-shrink:0}.mobile-menu-item.active{background:rgba(201,151,58,.16);border-left-color:var(--gold);color:#fff}
+body.mobile-menu-open{overflow:hidden}
 /* Portrait phones: icon + tiny label */
-@media(max-width:899px) and (orientation:portrait){.bottom-nav{height:62px}.navbtn{font-size:8.5px}}
+@media(max-width:1199px) and (orientation:portrait){.bottom-nav{height:66px}.navbtn{font-size:10px}}
 /* Landscape phones: icon only, taller hit target, no label */
-@media(max-width:899px) and (orientation:landscape){.bottom-nav{height:50px;grid-template-columns:repeat(7,1fr)}.navbtn{font-size:0}.navbtn svg{width:24px;height:24px}}
+@media(max-width:1199px) and (orientation:landscape){.bottom-nav{height:52px;grid-template-columns:repeat(5,1fr)}.navbtn{font-size:9px}.navbtn svg{width:21px;height:21px}}
 .chatbox{height:360px;overflow:auto;border:1px solid var(--border);background:#f7f3ed;border-radius:18px;padding:13px;display:flex;flex-direction:column;gap:10px}.msg{background:white;border:1px solid var(--border);border-radius:16px;padding:10px 12px;max-width:82%;align-self:flex-start}.msg.me{align-self:flex-end;background:var(--navy);color:white}.msg small{display:block;font-size:11px;opacity:.65;margin-top:5px}.chatbar{display:flex;gap:8px;margin-top:10px}.chatbar input{flex:1}
 .setup{max-width:720px;margin:35px auto;padding:16px}.authUserBox{font-size:13px;color:var(--muted);margin-top:6px}.setup h1{font-size:36px}.desktop{display:none}.priorityBox{border-left:5px solid var(--red);background:#fffafa}.quick{display:grid;grid-template-columns:1fr;gap:10px}.quick .card{margin-bottom:0}.member-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.searchHit{cursor:pointer}.searchHit:hover{background:#faf7ef;border-radius:12px;padding-left:8px}
 .calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.calHead{text-align:center;font-size:11px;color:var(--muted);font-weight:800;padding:5px}.calDay{min-height:78px;background:#fff;border:1px solid var(--border);border-radius:12px;padding:7px;font-size:12px}.calNum{font-weight:900;color:var(--navy)}.calEvent{margin-top:4px;background:#fff3d8;color:#775000;border-radius:8px;padding:3px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:10.5px}.calEvent.done{background:#e8f5ee;color:var(--green)}.calEvent.prog{background:#e6f0fa;color:var(--blue)}.calEvent.court{background:#fde8e8;color:var(--red)}.calEvent.gold{background:#fff3d8;color:#775000}.calDaySelected{border:2px solid var(--navy)!important;background:#f0f4fa}.calEvent.calMore{background:#e8e4dc;color:var(--muted);font-style:italic}
 .reportSummary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}.miniStat{background:#f8f4ed;border:1px solid var(--border);border-radius:14px;padding:10px}.miniStat b{display:block;font-size:22px}.miniStat small{color:var(--muted)}
-@media(min-width:900px){body{padding-bottom:0}.layout{display:flex}.desktop{display:flex!important;flex-direction:column;position:fixed;top:0;bottom:0;left:0;width:270px;background:var(--navy);color:white;padding:0}.brand{padding:0 22px 18px;border-bottom:1px solid rgba(255,255,255,.1)}.brand h2{color:white;margin:0}.brand p{color:#e5b665;font-size:11px;letter-spacing:.08em;text-transform:uppercase}.sidebtn{display:block;position:relative;width:100%;text-align:left;background:transparent;color:rgba(255,255,255,.72);border:0;border-left:4px solid transparent;padding:12px 22px}.sidebtn.active,.sidebtn:hover{background:rgba(201,151,58,.15);border-left-color:var(--gold);color:white}.sidebtn .badge{right:16px;top:9px}.main{margin-left:270px;width:calc(100% - 270px)}.bottom-nav{display:none}.grid4{grid-template-columns:repeat(4,1fr)}.grid6{grid-template-columns:repeat(6,1fr)}.grid2{grid-template-columns:1.25fr .75fr}.row{grid-template-columns:repeat(2,1fr)}.header{padding:22px 28px}.wrap{padding:24px}.quick{grid-template-columns:repeat(3,1fr)}}
-/* Small-laptop fix: the 900px breakpoint above treats every width from
-   900px to any monitor size identically. A ~1024-1280px laptop (still
-   >=900px, so it gets the fixed 270px desktop sidebar) does not have
-   room for 6-column KPI grids or the Invoice module's three fixed-width
-   panes (240px sidebar + flexible form + 420px preview) side by side --
-   the flexible middle pane gets squeezed and content overlaps instead of
-   reflowing. This narrower band gets reduced column counts and shrunk
-   (not hidden) side panes so everything still fits without overlap. */
-@media(min-width:900px) and (max-width:1300px){
+@media(min-width:1200px){body{padding-bottom:0}.layout{display:flex}.desktop{display:flex!important;flex-direction:column;position:fixed;top:0;bottom:0;left:0;width:270px;background:var(--navy);color:white;padding:0}.brand{padding:0 22px 18px;border-bottom:1px solid rgba(255,255,255,.1)}.brand h2{color:white;margin:0}.brand p{color:#e5b665;font-size:11px;letter-spacing:.08em;text-transform:uppercase}.sidebtn{display:block;position:relative;width:100%;text-align:left;background:transparent;color:rgba(255,255,255,.72);border:0;border-left:4px solid transparent;padding:12px 22px}.sidebtn.active,.sidebtn:hover{background:rgba(201,151,58,.15);border-left-color:var(--gold);color:white}.sidebtn .badge{right:16px;top:9px}.main{margin-left:270px;width:calc(100% - 270px)}.bottom-nav{display:none}.grid4{grid-template-columns:repeat(4,1fr)}.grid6{grid-template-columns:repeat(6,1fr)}.grid2{grid-template-columns:1.25fr .75fr}.row{grid-template-columns:repeat(2,1fr)}.header{padding:22px 28px}.wrap{padding:24px}.quick{grid-template-columns:repeat(3,1fr)}}
+/* Compact-desktop fix: 1200-1300px screens keep the desktop workspace but
+   use fewer KPI columns and narrower fixed panes so content cannot overlap. */
+@media(min-width:1200px) and (max-width:1300px){
   .grid4{grid-template-columns:repeat(2,1fr)!important}
   .grid6{grid-template-columns:repeat(3,1fr)!important}
   #fdKpiRow{grid-template-columns:repeat(3,1fr)!important}
@@ -63,12 +68,12 @@ input,select,textarea{width:100%;padding:12px;border:1px solid var(--border);bor
 .matter-update-section .row{margin-top:10px}
 /* Sprint C — Last updated metadata */
 .item-last-updated{font-size:10.5px;color:var(--muted);margin-top:3px}
-@media(max-width:899px) and (orientation:portrait){body{padding-bottom:62px}.topbar2{padding:10px 14px;gap:8px}.tb-title h1{font-size:20px}.tb-title p{display:none}.tb-search-wrap{flex:1}.tb-pname{font-size:12px}.tb-prole{font-size:10px}.av.av-md{width:30px;height:30px;font-size:11px}.tb-right .btn{padding:6px 10px;font-size:12px}.tb-refresh-btn{display:none}
+@media(max-width:1199px) and (orientation:portrait){body{padding-bottom:62px}.topbar2{padding:10px 14px;gap:8px}.tb-title h1{font-size:20px}.tb-title p{display:none}.tb-search-wrap{flex:1}.tb-pname{font-size:12px}.tb-prole{font-size:10px}.av.av-md{width:30px;height:30px;font-size:11px}.tb-right .btn{padding:6px 10px;font-size:12px}.tb-refresh-btn{display:none}
 .tb-module-controls{align-items:center;gap:8px}
 .tb-module-select{font-size:12px;border:1px solid var(--border);border-radius:8px;padding:5px 10px;color:var(--text);background:#fff;min-width:200px;max-width:300px;height:34px}
 .tb-module-badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
 }
-@media(max-width:899px) and (orientation:landscape){body{padding-bottom:50px}.main{padding-bottom:50px}}
+@media(max-width:1199px) and (orientation:landscape){body{padding-bottom:50px}.main{padding-bottom:50px}}
 /* ── DASHBOARD 2.0 ──────────────────────────────────────────────────────── */
 /* Sidebar brand */
 .brand-row2{display:flex;flex-direction:column;gap:2px;padding:0}
@@ -210,14 +215,14 @@ input,select,textarea{width:100%;padding:12px;border:1px solid var(--border);bor
 .pt-actions{white-space:nowrap;min-width:190px}
 .pt-actions .btn{font-size:11px;padding:4px 9px;margin:2px 2px 2px 0}
 /* Mobile: PA modal scrolls horizontally; action column collapses to select+button */
-@media(max-width:899px){
+@media(max-width:1199px){
   .pt-actions{min-width:120px;white-space:normal}
   .pt-actions .pa-act-full{display:none}
   .pt-actions .pa-act-compact{display:flex;gap:4px;align-items:center}
   .pa-act-compact select{font-size:11px;padding:3px 4px;border:1px solid var(--border);border-radius:6px;background:white;color:var(--navy)}
   .pa-act-compact .btn{padding:3px 8px;font-size:11px}
 }
-@media(min-width:900px){
+@media(min-width:1200px){
   .pt-actions .pa-act-full{display:flex;flex-direction:column;gap:3px}
   .pt-actions .pa-act-compact{display:none}
 }
@@ -232,8 +237,8 @@ input,select,textarea{width:100%;padding:12px;border:1px solid var(--border);bor
 .pa-rev-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
 /* Misc dash */
 .dash-footer{text-align:center;font-size:11px;color:var(--muted);margin-top:22px;padding-bottom:8px}
-@media(min-width:900px){.dash-grid3{grid-template-columns:2fr 1.6fr 1.4fr}}
-@media(max-width:899px){.grid4snap{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:1200px){.dash-grid3{grid-template-columns:2fr 1.6fr 1.4fr}}
+@media(max-width:1199px){.grid4snap{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:520px){.grid4snap{grid-template-columns:repeat(2,1fr)}.snap-num{font-size:30px}}
 /* ── INTERCOM 2.0 ────────────────────────────────────────────────────────── */
 .ic-bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:10px 0 12px;border-bottom:1px solid var(--border);margin-bottom:12px}
@@ -331,6 +336,83 @@ input,select,textarea{width:100%;padding:12px;border:1px solid var(--border);bor
 .pr-tab{padding:7px 16px;border-radius:20px;border:1px solid var(--border);background:transparent;font-size:13px;font-weight:600;cursor:pointer;color:var(--muted)}
 .pr-tab.active{background:var(--navy);color:#fff;border-color:var(--navy)}
 .pr-pane.active{display:block}
+/* Mobile workspace: keep the page fixed to the viewport and expose every
+   authorised desktop module through a compact drawer. */
+@media(max-width:1199px){
+  html,body{max-width:100%;overflow-x:hidden}
+  body{padding-bottom:calc(66px + env(safe-area-inset-bottom))}
+  .layout{display:block!important;width:100%!important;max-width:100%!important}
+  .desktop{display:none!important}
+  .main{margin-left:0!important;width:100%!important;max-width:100%!important;padding-bottom:calc(66px + env(safe-area-inset-bottom))}
+  .bottom-nav{display:grid!important}
+  .main,.wrap,.topbar2,.tb-title,.tb-right,.snap-card,.snap-body,.uc-body,
+  .grid2,.grid4,.grid6,.quick,.dash-grid3,.grid4snap,
+  section[id^="page-"]{min-width:0;max-width:100%}
+  .mobile-menu-toggle{display:flex}
+  .topbar2{display:flex;flex-wrap:wrap;width:100%;padding:9px 12px;gap:8px}
+  .tb-title{flex:1;min-width:0}
+  .tb-title h1{font-size:19px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tb-right{margin-left:0;gap:4px}
+  .tb-profile{padding:4px;border:0}
+  .tb-profile>div:nth-child(2),.tb-chev{display:none}
+  .tb-refresh-btn{display:none!important}
+  .tb-search-wrap{order:10;flex:1 0 100%;max-width:none;margin:0}
+  .tb-module-controls{order:11;flex:1 0 100%;min-width:0}
+  .tb-module-select{min-width:0!important;max-width:100%!important}
+  #notifPanel{position:fixed!important;top:104px!important;left:12px!important;right:12px!important;bottom:calc(76px + env(safe-area-inset-bottom))!important;width:auto!important;max-height:none!important;margin:0!important;border-radius:16px!important}
+  .wrap{padding:12px}
+  .grid2,.grid4,.grid6,.quick{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .row,.dash-grid3{grid-template-columns:minmax(0,1fr)!important}
+  .grid4snap{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .snap-card{padding:14px 12px 11px}
+  .snap-body{gap:9px;align-items:flex-start}
+  .snap-icon{width:42px;height:42px}
+  .snap-icon svg{width:21px;height:21px}
+  .snap-num{font-size:29px}
+  .snap-lbl{font-size:11.5px}
+  .snap-footer{margin-top:10px;padding-top:8px}
+  .uc-tr,.uc-sr{align-items:flex-start;gap:5px}
+  .uc-title{flex-basis:100%;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .uc-dl{margin-left:0}
+  .uc-sr{flex-wrap:wrap}
+  .uc-sub{overflow-wrap:anywhere}
+  #repStatCards,#hrKpiCards,#prDashCards,#bdKpiCards,#exKpiCards,#invKpiCards,#fdKpiRow{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .card,.notice,.item,.ud-prev,.item-title,.item-meta{overflow-wrap:anywhere}
+  img,canvas,video{max-width:100%;height:auto}
+}
+@media(max-width:767px){
+  .grid2,.grid4,.grid6,.quick{grid-template-columns:minmax(0,1fr)!important}
+  .grid4snap,#repStatCards,#hrKpiCards,#prDashCards,#bdKpiCards,#exKpiCards,#invKpiCards,#fdKpiRow{grid-template-columns:minmax(0,1fr)!important}
+  .snap-card{min-height:0}
+  .snap-body{align-items:center}
+  .snap-icon{width:48px;height:48px}
+  .snap-num{font-size:32px}
+  .uc-item{align-items:flex-start}
+}
+/* Tablet workspace: a stable, scrollable module rail and two-column content.
+   It is intentionally separate from both the phone drawer and desktop layout. */
+@media(min-width:768px) and (max-width:1199px){
+  body{padding-bottom:0}
+  .layout{display:flex!important}
+  .desktop{display:flex!important;flex-direction:column;position:fixed;inset:0 auto 0 0;width:210px;background:var(--navy);color:#fff;padding:0!important;z-index:60}
+  .desktop .brand{padding:18px 16px 15px!important;border-bottom:1px solid rgba(255,255,255,.1)!important}
+  .desktop nav{padding:6px 0!important}
+  .sidebtn{display:block;position:relative;width:100%;min-height:43px;text-align:left;background:transparent;color:rgba(255,255,255,.74);border:0;border-left:4px solid transparent;padding:10px 14px;font-size:13px}
+  .sidebtn.active,.sidebtn:hover{background:rgba(201,151,58,.15);border-left-color:var(--gold);color:#fff}
+  .sidebtn .badge{right:10px;top:8px}
+  .sb-clock{padding:11px 16px 14px}
+  .sb-clock-time{font-size:18px}
+  .main{margin-left:210px!important;width:calc(100% - 210px)!important;max-width:calc(100% - 210px)!important;padding-bottom:0}
+  .bottom-nav{display:none!important}
+  .mobile-menu-toggle{display:none!important}
+  .topbar2{flex-wrap:nowrap;width:100%;padding:11px 14px;gap:8px}
+  .tb-search-wrap{order:0;flex:1 1 220px;max-width:300px;margin-left:0}
+  .tb-module-controls{order:0;flex:1 1 auto}
+  .wrap{padding:16px}
+  .grid2,.grid4,.grid6,.quick,.grid4snap{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .row{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(max-width:340px){.grid4snap{grid-template-columns:1fr!important}}
 @media print{.no-print{display:none!important}.print-only{display:block!important}}
 </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js" defer></script>
@@ -408,6 +490,9 @@ input,select,textarea{width:100%;padding:12px;border:1px solid var(--border);bor
 
   <main class="main">
     <div class="topbar2">
+      <button class="mobile-menu-toggle" id="mobileMenuToggle" onclick="openMobileMenu()" aria-label="Open all modules" aria-controls="mobileDrawer" aria-expanded="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
       <div class="tb-title">
         <h1 id="title">Dashboard</h1>
         <p id="subTitle">Welcome back</p>
@@ -3005,6 +3090,19 @@ input,select,textarea{width:100%;padding:12px;border:1px solid var(--border);bor
 </main>
 </div>
 
+<div id="mobileDrawerLayer" class="mobile-drawer-layer hidden" onclick="closeMobileMenu()">
+  <aside id="mobileDrawer" class="mobile-drawer" role="dialog" aria-modal="true" aria-label="MOLMS modules" onclick="event.stopPropagation()">
+    <div class="mobile-drawer-head">
+      <div>
+        <div class="mobile-drawer-brand">M&amp;O LAW OFFICE</div>
+        <div class="mobile-drawer-sub">MANAGEMENT SYSTEM</div>
+      </div>
+      <button class="mobile-drawer-close" onclick="closeMobileMenu()" aria-label="Close menu">&times;</button>
+    </div>
+    <nav id="mobileDrawerItems" class="mobile-drawer-items" aria-label="All modules"></nav>
+  </aside>
+</div>
+
 <nav class="bottom-nav">
   <button class="navbtn active" data-nav="dashboard" onclick="go('dashboard')">
     <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
@@ -3018,21 +3116,13 @@ input,select,textarea{width:100%;padding:12px;border:1px solid var(--border);bor
     <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
     Non-Lit<i class="badge" id="bbNonLit" style="display:none">0</i>
   </button>
-  <button class="navbtn" data-nav="reports" onclick="go('reports')">
-    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
-    Reports<i class="badge" id="bbReports" style="display:none">0</i>
-  </button>
   <button class="navbtn" data-nav="diary" onclick="go('diary')">
     <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
     Diary<i class="badge" id="bbDiary" style="display:none">0</i>
   </button>
-  <button class="navbtn" data-nav="documents" onclick="go('documents')">
-    <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
-    Docs<i class="badge" id="bbDocs" style="display:none">0</i>
-  </button>
-  <button class="navbtn" data-nav="chat" onclick="go('chat')">
-    <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-    InterCom<i class="badge" id="bbChat" style="display:none">0</i>
+  <button class="navbtn" id="mobileMoreBtn" onclick="openMobileMenu()" aria-label="Open all modules">
+    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="5" height="5"/><rect x="10" y="3" width="5" height="5"/><rect x="17" y="3" width="4" height="5"/><rect x="3" y="10" width="5" height="5"/><rect x="10" y="10" width="5" height="5"/><rect x="17" y="10" width="4" height="5"/><rect x="3" y="17" width="5" height="4"/><rect x="10" y="17" width="5" height="4"/><rect x="17" y="17" width="4" height="4"/></svg>
+    More
   </button>
 </nav>
 
@@ -3051,6 +3141,40 @@ let caseEditId=null, repEditId=null, nlEditId=null;
 let dashPendingCount=0, clockInterval=null;
 const LS={cases:'molms_cases_v8',nonlits:'molms_nonlits_v8',diary:'molms_diary_v8',officeEvents:'molms_oevents_v8',docs:'molms_docs_v8',msgs:'molms_msgs_v8',members:'molms_members_v8',reports:'molms_reports_v8',current:'molms_current_member_v8',viewed:'molms_viewed_badges_v8',userSettings:'molms_user_settings_v1',firmSettings:'molms_firm_settings_v1'};
 function $(id){return document.getElementById(id)} function val(id){return $(id).value.trim()} function clear(id){$(id).value=''}
+function buildMobileMenu(){
+  const target=$('mobileDrawerItems');
+  if(!target)return;
+  target.innerHTML='';
+  document.querySelectorAll('.desktop .sidebtn[data-nav]').forEach(source=>{
+    if(getComputedStyle(source).display==='none')return;
+    const clone=source.cloneNode(true);
+    clone.removeAttribute('id');
+    clone.removeAttribute('onclick');
+    clone.removeAttribute('style');
+    clone.className='mobile-menu-item'+(source.dataset.nav===page?' active':'');
+    clone.querySelectorAll('[id]').forEach(node=>node.removeAttribute('id'));
+    clone.querySelectorAll('.badge').forEach(node=>node.remove());
+    clone.addEventListener('click',()=>{closeMobileMenu();go(source.dataset.nav)});
+    target.appendChild(clone);
+  });
+}
+function openMobileMenu(){
+  const layer=$('mobileDrawerLayer'),toggle=$('mobileMenuToggle');
+  if(!layer)return;
+  buildMobileMenu();
+  layer.classList.remove('hidden');
+  document.body.classList.add('mobile-menu-open');
+  if(toggle)toggle.setAttribute('aria-expanded','true');
+  const first=$('mobileDrawerItems')?.querySelector('button');
+  if(first)first.focus();
+}
+function closeMobileMenu(){
+  const layer=$('mobileDrawerLayer'),toggle=$('mobileMenuToggle');
+  if(layer)layer.classList.add('hidden');
+  document.body.classList.remove('mobile-menu-open');
+  if(toggle)toggle.setAttribute('aria-expanded','false');
+}
+document.addEventListener('keydown',event=>{if(event.key==='Escape')closeMobileMenu()});
 function esc(x){return (x??'').toString().replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
 // Displays a Daily Report's Next Action date/time. Never shows "null" or
 // "undefined", never manufactures a time for a historical date-only
@@ -3833,7 +3957,7 @@ async function addCaseOnline(payload){
     sb.from('cause_list_v2').insert(payload).select()
   );
 }
-function go(p){ if(p!=='diary'&&oeEditId!==null){oeEditId=null;resetOfficeEventForm();} if(p!=='documents'&&docEditId!==null){docEditId=null;resetDocForm();} if(p!=='members'&&memberEditId!==null){memberEditId=null;resetMemberEditForm();} if(p!=='chat'&&icEditingId!==null){icCancelEdit();} if(p!=='cause'&&caseEditId!==null){cancelCaseEdit();} if(p!=='reports'&&repEditId!==null){cancelReportEdit();} if(p!=='nonlit'&&nlEditId!==null){cancelNonLitEdit();} if(p==='reports'&&page!=='reports'){repResetOnEntry();} if(p==='chat'&&msgs.length){ viewed['chat_last_seen']=msgs[msgs.length-1].created_at; writeObj(LS.viewed,viewed); } page=p;viewed[p]=countFor(p);writeObj(LS.viewed,viewed);document.querySelectorAll('section[id^="page-"]').forEach(s=>s.classList.add('hidden'));$('page-'+p).classList.remove('hidden');document.querySelectorAll('[data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===p));const names={dashboard:'Dashboard',cause:'Cause List (Court Matters)',matterdetails:'Matter Details',nonlit:'Non-Litigation Matters',nonlitdetails:'Matter Details',reports:'Daily Work Reports',reportdetails:'Report Details',diary:'Legal Diary & Calendar',documents:'Document Management',chat:'InterCom',members:'Team Members',settings:'Settings',hr:'HR — Employee Management',payroll:'HR — Payroll',budget:'Office Budget',expenses:'Expense Register',invoice:'Invoices',findash:'Financial Dashboard'};$('title').textContent=names[p]||p;render()}
+function go(p){ if(p!=='diary'&&oeEditId!==null){oeEditId=null;resetOfficeEventForm();} if(p!=='documents'&&docEditId!==null){docEditId=null;resetDocForm();} if(p!=='members'&&memberEditId!==null){memberEditId=null;resetMemberEditForm();} if(p!=='chat'&&icEditingId!==null){icCancelEdit();} if(p!=='cause'&&caseEditId!==null){cancelCaseEdit();} if(p!=='reports'&&repEditId!==null){cancelReportEdit();} if(p!=='nonlit'&&nlEditId!==null){cancelNonLitEdit();} if(p==='reports'&&page!=='reports'){repResetOnEntry();} if(p==='chat'&&msgs.length){ viewed['chat_last_seen']=msgs[msgs.length-1].created_at; writeObj(LS.viewed,viewed); } page=p;viewed[p]=countFor(p);writeObj(LS.viewed,viewed);document.querySelectorAll('section[id^="page-"]').forEach(s=>s.classList.add('hidden'));$('page-'+p).classList.remove('hidden');document.querySelectorAll('[data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===p));const mobileMore=$('mobileMoreBtn');if(mobileMore)mobileMore.classList.toggle('active',!['dashboard','cause','nonlit','diary'].includes(p));closeMobileMenu();const names={dashboard:'Dashboard',cause:'Cause List (Court Matters)',matterdetails:'Matter Details',nonlit:'Non-Litigation Matters',nonlitdetails:'Matter Details',reports:'Daily Work Reports',reportdetails:'Report Details',diary:'Legal Diary & Calendar',documents:'Document Management',chat:'InterCom',members:'Team Members',settings:'Settings',hr:'HR — Employee Management',payroll:'HR — Payroll',budget:'Office Budget',expenses:'Expense Register',invoice:'Invoices',findash:'Financial Dashboard'};$('title').textContent=names[p]||p;render()}
 function filter(arr,fields){const q=($('search').value||'').toLowerCase();return !q?arr:arr.filter(x=>fields.some(f=>(x[f]||'').toString().toLowerCase().includes(q)))}
 function countFor(p){let map={dashboard:cases.length+nonlits.length+reports.length+officeEvents.length+docs.length+msgs.length,cause:cases.length,nonlit:nonlits.length,reports:reports.length,diary:officeEvents.length,documents:docs.length,chat:msgs.length,members:members.length};return map[p]||0}
 function badgeVal(p){if(p==='chat') return Math.max(0,getUnreadCount());return Math.max(0,countFor(p)-(viewed[p]||0))}
