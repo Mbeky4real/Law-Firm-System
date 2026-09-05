@@ -1,0 +1,33 @@
+name: patch-login-literal-newlines
+on:
+  push:
+    branches: [fix-login-literal-newlines-20260906]
+    paths:
+      - '.github/patch-login-literal-newlines.py'
+      - '.github/workflows/patch-login-literal-newlines.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Remove visible literal newline artifact
+        run: python .github/patch-login-literal-newlines.py
+      - name: Verify artifact removed
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          assert r'\n\n<style>/* MOLMS-FINANCE-HIERARCHY-V10 */' not in s
+          assert '<style>/* MOLMS-FINANCE-HIERARCHY-V10 */' in s
+          assert 'sb.auth.signInWithPassword' in s
+          print('verification passed')
+          PY
+      - name: Commit patched index
+        run: |
+          git config user.name 'MOLMS Production Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet || git commit -m 'fix(login): remove visible literal newline artifact'
+          git push
