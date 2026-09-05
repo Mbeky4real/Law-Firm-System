@@ -1,0 +1,48 @@
+name: patch-firm-settings-master-profile
+on:
+  push:
+    branches:
+      - firm-settings-master-profile-20260906
+    paths:
+      - '.github/patch-firm-settings-master-profile.py'
+      - '.github/workflows/patch-firm-settings-master-profile.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: firm-settings-master-profile-20260906
+      - name: Apply guarded patch
+        run: python .github/patch-firm-settings-master-profile.py
+      - name: Structural checks
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          required=['firmProfileEnsureLoaded','firmProfileGet','async function exPrintReport()','Firm Logo (direct image URL)','Official firm identity used by MOLMS-generated invoices']
+          for x in required: assert x in s, x
+          assert 'const INV_FIRM' not in s
+          assert 'INV_FIRM.' not in s
+          print('structural checks passed')
+          PY
+      - name: Validate inline JavaScript syntax
+        run: |
+          python - <<'PY'
+          import re, pathlib
+          s=pathlib.Path('index.html').read_text()
+          scripts=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>',s,re.S|re.I)
+          pathlib.Path('/tmp/molms-inline.js').write_text('\n;\n'.join(scripts))
+          print('scripts',len(scripts))
+          PY
+          node --check /tmp/molms-inline.js
+      - name: Commit patched index
+        run: |
+          if git diff --quiet -- index.html; then echo 'No index changes to commit'; exit 0; fi
+          git config user.name 'MOLMS Production Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add index.html
+          git commit -m 'feat(settings): make firm profile drive official outputs'
+          git push origin HEAD:firm-settings-master-profile-20260906
