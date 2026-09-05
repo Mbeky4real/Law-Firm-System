@@ -1,0 +1,46 @@
+name: patch-finance-dashboard-architecture-v2
+on:
+  push:
+    branches: [refine-receivables-client-matter-20260905]
+    paths:
+      - '.github/patch-finance-dashboard-architecture-v2.py'
+      - '.github/workflows/patch-finance-dashboard-architecture-v2.yml'
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refine-receivables-client-matter-20260905
+      - name: Apply patch
+        run: python .github/patch-finance-dashboard-architecture-v2.py
+      - name: Verify JavaScript syntax
+        run: |
+          python - <<'PY'
+          import re, pathlib
+          s=pathlib.Path('index.html').read_text()
+          scripts=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>',s,re.S)
+          pathlib.Path('/tmp/molms.js').write_text('\n'.join(scripts))
+          PY
+          node --check /tmp/molms.js
+      - name: Structural audit
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          assert 'MOLMS-FINANCE-DASHBOARD-ARCHITECTURE-V2' in s
+          assert 'MOLMS-RECEIVABLES-CLIENT-MATTER-V1' not in s
+          assert s.count('id="fdClientMatterRevenueV2"') == 0  # created at runtime only
+          assert 'fdFinanceDashboardAuditV2' in s
+          assert 'window.fdRenderReceivablesCard=renderReceivablesV2' in s
+          print('structural audit passed')
+          PY
+      - name: Commit
+        run: |
+          git config user.name 'MOLMS Production Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet || git commit -m 'refactor(finance): professional dashboard architecture v2'
+          git push
