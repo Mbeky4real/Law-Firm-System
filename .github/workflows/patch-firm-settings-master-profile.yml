@@ -22,10 +22,11 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           s=Path('index.html').read_text()
-          required=['firmProfileEnsureLoaded','firmProfileGet','async function exPrintReport()','Firm Logo (direct image URL)','Official firm identity used by MOLMS-generated invoices']
+          required=['firmProfileEnsureLoaded','firmProfileGet','async function exPrintReport()','Firm Logo (direct image URL)']
           for x in required: assert x in s, x
           assert 'const INV_FIRM' not in s
           assert 'INV_FIRM.' not in s
+          assert "sb.from('system_settings').select('value').eq('key','firm_settings')" in s
           print('structural checks passed')
           PY
       - name: Validate inline JavaScript syntax

@@ -1518,7 +1518,7 @@ body.mobile-menu-open{overflow:hidden}
               <div><label>Firm Email</label><input id="sFirmEmail" type="email" placeholder="info@molaw.co.tz"></div>
               <div><label>Website</label><input id="sFirmWebsite" placeholder="https://molaw.co.tz"></div>
             </div>
-            <div><label>Firm Logo URL (https://...)</label><input id="sFirmLogo" placeholder="https://..."></div>
+            <div><label>Firm Logo (direct image URL)</label><input id="sFirmLogo" placeholder="https://.../logo.png"><div style="font-size:10px;color:var(--muted);margin-top:4px">Use a direct PNG, JPG, WEBP, GIF or SVG image URL. Ordinary website addresses are not treated as logos.</div></div>
             <p><button class="btn gold" onclick="saveFirmSettings()">Save Firm Settings</button></p>
             <div id="firmMsg"></div>
           </div>
@@ -8983,8 +8983,9 @@ async function saveProfile(){
   renderTopbarProfile();
 }
 
-function loadFirmFields(){
-  const fs=readObj(LS.firmSettings);
+async function loadFirmFields(){
+  await firmProfileEnsureLoaded(true);
+  const fs=firmProfileGet();
   if($('sFirmName')) $('sFirmName').value=fs.firmName||'M&O Law Office';
   if($('sFirmTagline')) $('sFirmTagline').value=fs.firmTagline||'';
   if($('sFirmAddress')) $('sFirmAddress').value=fs.firmAddress||'';
@@ -13684,8 +13685,10 @@ async function exCloseMonth(){
 }
 
 // ── PRINT REPORT ──────────────────────────────────────────────────────────────
-function exPrintReport(){
+async function exPrintReport(){
   if(!_exBudgetDoc) return;
+  await firmProfileEnsureLoaded();
+  const firm=firmProfileGet();
   const d=_exBudgetDoc;
   const received=_exReceipts.reduce((s,r)=>s+Number(r.amount||0),0);
   const spent=_exEntries.reduce((s,e)=>s+Number(e.amount||0),0);
@@ -13719,7 +13722,7 @@ function exPrintReport(){
       @media print{body{margin:15px}}
     </style>
   </head><body>
-    <div class="firm">M&O LAW OFFICE — EXPENSE REGISTER REPORT</div>
+    <div class="firm">${esc(String(firm.firmName||'M&O Law Office').toUpperCase())} — EXPENSE REGISTER REPORT</div>
     <h1>${d.title||d.notes||'Expense Register'}</h1>
     <div style="font-size:11px;color:#666">${d.reference_number||''} | ${d.department||''} | ${d.budget_month||''}</div>
     <div class="meta">
@@ -13748,7 +13751,8 @@ function exPrintReport(){
     <tbody>${expRows}</tbody></table>
     ${val('exRemarks')?`<h2>Office Manager Remarks</h2><p>${esc(val('exRemarks'))}</p>`:''}
     <div style="margin-top:20px;font-size:10px;color:#666">
-      Prepared by ${authFullName||'—'} | Printed: ${new Date().toLocaleString()} | M&O Law Office Management System
+      Prepared by ${authFullName||'—'} | Printed: ${new Date().toLocaleString()} | ${esc(firm.firmName||'M&O Law Office')} Management System<br>
+      ${esc(firm.firmAddress||'')} ${firm.firmTel?' | '+esc(firm.firmTel):''} ${firm.firmEmail?' | '+esc(firm.firmEmail):''} ${firm.firmWebsite?' | '+esc(firm.firmWebsite):''}
     </div>
   </body></html>`);
   w.document.close(); w.print();
@@ -13854,17 +13858,57 @@ let _invVatApplicable = true;  // VAT toggle
 let _invPreviewDirty = false;
 let invNumberEdited = false; // true when user manually typed a number
 
-// Firm constants
-const INV_FIRM = {
-  name:    'M&O LAW OFFICE',
-  tin:     '156-608-947',
-  address: 'Mwanga Tower, 4th Floor – Left Wing',
-  street:  'New Bagamoyo Road, Along Makumbusho Area',
-  city:    'Dar es Salaam, Tanzania',
-  tel:     ['+255 22 292 3816','+255 714 202 646','+255 758 666 024'],
-  email:   'info@molaw.co.tz',
-  website: 'www.molaw.co.tz',
+// ── MASTER FIRM PROFILE ─────────────────────────────────────────────────────
+// Firm Settings is the single source of truth for official firm identity used
+// by generated/printable MOLMS outputs. Regulatory identifiers that do not yet
+// have a Settings field (TIN) remain controlled defaults until deliberately
+// exposed as editable configuration.
+const FIRM_PROFILE_DEFAULTS={
+  firmName:'M&O Law Office',
+  firmTagline:'',
+  firmAddress:'Mwanga Tower, 4th Floor – Left Wing, New Bagamoyo Road, Dar es Salaam, Tanzania',
+  firmTel:'+255 22 292 3816',
+  firmEmail:'info@molaw.co.tz',
+  firmWebsite:'www.molaw.co.tz',
+  firmLogo:'',
+  tin:'156-608-947',
 };
+let _firmProfileServerLoaded=false;
+function firmProfileGet(){
+  const local=readObj(LS.firmSettings)||{};
+  return {...FIRM_PROFILE_DEFAULTS,...local,tin:FIRM_PROFILE_DEFAULTS.tin};
+}
+async function firmProfileEnsureLoaded(force=false){
+  if(_firmProfileServerLoaded&&!force) return firmProfileGet();
+  if(!sb) return firmProfileGet();
+  try{
+    const {data,error}=await sb.from('system_settings').select('value').eq('key','firm_settings').maybeSingle();
+    if(error) throw error;
+    let remote=data?.value||{};
+    if(typeof remote==='string'){
+      try{remote=JSON.parse(remote||'{}')}catch(e){remote={}}
+    }
+    if(remote&&typeof remote==='object'){
+      const merged={...readObj(LS.firmSettings),...remote};
+      writeObj(LS.firmSettings,merged);
+    }
+    _firmProfileServerLoaded=true;
+  }catch(e){
+    console.warn('[firm-profile] server load failed; using local/default profile',e?.message||e);
+  }
+  return firmProfileGet();
+}
+function firmProfileLogoUrl(firm=firmProfileGet()){
+  const u=String(firm.firmLogo||'').trim();
+  if(!u) return '';
+  if(/^data:image\//i.test(u)||/^blob:/i.test(u)||/\.(png|jpe?g|webp|gif|svg)(\?.*)?$/i.test(u)) return u;
+  return '';
+}
+function firmProfilePhones(firm=firmProfileGet()){
+  const raw=String(firm.firmTel||'').trim();
+  if(!raw) return [];
+  return raw.split(/\s*(?:,|;|\||\/)\s*/).map(x=>x.trim()).filter(Boolean);
+}
 
 // ── RBAC ──────────────────────────────────────────────────────────────────────
 function invCanAccess(){ return authRole==='partner'||authRole==='office_manager'; }
@@ -13874,6 +13918,7 @@ function invCanIssue(){  return authRole==='partner'; }
 async function invRender(){
   if(!invCanAccess()){ return; }
   if(!sb) return;
+  await firmProfileEnsureLoaded();
 
   // Three independent reads run in parallel instead of sequentially --
   // bank accounts, invoices, and the client list (built from cases/
@@ -14538,6 +14583,9 @@ function invAmountToWords(amount,currency){
 // ── INVOICE PREVIEW ───────────────────────────────────────────────────────────
 function invRenderPreview(){
   const el=$('invPreviewPane'); if(!el) return;
+  const firm=firmProfileGet();
+  const firmLogo=firmProfileLogoUrl(firm);
+  const firmPhones=firmProfilePhones(firm);
   const cur=val('invCurrency')||'TZS';
   const clientNameForPreview=invGetClientName();
   const attention=val('invAttention')||'';
@@ -14556,15 +14604,15 @@ function invRenderPreview(){
     ${voidStamp}
     <!-- Firm header -->
     <div style="text-align:center;border-bottom:3px solid #8b3a0f;padding-bottom:12px;margin-bottom:12px">
-      <div style="font-size:28px;font-weight:900;color:#1a1a2e;letter-spacing:-1px;line-height:1">M&O</div>
-      <div style="font-size:11px;font-weight:700;letter-spacing:3px;color:#1a1a2e">LAW OFFICE</div>
+      ${firmLogo?`<img src="${esc(firmLogo)}" alt="${esc(firm.firmName||'Firm logo')}" style="max-width:150px;max-height:64px;object-fit:contain;margin-bottom:5px">`:`<div style="font-size:22px;font-weight:900;color:#1a1a2e;letter-spacing:-.5px;line-height:1.1">${esc(String(firm.firmName||'M&O Law Office').toUpperCase())}</div>`}
+      ${firm.firmTagline?`<div style="font-size:9px;letter-spacing:1px;color:#555;margin-top:5px">${esc(firm.firmTagline)}</div>`:''}
       <div style="height:1px;background:#8b3a0f;margin:8px 0"></div>
     </div>
 
     <!-- TIN + Invoice No + Date -->
     <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:10px">
       <div>
-        <div>TIN ${INV_FIRM.tin}</div>
+        <div>TIN ${esc(firm.tin)}</div>
         <div>Invoice No. ${esc(invNo)}</div>
       </div>
       <div style="text-align:right">Date: ${invDate}</div>
@@ -14653,18 +14701,16 @@ function invRenderPreview(){
     <!-- Footer -->
     <div style="border-top:3px solid #8b3a0f;padding-top:10px;font-size:9px">
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px">
-        <div><div style="font-weight:700">${INV_FIRM.name}</div>
-          <div>${INV_FIRM.address}</div>
-          <div>${INV_FIRM.street}</div>
-          <div>${INV_FIRM.city}</div>
+        <div><div style="font-weight:700">${esc(firm.firmName||'M&O Law Office')}</div>
+          <div>${esc(firm.firmAddress||'—')}</div>
         </div>
         <div><div style="font-weight:700">Telephone:</div>
-          ${INV_FIRM.tel.map(t=>`<div>${t}</div>`).join('')}
+          ${(firmPhones.length?firmPhones:['—']).map(t=>`<div>${esc(t)}</div>`).join('')}
         </div>
         <div><div style="font-weight:700">Email:</div>
-          <div>${INV_FIRM.email}</div>
+          <div>${esc(firm.firmEmail||'—')}</div>
           <div style="margin-top:4px;font-weight:700">Website:</div>
-          <div>${INV_FIRM.website}</div>
+          <div>${esc(firm.firmWebsite||'—')}</div>
         </div>
       </div>
     </div>
