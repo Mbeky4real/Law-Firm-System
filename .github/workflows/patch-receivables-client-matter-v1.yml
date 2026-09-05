@@ -1,0 +1,38 @@
+name: patch-receivables-client-matter-v1
+on:
+  push:
+    branches: [refine-receivables-client-matter-20260905]
+    paths:
+      - '.github/patch-receivables-client-matter-v1.py'
+      - '.github/workflows/patch-receivables-client-matter-v1.yml'
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refine-receivables-client-matter-20260905
+      - name: Apply patch
+        run: python .github/patch-receivables-client-matter-v1.py
+      - name: Verify injected JavaScript
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          marker='MOLMS-RECEIVABLES-CLIENT-MATTER-V1'
+          assert marker in s
+          block=s[s.index('/* '+marker+' */'):]
+          block=block[:block.index('</script>')]
+          Path('/tmp/refine.js').write_text(block)
+          PY
+          node --check /tmp/refine.js
+      - name: Commit
+        run: |
+          if git diff --quiet; then exit 0; fi
+          git config user.name 'MOLMS Production Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add index.html
+          git commit -m 'feat(finance): clickable receivables and unified client matter revenue'
+          git push origin HEAD:refine-receivables-client-matter-20260905
