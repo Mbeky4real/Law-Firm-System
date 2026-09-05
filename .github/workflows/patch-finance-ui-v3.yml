@@ -1,0 +1,50 @@
+name: patch-finance-ui-v3
+on:
+  push:
+    branches: [refine-finance-ui-v3-20260905]
+    paths:
+      - '.github/patch-finance-ui-v3.py'
+      - '.github/workflows/patch-finance-ui-v3.yml'
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refine-finance-ui-v3-20260905
+      - name: Apply patch
+        run: python .github/patch-finance-ui-v3.py
+      - name: Verify JavaScript syntax
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text()
+          blocks=re.findall(r'<script>(.*?)</script>',s,re.S)
+          Path('/tmp/all-inline.js').write_text('\n'.join(blocks))
+          PY
+          node --check /tmp/all-inline.js
+      - name: Structural audit
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          checks={
+            'marker': s.count('MOLMS-FINANCE-UI-V3')==1,
+            'priority row': 'fdPriorityRowV3' in s,
+            'attention details': 'fdAttentionDetailV3' in s,
+            'metrics source': "fdMetrics==='function'?fdMetrics()" in s,
+            'client matter card': 'fdClientMatterRevenueV2' in s,
+          }
+          print(checks)
+          assert all(checks.values())
+          PY
+      - name: Commit
+        run: |
+          git config user.name 'MOLMS Production Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet || git commit -m 'refactor(finance): compact receivables obligations and detailed attention'
+          git push origin HEAD:refine-finance-ui-v3-20260905
