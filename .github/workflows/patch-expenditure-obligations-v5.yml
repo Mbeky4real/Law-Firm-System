@@ -1,0 +1,46 @@
+name: patch-expenditure-obligations-v5
+on:
+  push:
+    branches: [fix-expenditure-obligations-v5-20260905]
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply patch
+        run: python .github/patch-expenditure-obligations-v5.py
+      - name: Verify JavaScript syntax
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text()
+          blocks=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>',s,re.S)
+          Path('/tmp/all-inline.js').write_text('\n'.join(blocks))
+          PY
+          node --check /tmp/all-inline.js
+      - name: Structural audit
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          checks={
+            'v5 marker': s.count('MOLMS-EXPENDITURE-OBLIGATIONS-V5')==1,
+            'uses real obligations container': "getElementById('fdMonthlyObligations')" in s,
+            'no revenue receivable in expenditure mode': "data-fd-mode-v5=\"expenditure\"" in s and 'Save Expenditure' in s,
+            'drawing mapped to expenditure edit': "['expenditure','drawing']" in s,
+            'audit present': 'fdFinanceV5Audit' in s,
+          }
+          print(checks)
+          assert all(checks.values())
+          PY
+      - name: Commit
+        run: |
+          git config user.name "MOLMS Production Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m "fix(finance): separate expenditure UX and persist monthly obligations"
+          git push
