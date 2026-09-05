@@ -1,0 +1,53 @@
+name: reintegrate-v8-safe
+on:
+  push:
+    branches: [reintegrate-v8-safe-20260905]
+    paths:
+      - '.github/patch-reintegrate-v8-safe.py'
+      - '.github/workflows/reintegrate-v8-safe.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: reintegrate-v8-safe-20260905
+      - name: Apply safe additive patch
+        run: python .github/patch-reintegrate-v8-safe.py
+      - name: Verify auth guardrails and UI markers
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text(errors='surrogateescape')
+          checks={
+            'auth login preserved': "sb.auth.signInWithPassword" in s,
+            'correct Supabase project preserved': "const url='https://myjkthjgnmzabmuwprqp.supabase.co'" in s,
+            'bottom nav hidden by default': '<nav class="bottom-nav hidden">' in s,
+            'auth nav gate preserved': 'function _setBottomNavHidden' in s,
+            'single financial page': s.count('id="page-findash"')==1,
+            'single V8 runtime marker': s.count('MOLMS-V8-SAFE-REINTEGRATION runtime')==1,
+            'sidebar context': 'id="sidebarV8Context"' in s,
+            'office image': "assets/molms-office-sidebar.webp" in s,
+            'executive financial view': 'fdExecutiveV8' in s,
+          }
+          print(checks)
+          assert all(checks.values()), checks
+          PY
+      - name: Ensure patch is small
+        run: |
+          git diff --stat
+          python - <<'PY'
+          import subprocess
+          n=int(subprocess.check_output(['git','diff','--numstat','--','index.html']).decode().split()[0])
+          assert n < 100, f'too many inserted lines: {n}'
+          PY
+      - name: Commit patched index
+        run: |
+          if git diff --quiet -- index.html; then echo 'No change'; exit 0; fi
+          git config user.name 'MOLMS Production Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add index.html
+          git commit -m 'feat(ui): safely reintegrate V8 executive dashboard and contextual sidebar'
+          git push origin HEAD:reintegrate-v8-safe-20260905
