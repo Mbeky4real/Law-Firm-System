@@ -16846,15 +16846,7 @@ async function invSubmitPayment(){
   function cardOf3(el){let p=el;while(p&&p.id!=='page-findash'){const st=p.getAttribute?.('style')||'';if(st.includes('background:#fff')&&st.includes('border-radius:12px'))return p;p=p.parentElement;}return null;}
   function headingCard3(text){const root=document.getElementById('page-findash');if(!root)return null;const leaf=[...root.querySelectorAll('div,span')].find(e=>e.children.length===0&&e.textContent.trim()===text);return leaf?cardOf3(leaf):null;}
 
-  function buildPriorityRowV3(){
-    if(typeof fdRenderReceivablesCard==='function')try{fdRenderReceivablesCard();}catch(e){}
-    const kpi=document.getElementById('fdKpiRow'),rec=document.getElementById('fdReceivablesCardV1'),obl=headingCard3('MONTHLY OBLIGATIONS');
-    if(!kpi||!rec||!obl)return;
-    let row=document.getElementById('fdPriorityRowV3');if(!row){row=document.createElement('div');row.id='fdPriorityRowV3';kpi.insertAdjacentElement('afterend',row);}
-    rec.style.height='auto';rec.style.minHeight='0';
-    obl.classList.add('fd-obligations-v3');obl.style.height='auto';obl.style.minHeight='0';
-    if(rec.parentElement!==row)row.appendChild(rec);if(obl.parentElement!==row)row.appendChild(obl);
-  }
+  function buildPriorityRowV3(){}
 
   function revenueRowsV3(){
     const rows=[];
@@ -16933,23 +16925,7 @@ async function invSubmitPayment(){
   }
   function stripIds4(root){root.removeAttribute?.('id');root.querySelectorAll?.('[id]').forEach(e=>e.removeAttribute('id'));}
 
-  function buildPriority4(){
-    if(applyingPriority)return; applyingPriority=true;
-    try{
-      if(typeof fdRenderReceivablesCard==='function')try{fdRenderReceivablesCard();}catch(e){}
-      const kpi=document.getElementById('fdKpiRow'),rec=document.getElementById('fdReceivablesCardV1'),source=obligationsSource4();
-      if(!kpi||!rec||!source)return;
-      let row=document.getElementById('fdPriorityRowV4');
-      if(!row){row=document.createElement('div');row.id='fdPriorityRowV4';kpi.insertAdjacentElement('afterend',row);}
-      if(rec.parentElement!==row)row.appendChild(rec);
-      let compact=document.getElementById('fdObligationsCompactV4');
-      const fresh=source.cloneNode(true);stripIds4(fresh);fresh.id='fdObligationsCompactV4';fresh.classList.add('fd-obligations-v4');
-      if(compact)compact.replaceWith(fresh);else row.appendChild(fresh);
-      source.style.display='none';source.dataset.fdObligationsSourceV4='1';
-      // Remove any obsolete V3 placeholder once both live cards are owned by V4.
-      const v3=document.getElementById('fdPriorityRowV3');if(v3&&v3!==row&&v3.children.length===0)v3.remove();
-    }finally{applyingPriority=false;}
-  }
+  function buildPriority4(){}
 
   function parseMoney4(text){
     const t=String(text||'').trim();const m=t.match(/\b(TZS|USD|EUR|GBP)\b/i);const currency=m?m[1].toUpperCase():'TZS';
@@ -17088,25 +17064,59 @@ async function invSubmitPayment(){
     return save6.apply(this,arguments);
   };
 
-  function renderObligations6(){
-    const kpi=document.getElementById('fdKpiRow'),rec=document.getElementById('fdReceivablesCardV1');
-    if(!kpi||!rec||typeof fdMonthlyObligations!=='function')return;
-    let o;try{o=fdMonthlyObligations();}catch(e){console.warn('[V6 obligations]',e);return;}
-    let row=document.getElementById('fdPriorityRowV4');if(!row){row=document.createElement('div');row.id='fdPriorityRowV4';kpi.insertAdjacentElement('afterend',row);}
-    if(rec.parentElement!==row)row.appendChild(rec);
-    let card=document.getElementById('fdMonthlyObligationsStableV6');if(!card){card=document.createElement('div');card.id='fdMonthlyObligationsStableV6';row.appendChild(card);}
-    const monthLabel=new Date(o.month+'-01T00:00:00').toLocaleDateString('en-US',{month:'long',year:'numeric'});
-    const badge=o.payrollGenerated?'<span style="font-size:9px;font-weight:700;color:#166534;background:#dcfce7;padding:2px 7px;border-radius:10px">Payroll generated</span>':'<span style="font-size:9px;font-weight:700;color:#92400e;background:#fef3c7;padding:2px 7px;border-radius:10px">Payroll not generated</span>';
-    const items=[['PAYE',o.paye],['NSSF',o.nssf],['Health Insurance',o.health],['SDL',o.sdl],['WCF',o.wcf],['VAT on Issued Tax Invoices',o.vat]];
-    card.innerHTML=`<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div><div style="font-size:10px;font-weight:800;letter-spacing:.4px;color:var(--muted)">MONTHLY OBLIGATIONS</div><div style="font-size:10px;color:var(--muted);margin-top:2px">${monthLabel}</div></div>${badge}</div><div style="font-size:19px;font-weight:900;color:var(--navy);margin:8px 0 1px">${fmt6(o.total)}</div><div style="font-size:9px;color:var(--muted);margin-bottom:7px">Total to Provide For</div>${items.map(([n,v])=>`<div class="fd-ob-row"><span>${n}</span><strong>${fmt6(v)}</strong></div>`).join('')}`;
-    document.getElementById('fdObligationsCompactV4')?.setAttribute('aria-hidden','true');
-  }
+  function renderObligations6(){}
 
   const refresh6=window.fdRefresh;
   if(typeof refresh6==='function')window.fdRefresh=async function(){const r=await refresh6.apply(this,arguments);renderObligations6();return r;};
   window.addEventListener('load',()=>{setTimeout(renderObligations6,900);setTimeout(renderObligations6,1800);});
 
   window.fdFinanceV6Audit=function(){const row=document.getElementById('fdPriorityRowV4'),rec=document.getElementById('fdReceivablesCardV1'),obl=document.getElementById('fdMonthlyObligationsStableV6');return {receivablesSide:!!row&&rec?.parentElement===row,monthlyObligationsSide:!!row&&obl?.parentElement===row,obligationsText:obl?.textContent?.includes('MONTHLY OBLIGATIONS')||false,noV6Observer:true,expenditureMode:document.getElementById('fdManualModal')?.dataset.fdModeV6||null};};
+})();
+</script>
+
+<style>
+/* MOLMS-OBLIGATIONS-LAYOUT-V7 */
+#fdPriorityRowV3,#fdPriorityRowV4,#fdMonthlyObligationsStableV6,#fdObligationsCompactV4{display:none!important}
+#fdPriorityRowV7{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(330px,.72fr)!important;gap:12px!important;align-items:start!important;margin:12px 0!important;width:100%!important}
+#fdPriorityRowV7>#fdReceivablesCardV1,#fdPriorityRowV7>#fdMonthlyObligations{display:block!important;min-width:0!important;margin:0!important;height:auto!important;min-height:0!important}
+#fdPriorityRowV7>#fdMonthlyObligations>div{display:block!important;margin:0!important;padding:12px!important;height:auto!important;min-height:0!important}
+#fdPriorityRowV7>#fdMonthlyObligations table{font-size:10px!important;margin:0!important}
+#fdPriorityRowV7>#fdMonthlyObligations td,#fdPriorityRowV7>#fdMonthlyObligations th{padding-top:3px!important;padding-bottom:3px!important}
+#fdPriorityRowV7>#fdMonthlyObligations [style*="font-size:22px"]{font-size:18px!important}
+@media(max-width:980px){#fdPriorityRowV7{grid-template-columns:1fr!important}}
+</style>
+<script>
+(function(){
+  let busy7=false;
+  function layout7(){
+    if(busy7)return;busy7=true;
+    try{
+      if(typeof fdRenderReceivablesCard==='function')try{fdRenderReceivablesCard();}catch(e){console.warn('[V7 receivables]',e);}
+      if(typeof fdRenderMonthlyObligations==='function')try{fdRenderMonthlyObligations();}catch(e){console.warn('[V7 obligations]',e);}
+      const kpi=document.getElementById('fdKpiRow');
+      const rec=document.getElementById('fdReceivablesCardV1');
+      const obl=document.getElementById('fdMonthlyObligations');
+      if(!kpi||!rec||!obl)return;
+      let row=document.getElementById('fdPriorityRowV7');
+      if(!row){row=document.createElement('div');row.id='fdPriorityRowV7';kpi.insertAdjacentElement('afterend',row);}
+      if(rec.parentElement!==row)row.appendChild(rec);
+      if(obl.parentElement!==row)row.appendChild(obl);
+      obl.style.display='block';
+      const card=obl.firstElementChild;
+      if(card){card.style.display='block';card.style.margin='0';card.style.height='auto';card.style.minHeight='0';}
+      document.getElementById('fdPriorityRowV3')?.remove();
+      document.getElementById('fdPriorityRowV4')?.remove();
+      document.getElementById('fdMonthlyObligationsStableV6')?.remove();
+      document.getElementById('fdObligationsCompactV4')?.remove();
+    }finally{busy7=false;}
+  }
+  const refresh7=window.fdRefresh;
+  if(typeof refresh7==='function')window.fdRefresh=async function(){const r=await refresh7.apply(this,arguments);layout7();return r;};
+  window.addEventListener('load',()=>{setTimeout(layout7,700);setTimeout(layout7,1500);setTimeout(layout7,2600);});
+  window.fdFinanceV7Audit=function(){
+    const row=document.getElementById('fdPriorityRowV7'),rec=document.getElementById('fdReceivablesCardV1'),obl=document.getElementById('fdMonthlyObligations');
+    return {priorityRow:!!row,receivablesSide:!!row&&rec?.parentElement===row,monthlyObligationsSide:!!row&&obl?.parentElement===row,monthlyObligationsVisible:!!obl&&getComputedStyle(obl).display!=='none',monthlyObligationsRendered:!!obl?.textContent?.includes('MONTHLY OBLIGATIONS'),legacyRowsGone:!document.getElementById('fdPriorityRowV3')&&!document.getElementById('fdPriorityRowV4'),legacyCloneGone:!document.getElementById('fdMonthlyObligationsStableV6')&&!document.getElementById('fdObligationsCompactV4')};
+  };
 })();
 </script>
 </body>
