@@ -3149,7 +3149,7 @@ body.mobile-menu-open{overflow:hidden}
   </aside>
 </div>
 
-<nav class="bottom-nav">
+<nav class="bottom-nav hidden">
   <button class="navbtn active" data-nav="dashboard" onclick="go('dashboard')">
     <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
     Dashboard<i class="badge" id="bbDash" style="display:none">0</i>
@@ -3254,7 +3254,7 @@ function businessDateOffset(days){const d=new Date();d.setUTCDate(d.getUTCDate()
 // already correctly anchored via today()/businessDateOffset().
 function dateStrAddDays(dateStr,days){const d=new Date(dateStr+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+days);return d.toISOString().slice(0,10)}
 function notice(m,t='ok'){$('notice').innerHTML=`<div class="notice ${t}">${m}</div>`;setTimeout(()=>$('notice').innerHTML='',3500)}
-function showSetup(){$('setup').classList.remove('hidden');$('login')&&$('login').classList.add('hidden');$('app').classList.add('hidden');document.querySelector('.bottom-nav').classList.add('hidden')} function showLogin(){$('setup').classList.add('hidden');$('login').classList.remove('hidden');$('app').classList.add('hidden');document.querySelector('.bottom-nav').classList.add('hidden')} function showApp(){$('setup').classList.add('hidden');$('login')&&$('login').classList.add('hidden');$('app').classList.remove('hidden');document.querySelector('.bottom-nav').classList.remove('hidden')}
+function _setBottomNavHidden(v){document.querySelectorAll('.bottom-nav').forEach(n=>n.classList.toggle('hidden',!!v))} function showSetup(){$('setup').classList.remove('hidden');$('login')&&$('login').classList.add('hidden');$('app').classList.add('hidden');_setBottomNavHidden(true)} function showLogin(){$('setup').classList.add('hidden');$('login').classList.remove('hidden');$('app').classList.add('hidden');_setBottomNavHidden(true)} function showApp(){$('setup').classList.add('hidden');$('login')&&$('login').classList.add('hidden');$('app').classList.remove('hidden');_setBottomNavHidden(false)}
 async function saveConfig(){
   const url=val('supabaseUrl').trim().replace(/\/+$/,'');
   const key=val('supabaseKey').trim().replace(/\s+/g,'');
@@ -3296,9 +3296,12 @@ async function saveConfig(){
 }
 function skipConfig(){localStorage.setItem('MOLMS_V12_LOCAL_ONLY','yes');init()}
 async function init(){
-  const localOnly=localStorage.getItem('MOLMS_V12_LOCAL_ONLY')==='yes';
-  const url=(localStorage.getItem('MOLMS_V12_SUPABASE_URL')||'').trim().replace(/\/+$/,'');
-  const key=(localStorage.getItem('MOLMS_V12_SUPABASE_KEY')||'').trim().replace(/\s+/g,'');
+  const localOnly=false;
+  const url='https://myjkthjgnmzabmuwprqp.supabase.co';
+  const key='sb_publishable_AarAzX83ZWe2vDXn-NEwfw_0c-_K43V';
+  localStorage.setItem('MOLMS_V12_SUPABASE_URL',url);
+  localStorage.setItem('MOLMS_V12_SUPABASE_KEY',key);
+  localStorage.removeItem('MOLMS_V12_LOCAL_ONLY');
 
   if(!localOnly && (!url || !key)){
     showSetup();
