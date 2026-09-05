@@ -3923,9 +3923,19 @@ async function icSaveEdit(id){
   renderChat();
 }
 function getUnreadCount(){
-  const lastSeen=viewed['chat_last_seen']||null;
-  if(!lastSeen) return msgs.filter(m=>!m.deleted_at).length;
-  return msgs.filter(m=>!m.deleted_at && m.created_at > lastSeen).length;
+  let lastSeen=viewed['chat_last_seen']||null;
+  const live=msgs.filter(m=>!m.deleted_at);
+  if(!lastSeen){
+    const latest=live.reduce((v,m)=>(!v||String(m.created_at||'')>String(v)?m.created_at:v),'');
+    viewed['chat_last_seen']=latest||new Date().toISOString();
+    saveViewedState();
+    return 0;
+  }
+  if(page==='chat'){
+    const latest=live.reduce((v,m)=>(!v||String(m.created_at||'')>String(v)?m.created_at:v),lastSeen);
+    viewed['chat_last_seen']=latest||lastSeen;saveViewedState();return 0;
+  }
+  return live.filter(m=>m.created_at > lastSeen).length;
 }
 async function loadNonLitigations(){
   if(!online || !sb) return;
@@ -4018,7 +4028,7 @@ function notificationCreatedAt(item){return item&&(item.created_at||item.created
 function latestNotificationTime(p){let latest='';notificationItems(p).forEach(item=>{const t=notificationCreatedAt(item);if(t&&(!latest||new Date(t)>new Date(latest)))latest=t});return latest}
 function notificationSeenKey(p){return p+'_last_seen_at'}
 function ensureNotificationBaseline(p){const key=notificationSeenKey(p);if(viewed[key])return false;viewed[key]=latestNotificationTime(p)||new Date().toISOString();saveViewedState();return true}
-function moduleUnreadCount(p){if(p==='chat')return Math.max(0,getUnreadCount());if(!NOTIFICATION_MODULES.includes(p))return 0;if(ensureNotificationBaseline(p))return 0;const seen=Date.parse(viewed[notificationSeenKey(p)]||'');if(!Number.isFinite(seen))return 0;return notificationItems(p).reduce((n,item)=>{const t=Date.parse(notificationCreatedAt(item)||'');return n+(Number.isFinite(t)&&t>seen?1:0)},0)}
+function moduleUnreadCount(p){if(p==='chat')return Math.max(0,getUnreadCount());if(!NOTIFICATION_MODULES.includes(p))return 0;if(ensureNotificationBaseline(p))return 0;if(page===p){viewed[notificationSeenKey(p)]=latestNotificationTime(p)||viewed[notificationSeenKey(p)]||new Date().toISOString();saveViewedState();return 0}const seen=Date.parse(viewed[notificationSeenKey(p)]||'');if(!Number.isFinite(seen))return 0;return notificationItems(p).reduce((n,item)=>{const t=Date.parse(notificationCreatedAt(item)||'');return n+(Number.isFinite(t)&&t>seen?1:0)},0)}
 function markModuleSeen(p){if(p==='chat'){if(msgs.length)viewed['chat_last_seen']=msgs[msgs.length-1].created_at||new Date().toISOString();else viewed['chat_last_seen']=new Date().toISOString();saveViewedState();return}if(!NOTIFICATION_MODULES.includes(p))return;viewed[notificationSeenKey(p)]=latestNotificationTime(p)||new Date().toISOString();saveViewedState()}
 function badgeVal(p){if(p==='dashboard')return NOTIFICATION_MODULES.reduce((n,m)=>n+moduleUnreadCount(m),0)+moduleUnreadCount('chat');return moduleUnreadCount(p)}
 function setBadge(id,v){let e=$(id);if(e){e.textContent=v;e.style.display=v>0?'flex':'none'}}
