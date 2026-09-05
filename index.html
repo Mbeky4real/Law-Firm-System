@@ -462,6 +462,7 @@ body.mobile-menu-open{overflow:hidden}
 </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+<!-- MOLMS-EXPENSE-CATEGORIES-20260905: standardized practical office spending groups -->
 </head>
 <body>
 <div id="setup" class="setup hidden">
@@ -11857,18 +11858,15 @@ let _bdSelectedLines = new Set(); // persists selected line IDs across re-render
 
 // ── CATEGORY CONSTANTS ─────────────────────────────────────────────────────────
 const BD_CATEGORIES = [
-  'Office Administration',
-  'Office Supplies',
+  'Transportation',
   'Utilities',
-  'Transport',
-  'ICT',
-  'Professional Fees',
-  'Marketing',
-  'Maintenance',
-  'Training',
-  'Court Operations',
-  'Business Development',
-  'Other',
+  'Stationery & Office Supplies',
+  'Pantry Supplies',
+  'Entertainment & Client Hospitality',
+  'Training & Professional Development',
+  'Petty Cash',
+  'Rent & Office Management',
+  'Other'
 ];
 // ── NAME RESOLVER ─────────────────────────────────────────────────────────────
 // Resolves user UUIDs to display names for list cards and audit trail.
@@ -12766,9 +12764,15 @@ const EX_PAGE_SIZE = 8;
 
 // ── EXPENSE CATEGORIES ────────────────────────────────────────────────────────
 const EX_CATEGORIES = [
-  'Transport','Utilities','Stationery','Office Supplies','Cleaning',
-  'Professional Fees','Marketing','Fuel','Bank Charges',
-  'Office Maintenance','ICT','Other',
+  'Transportation',
+  'Utilities',
+  'Stationery & Office Supplies',
+  'Pantry Supplies',
+  'Entertainment & Client Hospitality',
+  'Training & Professional Development',
+  'Petty Cash',
+  'Rent & Office Management',
+  'Other'
 ];
 
 // ── RBAC ──────────────────────────────────────────────────────────────────────
@@ -13299,6 +13303,10 @@ function exRenderExpenses(){
   const slice=filtered.slice((_exPage-1)*EX_PAGE_SIZE,_exPage*EX_PAGE_SIZE);
 
   const CAT_COLORS={
+    'Transportation':'#dbeafe','Utilities':'#fef3c7','Stationery & Office Supplies':'#ede9fe',
+    'Pantry Supplies':'#d1fae5','Entertainment & Client Hospitality':'#fce7f3',
+    'Training & Professional Development':'#e0f2fe','Petty Cash':'#fff3cd',
+    'Rent & Office Management':'#fee2e2','Other':'#f3f4f6',
     'Transport':'#dbeafe','Office Supplies':'#d1fae5','Utilities':'#fef3c7',
     'Stationery':'#ede9fe','Cleaning':'#d1fae5','Professional Fees':'#fce7f3',
     'Marketing':'#fee2e2','Fuel':'#dbeafe','ICT':'#e0f2fe','Other':'#f3f4f6',
@@ -14988,8 +14996,17 @@ let _fdLoading     = false;
 // Manual transaction categories (module-level constants)
 const FD_REVENUE_CATS  =['Cash Client Payment','Gift','Donation Received','Interest Income',
   'Insurance Claim','Asset Sale','Capital Contribution','Refund','Loan Received','Other'];
-const FD_EXPENSE_CATS  =['Partner Drawings','Loan Repayment','Government Penalty','Bank Charges',
-  'Donation','Capital Purchase','Refund','Tax Settlement','Other'];
+const FD_EXPENSE_CATS = [
+  'Transportation',
+  'Utilities',
+  'Stationery & Office Supplies',
+  'Pantry Supplies',
+  'Entertainment & Client Hospitality',
+  'Training & Professional Development',
+  'Petty Cash',
+  'Rent & Office Management',
+  'Other'
+];
 const FD_LIABILITY_CATS=[]; // Loan Received is already part of the approved revenue list.
 const FD_REF_CODES     ={revenue:'REV',expenditure:'OEX',loan:'LOA',drawing:'DRW',capital:'CAP'};
 
