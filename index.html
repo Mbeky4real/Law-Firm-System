@@ -463,6 +463,15 @@ body.mobile-menu-open{overflow:hidden}
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
 <!-- MOLMS-EXPENSE-CATEGORIES-20260905: standardized practical office spending groups -->
+
+<style>
+/* MOLMS-V8-SAFE-REINTEGRATION */
+.sb-v8-context{margin:10px 14px 12px;border:1px solid rgba(255,255,255,.14);border-radius:14px;overflow:hidden;background:rgba(255,255,255,.055)}
+.sb-v8-photo{height:96px;background:url('assets/molms-office-sidebar.webp') center/cover no-repeat;position:relative}.sb-v8-photo:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(15,36,64,.02),rgba(15,36,64,.78))}
+.sb-v8-copy{padding:11px 12px 12px}.sb-v8-kicker{font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--gold);font-weight:900;margin-bottom:5px}.sb-v8-message{font-family:Georgia,serif;font-size:13px;line-height:1.35;color:#fff}.sb-v8-note{font-size:10px;line-height:1.35;color:rgba(255,255,255,.56);margin-top:5px}
+#fdExecutiveV8{padding:14px 24px 2px}.fdv8-head{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-bottom:10px}.fdv8-title{font-family:Georgia,serif;font-size:18px;font-weight:900;color:var(--navy)}.fdv8-sub{font-size:11px;color:var(--muted);margin-top:2px}.fdv8-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.fdv8-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:13px;box-shadow:0 3px 12px rgba(15,36,64,.04)}.fdv8-card small{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:900}.fdv8-card strong{display:block;font-family:Georgia,serif;font-size:19px;color:var(--navy);margin-top:5px}.fdv8-status{border-left:4px solid var(--gold)}
+@media(max-width:900px){#fdExecutiveV8{padding:12px 12px 2px}.fdv8-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.sb-v8-context{display:none}}
+</style>
 </head>
 <body>
 <div id="setup" class="setup hidden">
@@ -524,6 +533,8 @@ body.mobile-menu-open{overflow:hidden}
       </button>
       <button class="sidebtn" data-nav="settings" onclick="go('settings')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:8px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Settings</button>
     </nav>
+
+    <div class="sb-v8-context" id="sidebarV8Context"><div class="sb-v8-photo" aria-hidden="true"></div><div class="sb-v8-copy"><div class="sb-v8-kicker" id="sidebarV8Kicker">M&amp;O MANAGEMENT</div><div class="sb-v8-message" id="sidebarV8Message">See what needs your attention, then act.</div><div class="sb-v8-note" id="sidebarV8Note">A clear management view — not an accounting screen.</div></div></div>
     <div class="sb-clock">
       <div class="sb-clock-lbl">TODAY IS</div>
       <div class="sb-clock-date" id="sidebarDate">Loading...</div>
@@ -10814,7 +10825,19 @@ async function prPrintPayslip(runId, employeeId){
   <div class="footer">${esc(footer)}</div>
   <div style="text-align:center;margin-top:12px"><button onclick="window.print()" style="padding:8px 18px;background:#0F2440;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-right:8px">Print</button>
   <button onclick="prDownloadPayslipPDF()" style="padding:8px 18px;background:#C9973A;color:#fff;border:none;border-radius:6px;cursor:pointer">Download PDF</button></div>
-  </body></html>`);
+  
+<script>
+/* MOLMS-V8-SAFE-REINTEGRATION runtime: additive only; auth/login code untouched. */
+(function(){
+ const contexts={dashboard:['FIRM OVERVIEW','Start with what needs attention today.','Urgent matters, deadlines and team activity at a glance.'],cause:['LITIGATION','Stay ahead of the next court step.','Focus on hearings, deadlines and matters requiring action.'],nonlit:['NON-LITIGATION','Keep advisory work moving.','See current work, responsible members and next steps.'],reports:['DAILY REPORTS','Know what was done and what remains.','Review progress without turning MOLMS into an HR system.'],diary:['LEGAL DIARY','Protect every important date.','Hearings, deadlines and commitments in one place.'],documents:['DOCUMENTS','Find the right document quickly.','Keep the matter record organised and accessible.'],chat:['INTERCOM','Keep internal communication inside the work.','Short, relevant and connected to the firm.'],hr:['HR','Manage people without unnecessary complexity.','Employment and leave information only where it helps decisions.'],payroll:['PAYROLL','Complete payroll accurately and move on.','Salary processing with statutory controls, not an accounting suite.'],budget:['OFFICE BUDGET','Approve spending before money moves.','Control requests and commitments with a simple audit trail.'],expenses:['EXPENSE REGISTER','Know what the office has spent.','Record approved expenditure and supporting documents.'],invoice:['INVOICES','From agreed fee to collected cash.','Issue, revise and record payment in one continuous workflow.'],findash:['FINANCIAL DASHBOARD','Know the firm’s financial position in 30 seconds.','Summary first, exceptions second, detail only when needed.'],members:['MEMBERS','Know who is responsible for what.','Keep access and responsibilities current.'],settings:['SETTINGS','Keep MOLMS aligned with the firm.','Change system preferences without disturbing daily work.']};
+ function setContext(k){const c=contexts[k]||contexts.dashboard;[['sidebarV8Kicker',0],['sidebarV8Message',1],['sidebarV8Note',2]].forEach(([id,i])=>{const e=document.getElementById(id);if(e)e.textContent=c[i]})}
+ document.addEventListener('click',e=>{const n=e.target.closest('[data-nav]');if(n)setContext(n.dataset.nav)});
+ const money=v=>'TZS '+Number(v||0).toLocaleString();
+ function build(){const root=document.getElementById('page-findash'),k=document.getElementById('fdKpiRow');if(!root||!k)return;let h=document.getElementById('fdExecutiveV8');if(!h){h=document.createElement('div');h.id='fdExecutiveV8';k.parentNode.insertBefore(h,k)}let m={},st={};try{if(typeof fdMetrics==='function')m=fdMetrics()||{}}catch(e){}try{if(typeof fdHealth==='function')st=fdHealth()||{}}catch(e){}h.innerHTML='<div class="fdv8-head"><div><div class="fdv8-title">Executive financial view</div><div class="fdv8-sub">The numbers that require a management decision now.</div></div><div class="pill gold">'+(st.level||'Current position')+'</div></div><div class="fdv8-grid"><div class="fdv8-card"><small>Revenue</small><strong>'+money(m.revenue)+'</strong></div><div class="fdv8-card"><small>Collected</small><strong>'+money(m.collected)+'</strong></div><div class="fdv8-card"><small>Available cash</small><strong>'+money(m.cash)+'</strong></div><div class="fdv8-card fdv8-status"><small>Outstanding</small><strong>'+money(m.outstanding)+'</strong></div></div>'}
+ const r=window.fdRender;if(typeof r==='function')window.fdRender=async function(){const x=await r.apply(this,arguments);build();return x};const f=window.fdRefresh;if(typeof f==='function')window.fdRefresh=async function(){const x=await f.apply(this,arguments);build();return x};window.addEventListener('load',()=>{setContext(typeof page==='string'?page:'dashboard');[500,1200,2200].forEach(t=>setTimeout(build,t))});
+})();
+</script>
+</body></html>`);
   w.document.close();
 
   // Attach PDF download to child window
