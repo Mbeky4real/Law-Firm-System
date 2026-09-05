@@ -1,0 +1,47 @@
+name: patch-expense-categories
+on:
+  push:
+    branches: [refine-expense-categories-20260905]
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply patch
+        run: python .github/patch-expense-categories.py
+      - name: Verify JavaScript syntax
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text()
+          scripts=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>',s,re.S|re.I)
+          Path('/tmp/molms-inline.js').write_text('\n'.join(scripts))
+          PY
+          node --check /tmp/molms-inline.js
+      - name: Structural audit
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          cats=['Transportation','Utilities','Stationery & Office Supplies','Pantry Supplies','Entertainment & Client Hospitality','Training & Professional Development','Petty Cash','Rent & Office Management','Other']
+          for name in ['BD_CATEGORIES','EX_CATEGORIES','FD_EXPENSE_CATS']:
+              start=s.find('const '+name)
+              if start<0: raise SystemExit('missing '+name)
+              end=s.find('];',start)
+              block=s[start:end]
+              missing=[c for c in cats if c not in block]
+              if missing: raise SystemExit(f'{name} missing {missing}')
+          if 'MOLMS-EXPENSE-CATEGORIES-20260905' not in s: raise SystemExit('marker missing')
+          print('category audit passed')
+          PY
+      - name: Commit
+        run: |
+          if git diff --quiet; then exit 0; fi
+          git config user.name 'MOLMS Production Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add index.html
+          git commit -m 'refine(finance): standardize budget and expenditure categories'
+          git push
