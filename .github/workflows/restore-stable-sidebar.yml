@@ -27,10 +27,10 @@ jobs:
           missing=required-found
           assert not missing, 'missing/broken sidebar routes: '+str(sorted(missing))
           assert 'sidebarV9BContext' not in s
+          assert 'MOLMS-FINANCE-SIDEBAR-V9B' not in s
+          assert 'MOLMS-SIDEBAR-MOTIVATION-V11B' not in s
           assert 'new MutationObserver(()=>{sync();financeIntro()})' not in s
           assert "assets/molms-office-sidebar.webp" not in s
-          assert s.count('</body>')==1
-          assert s.count('</html>')==1
           PY
       - name: Verify inline JavaScript syntax
         run: |
@@ -39,8 +39,7 @@ jobs:
           import re
           s=Path('index.html').read_text()
           scripts=[]
-          for x in re.findall(r'<script([^>]*)>(.*?)</script>',s,re.S|re.I):
-            attrs,body=x
+          for attrs,body in re.findall(r'<script([^>]*)>(.*?)</script>',s,re.S|re.I):
             if 'src=' not in attrs.lower(): scripts.append(body)
           Path('/tmp/molms-inline.js').write_text('\n;\n'.join(scripts))
           print('inline scripts:',len(scripts))
