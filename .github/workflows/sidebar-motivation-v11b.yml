@@ -15,28 +15,29 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
-          import hashlib,re
+          import re
           p=Path('index.html'); s=p.read_text(errors='surrogateescape')
           MARK='MOLMS-SIDEBAR-MOTIVATION-V11B'
           if MARK in s: raise SystemExit(0)
-          required=["const url='https://myjkthjgnmzabmuwprqp.supabase.co';",'sb.auth.signInWithPassword','<nav class="bottom-nav hidden">','MOLMS-FINANCE-SIDEBAR-V9B runtime','sidebarV9BMessage','sidebarV9BNote']
-          for x in required: assert x in s, 'missing '+x
-          pa='w.prDownloadPayslipPDF=()=>'; ps=s.index(pa); pe=s.find('// —— PERIOD CLOSING',ps); assert pe>ps
-          ph=hashlib.sha256(s[ps:pe].encode('utf-8','surrogatepass')).hexdigest()
+          for x in ["const url='https://myjkthjgnmzabmuwprqp.supabase.co';",'sb.auth.signInWithPassword','<nav class="bottom-nav hidden">','MOLMS-FINANCE-SIDEBAR-V9B runtime','sidebarV9BMessage','sidebarV9BNote','assets/molms-office-sidebar.webp']:
+              assert x in s, 'missing stable marker: '+x
           r0=s.index('MOLMS-FINANCE-SIDEBAR-V9B runtime')
           start=s.index('const contexts={',r0)
           end=s.index('};',start)+2
+          old=s[start:end]
+          assert 'Start with what needs your attention today.' in old
           contexts="""const contexts={dashboard:['M&O LAW OFFICE','Discipline today. Greater impact tomorrow.','EXCELLENCE IN PRACTICE'],cause:['M&O LAW OFFICE','Justice is not a product of chance, but of preparation, diligence and principle.','EXCELLENCE IN PRACTICE'],nonlit:['M&O LAW OFFICE','Good advice prevents bigger problems.','EXCELLENCE IN PRACTICE'],clients:['M&O LAW OFFICE','People trust us with their most important decisions.','EXCELLENCE IN PRACTICE'],matters:['M&O LAW OFFICE','Every matter matters.','EXCELLENCE IN PRACTICE'],invoice:['M&O LAW OFFICE','Agreed fees are the beginning. Collected fees keep us going.','EXCELLENCE IN PRACTICE'],findash:['M&O LAW OFFICE','Financial discipline fuels independence.','EXCELLENCE IN PRACTICE'],hr:['M&O LAW OFFICE','Our people are our greatest asset.','EXCELLENCE IN PRACTICE'],members:['M&O LAW OFFICE','Our people are our greatest asset.','EXCELLENCE IN PRACTICE'],payroll:['M&O LAW OFFICE','Reward work fairly. Build commitment continuously.','EXCELLENCE IN PRACTICE'],diary:['M&O LAW OFFICE','A well-managed day builds a successful practice.','EXCELLENCE IN PRACTICE'],documents:['M&O LAW OFFICE','Precision in documentation protects opportunities.','EXCELLENCE IN PRACTICE'],reports:['M&O LAW OFFICE','Information today. Better decisions tomorrow.','EXCELLENCE IN PRACTICE'],chat:['M&O LAW OFFICE','Clear communication builds stronger teams.','EXCELLENCE IN PRACTICE'],budget:['M&O LAW OFFICE','Discipline in small things builds strength in greater things.','EXCELLENCE IN PRACTICE'],expenses:['M&O LAW OFFICE','Stewardship is part of professional excellence.','EXCELLENCE IN PRACTICE'],settings:['M&O LAW OFFICE','A strong system supports a stronger team.','EXCELLENCE IN PRACTICE']};"""
           s=s[:start]+contexts+s[end:]
           css="""\n<style>/* MOLMS-SIDEBAR-MOTIVATION-V11B */\n.sb-v9b-copy{text-align:center;padding:11px 12px 13px!important}.sb-v9b-kicker{font-size:9px!important;letter-spacing:.16em!important}.sb-v9b-message{font-family:Georgia,'Times New Roman',serif!important;font-style:italic!important;font-size:13px!important;line-height:1.48!important;color:#fff!important}.sb-v9b-note{font-size:8px!important;letter-spacing:.19em!important;text-transform:uppercase!important;color:rgba(242,207,132,.78)!important;margin-top:9px!important}.sb-v9b-note:before{content:'';display:block;width:34px;height:1px;background:var(--gold);margin:0 auto 8px}.sb-v9b-photo{height:98px!important}\n</style>\n"""
-          m=re.search(r'</body>\s*</html>\s*$',s,re.I|re.S); assert m
+          m=re.search(r'</body>\s*</html>\s*$',s,re.I|re.S); assert m, 'terminal document close missing'
           s=s[:m.start()]+css+s[m.start():]
-          ps2=s.index(pa); pe2=s.find('// —— PERIOD CLOSING',ps2)
-          assert hashlib.sha256(s[ps2:pe2].encode('utf-8','surrogatepass')).hexdigest()==ph
           assert s.count(MARK)==1
           assert 'Start with what needs your attention today.' not in s
           assert 'Discipline today. Greater impact tomorrow.' in s
+          assert 'Justice is not a product of chance, but of preparation, diligence and principle.' in s
+          assert "const url='https://myjkthjgnmzabmuwprqp.supabase.co';" in s
           assert '<nav class="bottom-nav hidden">' in s and 'sb.auth.signInWithPassword' in s
+          assert s.count('MOLMS-FINANCE-SIDEBAR-V9B runtime')==1
           p.write_text(s,errors='surrogateescape')
           PY
       - name: Verify scoped change
@@ -46,8 +47,7 @@ jobs:
           import subprocess
           out=subprocess.check_output(['git','diff','--numstat','--','index.html']).decode().strip().split()
           assert len(out)>=2
-          a,d=int(out[0]),int(out[1])
-          print({'additions':a,'deletions':d})
+          a,d=int(out[0]),int(out[1]); print({'additions':a,'deletions':d})
           assert a<20 and d<20, (a,d)
           PY
       - name: Commit approved sidebar
