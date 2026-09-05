@@ -1,0 +1,56 @@
+name: patch-salaries-budget-summary-v12
+on:
+  push:
+    branches: [refine-salaries-budget-summary-20260906]
+    paths:
+      - '.github/patch-salaries-budget-summary-v12.py'
+      - '.github/workflows/patch-salaries-budget-summary-v12.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply finance refinement
+        run: python .github/patch-salaries-budget-summary-v12.py
+      - name: Verify finance structure
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text()
+          checks={
+            'net salaries source': 'const netSalaries=run?Number(run.total_net||0):0;' in s,
+            'net salaries first render': s.index("${FinanceUtils.fmtTZS(o.netSalaries)}") < s.index("${row('PAYE',o.paye)}"),
+            'total includes salaries': 'const total=netSalaries+paye+nssf+health+sdl+wcf+vat;' in s,
+            'budget detail marker': s.count('MOLMS-BUDGET-SUMMARY-DETAIL-V12')==1,
+            'budget viewall routed': "section==='budget'" in s,
+            'budget viewall trigger': bool(re.search(r"fdViewAll\(['\"]budget['\"]\)",s)),
+            'no observer in budget detail': 'MutationObserver' not in s[s.index('MOLMS-BUDGET-SUMMARY-DETAIL-V12'):s.index('MOLMS-FINANCE-UI-V3')],
+            'budget calc docs': 'Approved office budget' in s,
+            'budget calc expenses': 'Expense Register spending' in s,
+          }
+          print(checks)
+          assert all(checks.values()), checks
+          PY
+      - name: Verify inline JavaScript syntax
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text()
+          scripts=[]
+          for attrs,body in re.findall(r'<script([^>]*)>(.*?)</script>',s,re.S|re.I):
+            if 'src=' not in attrs.lower(): scripts.append(body)
+          Path('/tmp/molms-inline.js').write_text('\n;\n'.join(scripts))
+          print('inline scripts:',len(scripts))
+          PY
+          node --check /tmp/molms-inline.js
+      - name: Commit refined dashboard
+        run: |
+          git config user.name "MOLMS Production Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add index.html
+          git commit -m "refine(finance): add net salaries and precise budget detail"
+          git push
