@@ -1,0 +1,43 @@
+name: patch-notification-watermarks-v1b
+on:
+  push:
+    branches: [fix-notification-watermarks-20260906]
+    paths:
+      - '.github/patch-notification-watermarks-v1b.py'
+      - '.github/workflows/patch-notification-watermarks-v1b.yml'
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply notification hardening
+        run: python .github/patch-notification-watermarks-v1b.py
+      - name: Verify notification hardening
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          assert "if(page===p){viewed[notificationSeenKey(p)]" in s
+          assert "if(!lastSeen){" in s and "saveViewedState();" in s
+          assert "return live.filter(m=>m.created_at > lastSeen).length;" in s
+          print('notification hardening OK')
+          PY
+      - name: Verify inline JavaScript syntax
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text()
+          scripts=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>',s,re.S|re.I)
+          Path('/tmp/molms-inline.js').write_text('\n'.join(scripts))
+          PY
+          node --check /tmp/molms-inline.js
+      - name: Commit hardened notification engine
+        run: |
+          git config user.name 'MOLMS Production Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet || git commit -m 'fix(notifications): harden active-module and chat unread state'
+          git push
