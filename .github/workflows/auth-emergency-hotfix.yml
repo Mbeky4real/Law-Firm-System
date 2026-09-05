@@ -1,0 +1,61 @@
+name: auth-emergency-hotfix
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/auth-emergency-hotfix.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Patch production authentication bootstrap
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+
+          # 1) Navigation must never be visible before authentication.
+          s=s.replace('<nav class="bottom-nav">','<nav class="bottom-nav hidden">',1)
+
+          # 2) Use the actual MOLMS production data/auth project, not any stale browser config.
+          old="""  const localOnly=localStorage.getItem('MOLMS_V12_LOCAL_ONLY')==='yes';\n  const url=(localStorage.getItem('MOLMS_V12_SUPABASE_URL')||'').trim().replace(/\\/+$/,'');\n  const key=(localStorage.getItem('MOLMS_V12_SUPABASE_KEY')||'').trim().replace(/\\s+/g,'');"""
+          new="""  const localOnly=false;\n  const url='https://myjkthjgnmzabmuwprqp.supabase.co';\n  const key='sb_publishable_AarAzX83ZWe2vDXn-NEwfw_0c-_K43V';\n  localStorage.setItem('MOLMS_V12_SUPABASE_URL',url);\n  localStorage.setItem('MOLMS_V12_SUPABASE_KEY',key);\n  localStorage.removeItem('MOLMS_V12_LOCAL_ONLY');"""
+          if old not in s:
+              raise SystemExit('Expected auth config block not found; refusing unsafe patch')
+          s=s.replace(old,new,1)
+
+          # 3) Harden auth-screen transitions against duplicate/future nav nodes.
+          old_fn="function showSetup(){$('setup').classList.remove('hidden');$('login')&&$('login').classList.add('hidden');$('app').classList.add('hidden');document.querySelector('.bottom-nav').classList.add('hidden')} function showLogin(){$('setup').classList.add('hidden');$('login').classList.remove('hidden');$('app').classList.add('hidden');document.querySelector('.bottom-nav').classList.add('hidden')} function showApp(){$('setup').classList.add('hidden');$('login')&&$('login').classList.add('hidden');$('app').classList.remove('hidden');document.querySelector('.bottom-nav').classList.remove('hidden')}"
+          new_fn="function _setBottomNavHidden(v){document.querySelectorAll('.bottom-nav').forEach(n=>n.classList.toggle('hidden',!!v))} function showSetup(){$('setup').classList.remove('hidden');$('login')&&$('login').classList.add('hidden');$('app').classList.add('hidden');_setBottomNavHidden(true)} function showLogin(){$('setup').classList.add('hidden');$('login').classList.remove('hidden');$('app').classList.add('hidden');_setBottomNavHidden(true)} function showApp(){$('setup').classList.add('hidden');$('login')&&$('login').classList.add('hidden');$('app').classList.remove('hidden');_setBottomNavHidden(false)}"
+          if old_fn not in s:
+              raise SystemExit('Expected auth visibility block not found; refusing unsafe patch')
+          s=s.replace(old_fn,new_fn,1)
+
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Verify repair
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text(encoding='utf-8')
+          assert '<nav class="bottom-nav hidden">' in s
+          assert "const url='https://myjkthjgnmzabmuwprqp.supabase.co';" in s
+          assert "const key='sb_publishable_" in s
+          assert '_setBottomNavHidden(true)' in s
+          assert 'signInWithPassword' in s
+          print('Auth repair verification passed')
+          PY
+      - name: Commit repaired production index
+        run: |
+          if git diff --quiet -- index.html; then echo 'No change'; exit 0; fi
+          git config user.name 'MOLMS Production Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add index.html
+          git commit -m 'fix(auth): bind MOLMS to live auth project and gate navigation'
+          git push origin HEAD:main
