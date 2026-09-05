@@ -16,3 +16,4 @@ js='''\n<script>\n/* MOLMS-V8-SAFE-REINTEGRATION runtime: additive only; auth/lo
 s=s.replace('</body>',js+'</body>',1)
 p.write_text(s,errors='surrogateescape')
 print('patched',len(s))
+# trigger 2026-09-05
