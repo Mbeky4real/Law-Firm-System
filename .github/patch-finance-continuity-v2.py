@@ -12,7 +12,6 @@ patch=r'''
   const add=(o,c,v)=>{c=c||'TZS';o[c]=(o[c]||0)+Number(v||0);};
   const allCurrencies=o=>{if(o.TZS===undefined)o.TZS=0;return o;};
   function dateLE(v,end){return !!v&&String(v).slice(0,10)<=end;}
-  function dateLT(v,start){return !!v&&String(v).slice(0,10)<start;}
   function canonicalPayroll(rows){
     const precedence={locked:3,approved:2,submitted:1,draft:0,rejected:-1};
     const byMonth={};
@@ -74,3 +73,4 @@ if pos<0: raise SystemExit('no body')
 s=s[:pos]+patch+s[pos:]
 p.write_text(s)
 print('patched')
+# trigger: continuity_v2_20260905
