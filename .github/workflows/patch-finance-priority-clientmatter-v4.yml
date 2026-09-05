@@ -1,0 +1,52 @@
+name: patch-finance-priority-clientmatter-v4
+on:
+  push:
+    branches: [fix-finance-priority-clientmatter-v4-20260905]
+    paths:
+      - '.github/patch-finance-priority-clientmatter-v4.py'
+      - '.github/workflows/patch-finance-priority-clientmatter-v4.yml'
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix-finance-priority-clientmatter-v4-20260905
+      - name: Apply patch
+        run: python .github/patch-finance-priority-clientmatter-v4.py
+      - name: Verify JavaScript syntax
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text()
+          scripts=re.findall(r'<script(?:[^>]*)>(.*?)</script>',s,flags=re.S|re.I)
+          Path('/tmp/all-inline.js').write_text('\n;\n'.join(x for x in scripts if 'src=' not in x[:80]))
+          PY
+          node --check /tmp/all-inline.js
+      - name: Structural audit
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          checks={
+            'single V4 marker': s.count('MOLMS-FINANCE-PRIORITY-CLIENTMATTER-V4')==1,
+            'priority row': 'fdPriorityRowV4' in s,
+            'compact obligations': 'fdObligationsCompactV4' in s,
+            'register observer': "'fdRegBody','fdManualBody','fdKpiRow'" in s,
+            'register tax source': 'registerRows4()' in s,
+            'runtime audit': 'fdFinanceV4Audit' in s,
+          }
+          print(checks)
+          assert all(checks.values()), checks
+          PY
+      - name: Commit
+        run: |
+          if git diff --quiet; then exit 0; fi
+          git config user.name 'MOLMS Production Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add index.html
+          git commit -m 'fix(finance): deterministic receivables obligations and client matter v4'
+          git push origin HEAD:fix-finance-priority-clientmatter-v4-20260905
