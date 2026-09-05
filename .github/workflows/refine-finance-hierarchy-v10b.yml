@@ -1,0 +1,36 @@
+name: refine-finance-hierarchy-v10b
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/refine-finance-hierarchy-v10b.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Apply V10 finance hierarchy patch
+        run: python .github/patch-finance-hierarchy-v10.py
+      - name: Verify scoped diff
+        run: |
+          git diff --stat -- index.html
+          python - <<'PY'
+          import subprocess
+          out=subprocess.check_output(['git','diff','--numstat','--','index.html']).decode().strip().split()
+          assert len(out)>=2
+          a,d=int(out[0]),int(out[1])
+          print({'additions':a,'deletions':d})
+          assert a < 35 and d < 5
+          PY
+      - name: Commit production refinement
+        run: |
+          if git diff --quiet -- index.html; then exit 0; fi
+          git config user.name 'MOLMS Production Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add index.html
+          git commit -m 'feat(finance): simplify dashboard hierarchy with drill-down sections'
+          git push origin HEAD:main
