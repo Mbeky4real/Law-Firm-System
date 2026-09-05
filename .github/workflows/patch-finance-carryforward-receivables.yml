@@ -1,0 +1,32 @@
+name: patch-finance-carryforward-receivables
+on:
+  push:
+    branches: [refine-finance-carryforward-receivables-20260905]
+    paths: ['.github/patch-finance-carryforward-receivables.py','.github/workflows/patch-finance-carryforward-receivables.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refine-finance-carryforward-receivables-20260905
+      - run: python .github/patch-finance-carryforward-receivables.py
+      - name: Verify injected JavaScript
+        run: |
+          python - <<'PY'
+          import re
+          s=open('index.html').read(); m=re.search(r'<script>\s*/\* MOLMS-FINANCE-CARRYFORWARD-RECEIVABLES-V1 \*/(.*?)</script>',s,re.S)
+          assert m
+          open('/tmp/molms-finance.js','w').write(m.group(1))
+          PY
+          node --check /tmp/molms-finance.js
+      - name: Commit
+        run: |
+          if git diff --quiet -- index.html; then echo 'No change'; exit 0; fi
+          git config user.name 'MOLMS Production Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add index.html
+          git commit -m 'feat(finance): carry forward balances and show client receivables'
+          git push origin HEAD:refine-finance-carryforward-receivables-20260905
