@@ -1,0 +1,50 @@
+name: patch-expenditure-obligations-v6-safe
+on:
+  push:
+    branches: [fix-expenditure-obligations-v6-safe-20260905]
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply patch
+        run: python .github/patch-expenditure-obligations-v6-safe.py
+      - name: Verify JavaScript syntax
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re, subprocess, tempfile
+          s=Path('index.html').read_text()
+          blocks=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>',s,re.S|re.I)
+          js='\n'.join(blocks)
+          p=Path('/tmp/molms-inline-v6.js'); p.write_text(js)
+          subprocess.run(['node','--check',str(p)],check=True)
+          PY
+      - name: Structural audit
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          checks={
+            'marker': s.count('MOLMS-EXPENDITURE-OBLIGATIONS-V6-SAFE')==1,
+            'stable obligations': 'fdMonthlyObligationsStableV6' in s,
+            'no v6 MutationObserver': 'MOLMS-EXPENDITURE-OBLIGATIONS-V6-SAFE' in s and 'new MutationObserver' not in s[s.rfind('MOLMS-EXPENDITURE-OBLIGATIONS-V6-SAFE'):],
+            'expenditure hides receivable': 'data-fd-mode-v6="expenditure"' in s,
+            'supplier wording': 'Paid To / Supplier' in s,
+            'drawing treated as expenditure': "['expenditure','drawing']" in s,
+            'refresh hook': 'renderObligations6();return r' in s,
+          }
+          print(checks)
+          assert all(checks.values())
+          PY
+      - name: Commit
+        run: |
+          git config user.name 'MOLMS Production Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add index.html
+          if ! git diff --cached --quiet; then
+            git commit -m 'fix(finance): safe expenditure separation and stable obligations v6'
+            git push origin HEAD
+          fi
