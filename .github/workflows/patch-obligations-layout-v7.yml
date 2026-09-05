@@ -1,0 +1,50 @@
+name: patch-obligations-layout-v7
+on:
+  push:
+    branches: [fix-obligations-layout-v7-20260905]
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply patch
+        run: python .github/patch-obligations-layout-v7.py
+      - name: Verify JavaScript syntax
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re, subprocess, tempfile
+          s=Path('index.html').read_text()
+          scripts=re.findall(r'<script(?: [^>]*)?>(.*?)</script>',s,re.S)
+          code='\n'.join(x for x in scripts if x.strip())
+          p=Path('/tmp/molms-inline-v7.js'); p.write_text(code)
+          subprocess.run(['node','--check',str(p)],check=True)
+          PY
+      - name: Structural audit
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          checks={
+            'v7 marker': s.count('MOLMS-OBLIGATIONS-LAYOUT-V7')==1,
+            'v3 layout neutralized': 'function buildPriorityRowV3(){}' in s,
+            'v4 layout neutralized': 'function buildPriority4(){}' in s,
+            'v6 obligations neutralized': 'function renderObligations6(){}' in s,
+            'authoritative obligations used': "document.getElementById('fdMonthlyObligations')" in s[s.rfind('MOLMS-OBLIGATIONS-LAYOUT-V7'):],
+            'no new observer': 'MutationObserver' not in s[s.rfind('MOLMS-OBLIGATIONS-LAYOUT-V7'):],
+            'v7 runtime audit': 'fdFinanceV7Audit' in s,
+          }
+          print(checks)
+          assert all(checks.values())
+          PY
+      - name: Commit
+        run: |
+          git config user.name 'MOLMS Production Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet || git commit -m 'fix(finance): single-owner monthly obligations layout v7'
+          git push origin HEAD:${GITHUB_REF_NAME}
