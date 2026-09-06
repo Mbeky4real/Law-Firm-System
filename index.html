@@ -17293,15 +17293,25 @@ async function invSubmitPayment(){
     if(!to||!subject||!message){showErr('Recipient, subject and message are required.');return;}
     const btn=$('invEmailSendBtn'); btn.disabled=true; btn.textContent='Sending…';
     try{
+      /* MOLMS-INVOICE-EMAIL-V7 */
       const {data,error}=await sb.functions.invoke('send-invoice-email',{body:{invoice_id:emailCtx.invoiceId,recipient_email:to,cc_email:cc||null,subject,message}});
-      if(error) throw error;
+      if(error){
+        let detail='';
+        try{
+          if(error.context && typeof error.context.json==='function'){
+            const body=await error.context.json();
+            detail=body?.error||body?.message||'';
+          }
+        }catch(_e){}
+        throw new Error(detail||error.message||'Email delivery request failed.');
+      }
       if(data?.error) throw new Error(data.error);
       const invoiceNo=emailCtx.invoiceNumber;
       invCloseEmailModal();
       notice(`Invoice ${invoiceNo} emailed successfully to ${to}.`,'ok');
     }catch(err){
       console.error('invSendEmail',err);
-      const msg=err?.context?.body?.error||err?.message||'Email could not be sent.';
+      const msg=err?.message||'Email could not be sent.';
       showErr(msg);
     }finally{ btn.disabled=false;btn.textContent='Send Invoice'; }
   };
