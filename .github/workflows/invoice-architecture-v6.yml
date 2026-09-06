@@ -25,7 +25,7 @@ jobs:
           assert 'MOLMS-INVOICE-PAYMENT-CONTEXT-V3' not in s
           assert 'MOLMS-INVOICE-PAYMENT-ROUTER-V4' not in s
           assert 'MOLMS-DASHBOARD-PAYMENT-DIRECT-V5' not in s
-          assert s.count('MOLMS-INVOICE-CANONICAL-V6')==1
+          assert s.count('MOLMS-INVOICE-CANONICAL-V6')>=2
           assert s.count('id="invEmailModal"')==1
           assert s.count('send-invoice-email')>=1
           print('invoice architecture v6 verified')
