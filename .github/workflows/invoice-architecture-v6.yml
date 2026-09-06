@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - '.github/patch-invoice-architecture-v6.py'
+      - '.github/invoice-architecture-v6.trigger'
 permissions:
   contents: write
 jobs:
