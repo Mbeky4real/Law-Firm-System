@@ -1,0 +1,70 @@
+name: Finance dashboard canonical cleanup v15
+on:
+  push:
+    paths: ['.github/finance-dashboard-canonical-v15.trigger']
+permissions:
+  contents: write
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Canonicalize finance dashboard runtime
+        run: python .github/maintenance/finance-dashboard-canonical-v15.py
+      - name: Remove obsolete finance patch machinery
+        run: |
+          files=(
+            .github/patch-finance-30sec-labels-v1.py
+            .github/workflows/patch-finance-30sec-labels-v1.yml
+            .github/finance-30sec-labels-v1.trigger
+            .github/patch-finance-period-outlook-v11.py
+            .github/workflows/patch-finance-period-outlook-v11.yml
+            .github/finance-period-outlook-v11.trigger
+            .github/patch-finance-kpi-copy-v12.py
+            .github/workflows/patch-finance-kpi-copy-v12.yml
+            .github/finance-kpi-copy-v12.trigger
+            .github/patch-finance-period-integrity-v13.py
+            .github/workflows/patch-finance-period-integrity-v13.yml
+            .github/finance-period-integrity-v13.trigger
+            .github/patch-finance-period-integrity-v13b.py
+            .github/workflows/patch-finance-period-integrity-v13b.yml
+            .github/finance-period-integrity-v13b.trigger
+            .github/patch-finance-kpi-uniformity-v14.py
+            .github/workflows/patch-finance-kpi-uniformity-v14.yml
+            .github/finance-kpi-uniformity-v14.trigger
+          )
+          for f in "${files[@]}"; do
+            if [ -e "$f" ]; then git rm -f "$f"; fi
+          done
+      - name: Verify cleanup
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text(errors='surrogateescape')
+          obsolete=[
+            'MOLMS-FINANCE-30SEC-LABELS-V1','MOLMS-FINANCE-PERIOD-OUTLOOK-V11',
+            'MOLMS-FINANCE-KPI-COPY-V12','MOLMS-FINANCE-PERIOD-INTEGRITY-V13',
+            'MOLMS-FINANCE-PERIOD-INTEGRITY-V13B','MOLMS-FINANCE-KPI-UNIFORMITY-V14'
+          ]
+          assert all(x not in s for x in obsolete), [x for x in obsolete if x in s]
+          assert s.count('MOLMS-FINANCE-CANONICAL-V15 runtime') == 1
+          assert "['month','Monthly'],['quarter','Quarterly'],['half','Semi-Annual'],['year','Yearly'],['all','All Time']" in s
+          assert 'TOTAL CLIENT RECEIVABLES' in s
+          assert 'No manual financial transactions for the selected period.' in s
+          assert 'Cash received this period.' in s
+          assert 'Operating expenses this period.' in s
+          print('finance canonical cleanup verified')
+          PY
+      - name: Commit canonical finance module
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'refactor(finance): consolidate dashboard runtime and remove obsolete patches'
+          git push origin main
