@@ -15,19 +15,19 @@
       localStorage.removeItem('MOLMS_V12_LOCAL_ONLY');
     }
 
-    // Load the canonical application and inject the secure Documents runtime
-    // without modifying the 1 MB monolithic index.html directly.
-    const res = await fetch('/index.html?bootstrap=1', { cache: 'no-store' });
+    // Always load the canonical app through an internal route that bypasses
+    // the public /index.html bootstrap route, then inject the secure Documents runtime.
+    const res = await fetch('/molms-app.html?bootstrap=2', { cache: 'no-store' });
     if (!res.ok) throw new Error('Unable to load MOLMS index (' + res.status + ')');
     let html = await res.text();
-    const addon = '<script src="/js/document-upload-v1.js?v=20260907" defer><\/script>';
+    const addon = '<script src="/js/document-upload-v1.js?v=20260907b" defer><\/script>';
     html = html.includes('document-upload-v1.js') ? html : html.replace('</body>', addon + '\n</body>');
     document.open();
     document.write(html);
     document.close();
   } catch (e) {
     console.error('MOLMS production bootstrap failed:', e);
-    window.location.replace('/index.html');
+    window.location.replace('/molms-app.html');
   }
 })();
 </script>
