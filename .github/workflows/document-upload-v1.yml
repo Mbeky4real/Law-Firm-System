@@ -1,0 +1,71 @@
+name: Documents Real Upload v1
+on:
+  push:
+    paths:
+      - '.github/triggers/document-upload-v1.trigger'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch Documents module
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          marker='MOLMS-DOCUMENT-UPLOAD-V1'
+          if marker in s:
+              print('already patched'); raise SystemExit
+          block=r'''\n<!-- MOLMS-DOCUMENT-UPLOAD-V1 -->
+<style>
+#docUploadV1Box{margin:10px 0;padding:12px;border:1px solid #e5e7eb;border-radius:10px;background:#fafafa}#docUploadV1Box .du-note{font-size:12px;color:#667085;margin-top:6px}#docUploadV1Box .du-ok{color:#087443;font-weight:600}#docUploadV1Box .du-bad{color:#b42318;font-weight:600}
+</style>
+<script>
+(function(){
+ const MAX=2*1024*1024, BUCKET='molms-documents';
+ const MIME=new Set(['application/pdf','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document']);
+ function db(){return window.supabaseClient||window.supabase||window.sb||null}
+ function form(){return document.querySelector('#documentForm,form[data-module="documents"],#documentsModal form,#addDocumentModal form')}
+ function urlInput(f){return f&&f.querySelector('input[name="file_url"],#file_url,#docFileUrl,input[type="url"]')}
+ function install(){
+   const f=form(); if(!f||f.querySelector('#docUploadV1Box')) return;
+   const u=urlInput(f); const box=document.createElement('div'); box.id='docUploadV1Box';
+   box.innerHTML='<label style="font-weight:700;display:block;margin-bottom:6px">Upload Document</label><input id="docRealFileV1" type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"><div id="docFileStateV1" class="du-note">PDF or Word · Maximum 2 MB. For larger files, use External Link below.</div>';
+   if(u){u.parentElement.insertAdjacentElement('beforebegin',box); const lab=u.closest('label')||u.parentElement; if(lab){const t=lab.querySelector('label'); if(t)t.textContent='External Link (optional)';}}
+   else f.prepend(box);
+   const inp=box.querySelector('#docRealFileV1'), st=box.querySelector('#docFileStateV1');
+   inp.addEventListener('change',()=>{const x=inp.files[0]; if(!x){st.className='du-note';st.textContent='PDF or Word · Maximum 2 MB. For larger files, use External Link below.';return} const ok=x.size<=MAX && (MIME.has(x.type)||/\.(pdf|docx?)$/i.test(x.name)); st.className='du-note '+(ok?'du-ok':'du-bad');st.textContent=ok?(x.name+' · '+Math.ceil(x.size/1024)+' KB ✓'):(x.size>MAX?'This file exceeds the 2 MB MOLMS limit. Compress it or use External Link.':'Only PDF and Word documents are allowed.'); if(!ok) inp.value='';});
+   f.addEventListener('submit',async ev=>{
+     const file=inp.files[0]; if(!file) return;
+     ev.preventDefault(); ev.stopImmediatePropagation();
+     if(file.size>MAX){alert('Maximum document size is 2 MB.');return}
+     const client=db(); if(!client||!client.storage){alert('Document storage is unavailable. Please refresh and try again.');return}
+     const title=(f.querySelector('[name="title"],#docTitle')||{}).value||file.name;
+     const matter=(f.querySelector('[name="linked_case_id"],[name="linked_nonlit_id"],[name="linked_matter"]')||{}).value||'general';
+     const safe=file.name.replace(/[^a-zA-Z0-9._-]+/g,'_'); const path=(matter||'general')+'/'+Date.now()+'-'+safe;
+     st.className='du-note';st.textContent='Uploading securely…';
+     const up=await client.storage.from(BUCKET).upload(path,file,{contentType:file.type,upsert:false});
+     if(up.error){st.className='du-note du-bad';st.textContent='Upload failed: '+up.error.message;return}
+     let hidden=f.querySelector('input[name="storage_path"]'); if(!hidden){hidden=document.createElement('input');hidden.type='hidden';hidden.name='storage_path';f.appendChild(hidden)} hidden.value=path;
+     [['original_file_name',file.name],['mime_type',file.type],['file_size',String(file.size)],['storage_type','upload']].forEach(([n,v])=>{let h=f.querySelector('input[name="'+n+'"]');if(!h){h=document.createElement('input');h.type='hidden';h.name=n;f.appendChild(h)}h.value=v});
+     if(u)u.value=''; inp.value=''; st.className='du-note du-ok';st.textContent='Uploaded securely ✓ Saving document record…';
+     f.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));
+   },true);
+ }
+ const mo=new MutationObserver(install); mo.observe(document.documentElement,{childList:true,subtree:true}); document.addEventListener('click',()=>setTimeout(install,50)); setTimeout(install,500);
+ window.molmsOpenStoredDocument=async function(path){const client=db();const r=await client.storage.from(BUCKET).createSignedUrl(path,300);if(r.error){alert(r.error.message);return}window.open(r.data.signedUrl,'_blank','noopener')};
+})();
+</script>\n'''
+          s=s.replace('</body>',block+'\n</body>')
+          p.write_text(s)
+          PY
+      - name: Commit production patch
+        run: |
+          git config user.name 'MOLMS Deployment Bot'
+          git config user.email 'actions@github.com'
+          git add index.html
+          git commit -m 'feat(documents): enable secure small-file uploads'
+          git push
