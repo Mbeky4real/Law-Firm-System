@@ -1,0 +1,49 @@
+name: Finance period outlook v11
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/finance-period-outlook-v11.trigger'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Apply financial period outlook
+        run: python .github/patch-finance-period-outlook-v11.py
+      - name: Verify
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text(errors='surrogateescape')
+          checks={
+            'marker':s.count('MOLMS-FINANCE-PERIOD-OUTLOOK-V11 runtime')==1,
+            'semi annual':"['half','Semi-Annual']" in s,
+            'monthly':"['month','Monthly']" in s,
+            'quarterly':"['quarter','Quarterly']" in s,
+            'yearly':"['year','Yearly']" in s,
+            'all time':"['all','All Time']" in s,
+            'operating result hidden':'#page-findash #fdKpiRow>div:nth-child(3){display:none!important}' in s,
+            'outstanding wording':'OUTSTANDING PAYMENTS' in s,
+            'receivables wording':'TOTAL CLIENT RECEIVABLES' in s,
+            'current cap':'if(end>today)end=today' in s,
+          }
+          print(checks)
+          assert all(checks.values())
+          PY
+      - name: Commit production source
+        run: |
+          if git diff --quiet; then exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'refine(finance): implement current-first period outlook'
+          git push origin main
