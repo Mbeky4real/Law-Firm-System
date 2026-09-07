@@ -1,0 +1,46 @@
+name: Finance 30-second terminology v1
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/finance-30sec-labels-v1.trigger'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Apply terminology patch
+        run: python .github/patch-finance-30sec-labels-v1.py
+      - name: Verify
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          checks={
+            'marker':'MOLMS-FINANCE-30SEC-LABELS-V1' in s,
+            'revenue':"'REVENUE'" in s,
+            'expenses':"'EXPENSES'" in s,
+            'payments':"'PAYMENTS RECEIVED'" in s,
+            'unpaid':"'UNPAID THIS PERIOD'" in s,
+            'cash':"'CASH AVAILABLE'" in s,
+            'receivables':"'TOTAL CLIENT RECEIVABLES'" in s,
+          }
+          print(checks)
+          assert all(checks.values())
+          PY
+      - name: Commit production source
+        run: |
+          if git diff --quiet; then exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'refine(finance): adopt 30-second dashboard terminology'
+          git push origin main
