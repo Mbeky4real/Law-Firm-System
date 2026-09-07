@@ -90,3 +90,9 @@ Total removed: **63**
 - Do not leave one-shot patch workflows active after a successful production commit.
 - Prefer editing canonical module code directly. If a temporary patch is unavoidable, retire its script/workflow immediately after consolidation.
 - Treat duplicate IDs/functions reported above as review items, not automatic deletion targets, because some may be intentionally scoped or compatibility shims.
+
+## Runtime deduplication completion
+- Removed shadowed duplicate `invNewInvoice`; retained the last/effective declaration.
+- Removed shadowed duplicate `invRenderSavedList`; retained the last/effective declaration.
+- Removed the older shadowed `invPaymentRecalc`; retained the later proforma-aware/effective declaration.
+- DOM-ID scan findings `adminOnly`, `exReceiptsPlaceholder`, and `fdReceivablesCardV1` were confirmed as code/template references rather than simultaneous duplicate static DOM nodes; no unsafe rename was performed.

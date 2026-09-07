@@ -13027,33 +13027,6 @@ async function invLoadSavedList(){
   invRenderKpi();
 }
 
-function invRenderSavedList(){
-  const el=$('invSavedList'); if(!el) return;
-  if(!_invAllInvoices.length){
-    el.innerHTML='<div style="padding:12px;color:var(--muted);font-size:12px;text-align:center">No invoices yet</div>';
-    return;
-  }
-  const STATUS_COLORS={
-    draft:'#64748b',issued:'#1e40af',paid:'#065f46',
-    part_paid:'#92400e',overdue:'#991b1b',cancelled:'#6b7280',void:'#6b7280',
-  };
-  el.innerHTML=_invAllInvoices.map(inv=>{
-    const col=STATUS_COLORS[inv.status]||'#64748b';
-    const clientDisplay=inv.client_name||'—';
-    const isActive=_invActiveId===inv.id;
-    return `<div onclick="invLoadInvoice('${inv.id}')"
-      style="padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;
-        background:${isActive?'#faf8f4':'#fff'};border-left:3px solid ${isActive?'var(--gold)':'transparent'}"
-      onmouseenter="this.style.background='#faf8f4'" onmouseleave="this.style.background='${isActive?'#faf8f4':'#fff'}'">
-      <div style="font-size:11px;font-weight:700;color:var(--navy)">${esc(inv.invoice_number||'Draft')}</div>
-      <div style="font-size:10px;color:var(--muted);margin-top:2px">${esc(clientDisplay)}</div>
-      <div style="display:flex;justify-content:space-between;margin-top:3px;align-items:center">
-        <span style="font-size:10px;font-weight:700;color:${col}">${inv.status||'draft'}</span>
-        <span style="font-size:10px;color:var(--muted)">${(inv.invoice_date||'').slice(0,10)}</span>
-      </div>
-    </div>`;
-  }).join('');
-}
 
 async function invLoadInvoice(id){
   if(!sb) return;
@@ -13133,30 +13106,6 @@ async function invLoadInvoice(id){
   if(delDraftBtn) delDraftBtn.style.display=(inv.status==='draft'&&Number(inv.amount_paid||0)===0&&isAdmin())?'':'none';
 }
 
-function invNewInvoice(){
-  _invActiveId=null;
-  _invBankManuallyChosen=false;
-  _invLoadedStatus=null;
-  _invLoadedPayment=null;
-  _invPrevCurrency='TZS';
-  invNumberEdited=false;
-  const numEl=$('invNumber'); if(numEl){ numEl.value=''; numEl.removeAttribute('readonly'); }
-  const lockEl=$('invNumLock'); if(lockEl) lockEl.style.display='none';
-  const issueBtn=$('invBtnIssue'); if(issueBtn){ issueBtn.disabled=false; issueBtn.style.display=''; }
-  const voidBtn=$('invBtnVoid'); if(voidBtn) voidBtn.style.display='none';
-  const delDraftBtn=$('invBtnDeleteDraft'); if(delDraftBtn) delDraftBtn.style.display='none';
-  const payBtn=$('invBtnRecordPayment'); if(payBtn) payBtn.style.display='none';
-  // Reset form
-  ['invClient','invAttention','invMatter','invNotes'].forEach(id=>{ const el=$(id); if(el) el.value=''; });
-  const matterSel=$('invMatter');
-  if(matterSel) matterSel.innerHTML='<option value="">Select a client first</option>';
-  const manualWrap=document.getElementById('invMatterManualWrap');
-  if(manualWrap) manualWrap.style.display='none';
-  _invVatApplicable=true;
-  if($('invVatCheck')) $('invVatCheck').checked=true;
-  invSetDefaults();
-  invRenderSavedList();
-}
 
 
 // ── MATTER JOIN HELPERS ───────────────────────────────────────────────────────
@@ -14883,39 +14832,6 @@ function invPaymentWhtToggle(yes){
   invPaymentRecalc();
 }
 
-function invPaymentRecalc(){
-  if(!_invPaymentCtx) return;
-  const {total,subtotal,currentCash,currentWht}=_invPaymentCtx;
-  const cur=val('invCurrency')||'TZS';
-  const whtOn=$('invPayWhtSection')?.dataset.active==='1';
-  const cash=Number(val('invPayCash'))||0;
-  let wht=0;
-  if(whtOn){
-    const rate=Number(val('invPayWhtRate'))||0;
-    wht=Math.round(subtotal*rate/100);
-    if($('invPayWhtAmountDisplay')) $('invPayWhtAmountDisplay').value=`${cur} ${wht.toLocaleString()}`;
-  }
-  const newCashTotal=currentCash+cash, newWhtTotal=currentWht+wht;
-  const settled=newCashTotal+newWhtTotal;
-  const outstanding=Math.max(0,total-settled);
-  const overshoot=settled>total+1;
-
-  const tbl=$('invPaySummaryTable');
-  if(tbl){
-    const row=(l,v,bold)=>`<tr><td style="padding:3px 0;color:${bold?'var(--navy)':'var(--muted)'};font-weight:${bold?800:600}">${l}</td><td style="padding:3px 0;text-align:right;font-weight:${bold?800:600};color:${bold?'var(--navy)':'var(--text)'}">${cur} ${v.toLocaleString()}</td></tr>`;
-    tbl.innerHTML=row('Invoice Total',total,false)+row('Cash Received',newCashTotal,false)
-      +(newWhtTotal>0?row('WHT Deducted',newWhtTotal,false):'')
-      +row('Total Settled',settled,false)+row('Balance Remaining',outstanding,true);
-  }
-  const badge=$('invPayStatusBadge');
-  if(badge){
-    if(overshoot){ badge.style.background='#fef2f2'; badge.style.color='#991b1b'; badge.textContent='OVER-SETTLEMENT — NOT VALID'; }
-    else if(outstanding<=0.5 && settled>0){ badge.style.background='#dcfce7'; badge.style.color='#166534'; badge.textContent='FULLY PAID'; }
-    else if(settled>0){ badge.style.background='#fef3c7'; badge.style.color='#92400e'; badge.textContent=`PARTIALLY PAID — ${cur} ${outstanding.toLocaleString()} REMAINING`; }
-    else { badge.style.background='#f1f5f9'; badge.style.color='#475569'; badge.textContent='NO PAYMENT ENTERED'; }
-  }
-  return {cash,wht,newCashTotal,newWhtTotal,settled,outstanding,overshoot};
-}
 
 function invClosePaymentModal(){
   $('invPaymentModal').style.display='none';
