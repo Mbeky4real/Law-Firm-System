@@ -1,35 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MOLMS</title>
-</head>
-<body>
-<script>
-(async function(){
-  try {
-    if (window.location.hostname === 'admin.molaw.co.tz') {
-      localStorage.setItem('MOLMS_V12_SUPABASE_URL','https://myjkthjgnmzabmuwprqp.supabase.co');
-      localStorage.setItem('MOLMS_V12_SUPABASE_KEY','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYXNlIiwicmVmIjoibXlqa3RoamdubXphYm11d3BycXAiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc3NzA2NjA1OCwiZXhwIjoyMDkyNjQyMDU4fQ.eJO2oylABe71_g5FCBDGx7mnWWu5dgHr1Utr3dPOcGI');
-      localStorage.removeItem('MOLMS_V12_LOCAL_ONLY');
-    }
-
-    // Always load the canonical app through an internal route that bypasses
-    // the public /index.html bootstrap route, then inject the secure Documents runtime.
-    const res = await fetch('/molms-app.html?bootstrap=2', { cache: 'no-store' });
-    if (!res.ok) throw new Error('Unable to load MOLMS index (' + res.status + ')');
-    let html = await res.text();
-    const addon = '<script src="/js/document-upload-v1.js?v=20260907b" defer><\/script>';
-    html = html.includes('document-upload-v1.js') ? html : html.replace('</body>', addon + '\n</body>');
-    document.open();
-    document.write(html);
-    document.close();
-  } catch (e) {
-    console.error('MOLMS production bootstrap failed:', e);
-    window.location.replace('/molms-app.html');
-  }
-})();
-</script>
-</body>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MOLMS</title></head>
+<body><script>window.location.replace('/index.html');</script></body>
 </html>

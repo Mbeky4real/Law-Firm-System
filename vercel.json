@@ -1,23 +1,7 @@
 {
   "routes": [
-    {
-      "src": "/",
-      "dest": "/production-bootstrap.html"
-    },
-    {
-      "src": "/index.html",
-      "dest": "/production-bootstrap.html"
-    },
-    {
-      "src": "/molms-app.html",
-      "dest": "/index.html"
-    },
-    {
-      "handle": "filesystem"
-    },
-    {
-      "src": "/.*",
-      "dest": "/production-bootstrap.html"
-    }
+    {"src":"/","dest":"/index.html"},
+    {"handle":"filesystem"},
+    {"src":"/.*","dest":"/index.html"}
   ]
 }
