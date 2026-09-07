@@ -1,0 +1,84 @@
+from pathlib import Path
+p=Path('index.html'); s=p.read_text(errors='surrogateescape')
+MARK='MOLMS-FINANCE-PERIOD-INTEGRITY-V13'
+if MARK in s: raise SystemExit('Already patched')
+for x in ['MOLMS-FINANCE-PERIOD-OUTLOOK-V11','MOLMS-FINANCE-KPI-COPY-V12','id="fdManualBody"','id="fdReceivablesCardV1"']:
+    assert x in s, x
+insert=r'''
+<style>/* MOLMS-FINANCE-PERIOD-INTEGRITY-V13 */
+#fdManualBody tr[data-fdv13-outside="1"]{display:none!important}
+</style>
+<script>/* MOLMS-FINANCE-PERIOD-INTEGRITY-V13 runtime */
+(function(){
+ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
+ const money=(c,v)=>`${c||'TZS'} ${Number(v||0).toLocaleString()}`;
+ const inRange=d=>{if(!d)return false;const {start,end}=fdGetPeriodDates();const x=String(d).slice(0,10);return x>=start&&x<=end;};
+ const approved=t=>String(t?.status||(t?.is_approved?'approved':'pending')).toLowerCase()==='approved';
+ function paymentReceipts(i,end){
+   try{return (typeof fdInvoiceCashReceipts==='function'?fdInvoiceCashReceipts(i):[]).filter(r=>String(r.date||'').slice(0,10)<=end)}catch(e){return []}
+ }
+ function whtAsOf(i,end){
+   let w=0,m;const re=/\[Payment\s+(\d{4}-\d{2}-\d{2})\].*?WHT\s+([\d,]+(?:\.\d+)?)/gi;
+   while((m=re.exec(String(i.notes||'')))!==null){if(m[1]<=end)w+=Number(m[2].replace(/,/g,''))||0;}
+   if(!w&&String(i.status||'').toLowerCase()==='paid'&&String(i.invoice_date||'').slice(0,10)<=end)w=Number(i.withholding_tax_amount||0);
+   return w;
+ }
+ function receivableSourcesAsOf(){
+   const {end}=fdGetPeriodDates(),out=[];
+   const invs=(typeof _fdAllInvoices!=='undefined'&&Array.isArray(_fdAllInvoices))?_fdAllInvoices:[];
+   invs.forEach(i=>{
+     const dt=String(i.invoice_date||'').slice(0,10),type=String(i.invoice_type||'tax').toLowerCase(),st=String(i.status||'').toLowerCase();
+     if(type!=='tax'||!dt||dt>end||['draft','void','cancelled','superseded'].includes(st))return;
+     const paid=paymentReceipts(i,end).reduce((a,r)=>a+Number(r.amount||0),0)+whtAsOf(i,end);
+     const bal=Math.max(0,Number(i.total_due||0)-paid);if(bal<=0)return;
+     out.push({kind:'invoice',id:i.id,client:i.client_name||'Unknown Client',currency:i.currency||'TZS',amount:bal,reference:i.invoice_number||'—',matter:i.matter_ref||i.matter_title||'—',date:dt});
+   });
+   const manual=(typeof _fdAllManual!=='undefined'&&Array.isArray(_fdAllManual))?_fdAllManual:[];
+   manual.forEach(t=>{
+     const dt=String(t.date||'').slice(0,10);if(!approved(t)||!t.client_receivable||!dt||dt>end)return;
+     const bal=Math.max(0,Number(t.outstanding_amount||0));if(bal<=0)return;
+     out.push({kind:'manual',id:t.id,client:t.receivable_client_name||t.counterparty||'Unknown Client',currency:t.currency||'TZS',amount:bal,reference:t.reference||'—',matter:t.receivable_matter_ref||'—',date:dt});
+   });
+   return out;
+ }
+ function renderReceivablesV13(){
+   const card=document.getElementById('fdReceivablesCardV1')||document.getElementById('fdReceivablesCardV2');if(!card)return;
+   const src=receivableSourcesAsOf(),g={};src.forEach(r=>{const k=r.client+'|'+r.currency;if(!g[k])g[k]={client:r.client,currency:r.currency,amount:0};g[k].amount+=r.amount;});
+   const rows=Object.values(g).sort((a,b)=>b.amount-a.amount),tot={};rows.forEach(r=>tot[r.currency]=(tot[r.currency]||0)+r.amount);
+   const totals=Object.entries(tot).map(([c,v])=>money(c,v)).join(' · ')||'TZS 0';
+   const {end}=fdGetPeriodDates();
+   card.innerHTML=`<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:8px"><div><div style="font-size:11px;font-weight:800;color:var(--navy)">TOTAL CLIENT RECEIVABLES</div><div style="font-size:21px;font-weight:900;color:var(--navy);margin-top:2px">${totals}</div><div style="font-size:10px;color:var(--muted);margin-top:2px">Open client balances as at ${end}</div></div><div style="font-size:9px;color:var(--muted);text-align:right">Historical position</div></div><div>${rows.length?rows.map(r=>`<div style="width:100%;display:flex;justify-content:space-between;gap:12px;align-items:center;border-top:1px solid var(--border);padding:7px 0;color:var(--navy)"><span style="font-size:11px">${esc(r.client)}</span><span style="font-size:11px;font-weight:800">${money(r.currency,r.amount)}</span></div>`).join(''):'<div style="font-size:11px;color:var(--muted);padding:6px 0">No open receivables as at this date.</div>'}</div>`;
+ }
+ function filterManualTable(){
+   const body=document.getElementById('fdManualBody');if(!body)return;
+   [...body.querySelectorAll('tr')].forEach(tr=>{
+     const td=[...tr.querySelectorAll('td')];if(!td.length)return;
+     let d='';for(const cell of td.slice(0,3)){const m=(cell.textContent||'').match(/\b\d{4}-\d{2}-\d{2}\b/);if(m){d=m[0];break;}}
+     if(!d){delete tr.dataset.fdv13Outside;return;}
+     tr.dataset.fdv13Outside=inRange(d)?'0':'1';
+   });
+   const visible=[...body.querySelectorAll('tr')].filter(tr=>tr.dataset.fdv13Outside!=='1');
+   if(!visible.length)body.innerHTML='<tr><td colspan="9" style="padding:12px;text-align:center;color:var(--muted)">No manual financial transactions for the selected period.</td></tr>';
+ }
+ function fixKpiNotes(){
+   const notes={
+    'REVENUE':'Revenue recorded this period.',
+    'PAYMENTS RECEIVED':'Cash received this period.',
+    'OUTSTANDING PAYMENTS':'Unpaid from this period’s invoices.',
+    'EXPENSES':'Operating expenses this period.'
+   };
+   [...document.querySelectorAll('#fdKpiRow>div')].forEach(c=>{const h=(c.firstElementChild?.textContent||'').trim().toUpperCase();const n=c.querySelector('.fdv12-note');if(n&&notes[h])n.textContent=notes[h];});
+ }
+ function apply(){renderReceivablesV13();filterManualTable();fixKpiNotes();}
+ const baseRefresh=window.fdRefresh;if(typeof baseRefresh==='function')window.fdRefresh=async function(){const r=await baseRefresh.apply(this,arguments);setTimeout(apply,0);return r;};
+ const baseKpi=window.fdRenderKpi;if(typeof baseKpi==='function')window.fdRenderKpi=function(){const r=baseKpi.apply(this,arguments);setTimeout(apply,0);return r;};
+ window.addEventListener('load',()=>[700,1400,2600].forEach(t=>setTimeout(apply,t)));
+ new MutationObserver(()=>setTimeout(apply,50)).observe(document.documentElement,{subtree:true,childList:true});
+ window.fdPeriodIntegrityAuditV13=function(){const {start,end}=fdGetPeriodDates();const manual=[...document.querySelectorAll('#fdManualBody tr')].filter(tr=>tr.dataset.fdv13Outside!=='1').length;return {start,end,receivableSources:receivableSourcesAsOf().length,manualVisibleRows:manual};};
+})();
+</script>
+'''
+pos=s.lower().rfind('</body>'); assert pos>=0
+s=s[:pos]+insert+s[pos:]
+p.write_text(s,errors='surrogateescape')
+print('V13 historical period integrity applied')
