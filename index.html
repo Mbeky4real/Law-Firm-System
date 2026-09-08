@@ -14,30 +14,19 @@
   function ensureRuntime(d,id,src){
     if(d.getElementById(id))return true;
     const s=d.createElement('script');
-    s.id=id;
-    s.src=src;
-    s.async=false;
-    d.body.appendChild(s);
-    return true;
+    s.id=id;s.src=src;s.async=false;d.body.appendChild(s);return true;
   }
   function injectModules(){
     try{
-      const d=frame.contentDocument;
-      if(!d||!d.body)return false;
+      const d=frame.contentDocument;if(!d||!d.body)return false;
       ensureRuntime(d,'molmsDocumentModuleV3','/js/document-module-v3.js?v=20260908b');
-      ensureRuntime(d,'molmsIntercomModuleV3','/js/intercom-module-v3.js?v=20260908c');
+      ensureRuntime(d,'molmsIntercomModuleV31','/js/intercom-module-v3.js?v=20260908d');
       return true;
-    }catch(e){
-      console.error('MOLMS module runtime load failed',e);
-      return false;
-    }
+    }catch(e){console.error('MOLMS module runtime load failed',e);return false;}
   }
   frame.addEventListener('load',injectModules);
-  frame.src='/app-core.html?v=20260908c';
-  let attempts=0;
-  const fallback=setInterval(function(){
-    if(injectModules()||++attempts>=20)clearInterval(fallback);
-  },250);
+  frame.src='/app-core.html?v=20260908d';
+  let attempts=0;const fallback=setInterval(function(){if(injectModules()||++attempts>=20)clearInterval(fallback)},250);
 })();
 </script>
 </body>
