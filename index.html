@@ -22,11 +22,12 @@
       ensureRuntime(d,'molmsTimeFormatV1','/js/time-format-v1.js?v=20260908a');
       ensureRuntime(d,'molmsDocumentModuleV3','/js/document-module-v3.js?v=20260908b');
       ensureRuntime(d,'molmsIntercomModuleV31','/js/intercom-module-v3.js?v=20260908d');
+      ensureRuntime(d,'molmsMatterTimelineInlineV1','/js/matter-timeline-inline-v1.js?v=20260908a');
       return true;
     }catch(e){console.error('MOLMS module runtime load failed',e);return false;}
   }
   frame.addEventListener('load',injectModules);
-  frame.src='/app-core.html?v=20260908e';
+  frame.src='/app-core.html?v=20260908f';
   let attempts=0;const fallback=setInterval(function(){if(injectModules()||++attempts>=20)clearInterval(fallback)},250);
 })();
 </script>
