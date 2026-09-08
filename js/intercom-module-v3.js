@@ -1,0 +1,132 @@
+/* MOLMS-INTERCOM-MODULE-V3 */
+(function(){
+'use strict';
+const DAY=24*60*60*1000;
+let replyToId=null;
+let roster=[];
+let selectedMentions=new Set();
+const $id=id=>document.getElementById(id);
+const getSb=()=>typeof sb!=='undefined'?sb:(window.supabaseClient||null);
+const escHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function msgText(m){return (m&&((m.message||m.content)||''))||''}
+function msgAuthor(m){return (m&&(m.sender_name||m.sender))||'Team'}
+function isActive(m){
+  if(!m||m.deleted_at)return false;
+  if(m.pinned)return true;
+  const exp=m.expires_at?new Date(m.expires_at).getTime():(new Date(m.created_at||0).getTime()+DAY);
+  return Number.isFinite(exp)&&exp>Date.now();
+}
+function activeMessages(){return (typeof msgs!=='undefined'&&Array.isArray(msgs))?msgs.filter(isActive):[]}
+function pruneExpired(){
+  if(typeof msgs==='undefined'||!Array.isArray(msgs))return false;
+  const before=msgs.length;
+  msgs=msgs.filter(isActive);
+  if(before!==msgs.length){try{if(typeof write==='function'&&typeof LS!=='undefined'&&LS.msgs)write(LS.msgs,msgs)}catch(_e){}}
+  return before!==msgs.length;
+}
+async function archiveExpired(){
+  const c=getSb(); if(!c||!c.rpc)return;
+  try{await c.rpc('archive_expired_intercom')}catch(e){console.warn('[MOLMS] InterCom archive sync failed',e)}
+}
+async function loadRoster(){
+  const c=getSb(); if(!c)return;
+  try{
+    const {data,error}=await c.from('roles').select('user_id,full_name,email,role,active').eq('active',true).order('full_name',{ascending:true});
+    if(error)throw error;
+    roster=(data||[]).filter(r=>r.user_id&&(!authUser||r.user_id!==authUser.id));
+    renderMentionOptions();
+  }catch(e){console.warn('[MOLMS] InterCom member roster unavailable',e)}
+}
+function installComposerUI(){
+  const input=$id('chatInput'); if(!input||$id('icReplyMentionV3'))return;
+  const row=input.parentElement; if(!row)return;
+  const panel=document.createElement('div'); panel.id='icReplyMentionV3';
+  panel.style.cssText='margin:8px 0 10px;padding:10px 12px;border:1px solid var(--border);border-radius:14px;background:#faf7ef';
+  panel.innerHTML='<div id="icReplyPreviewV3" class="hidden" style="font-size:12px;margin-bottom:8px"></div><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><button type="button" class="btn out small" id="icTagToggleV3">@ Tag members</button><span id="icTagSummaryV3" class="muted small">No members tagged</span></div><div id="icTagPanelV3" class="hidden" style="margin-top:8px;max-height:160px;overflow:auto;border-top:1px solid var(--border);padding-top:8px"></div>';
+  row.parentNode.insertBefore(panel,row);
+  $id('icTagToggleV3').addEventListener('click',()=>{$id('icTagPanelV3').classList.toggle('hidden')});
+  renderMentionOptions();
+}
+function renderMentionOptions(){
+  const p=$id('icTagPanelV3'); if(!p)return;
+  p.innerHTML=roster.length?roster.map(r=>'<label style="display:flex;align-items:center;gap:8px;margin:4px 0;font-weight:600;color:var(--navy)"><input type="checkbox" data-icmention="'+r.user_id+'" style="width:auto" '+(selectedMentions.has(r.user_id)?'checked':'')+'> '+escHtml(r.full_name||r.email||'Member')+'</label>').join(''):'<span class="muted small">No active members found.</span>';
+  p.querySelectorAll('[data-icmention]').forEach(cb=>cb.addEventListener('change',()=>{
+    if(cb.checked)selectedMentions.add(cb.dataset.icmention); else selectedMentions.delete(cb.dataset.icmention);
+    updateTagSummary();
+  }));
+  updateTagSummary();
+}
+function updateTagSummary(){
+  const s=$id('icTagSummaryV3'); if(!s)return;
+  if(!selectedMentions.size){s.textContent='No members tagged';return;}
+  const names=roster.filter(r=>selectedMentions.has(r.user_id)).map(r=>r.full_name||r.email||'Member');
+  s.textContent='Tagged: '+names.join(', ');
+}
+function setReply(id){
+  const m=(typeof msgs!=='undefined'&&Array.isArray(msgs))?msgs.find(x=>x.id===id):null; if(!m)return;
+  replyToId=id; installComposerUI();
+  const p=$id('icReplyPreviewV3'); if(p){p.classList.remove('hidden');p.innerHTML='<b>Replying to '+escHtml(msgAuthor(m))+'</b><br><span class="muted">'+escHtml(msgText(m).slice(0,120))+(msgText(m).length>120?'…':'')+'</span> <button type="button" class="btn out small" id="icCancelReplyV3" style="margin-left:6px">Cancel</button>';const b=$id('icCancelReplyV3');if(b)b.onclick=clearReply;}
+  const input=$id('chatInput');if(input){input.focus();input.placeholder='Write a reply…';}
+}
+function clearReply(){replyToId=null;const p=$id('icReplyPreviewV3');if(p){p.classList.add('hidden');p.innerHTML='';}const input=$id('chatInput');if(input)input.placeholder='Write a communication…';}
+function clearMentions(){selectedMentions.clear();renderMentionOptions();const p=$id('icTagPanelV3');if(p)p.classList.add('hidden')}
+function locateMessageNode(m){
+  const box=$id('chatBox');if(!box)return null;
+  const needle=msgText(m).trim().slice(0,60); if(!needle)return null;
+  const nodes=Array.from(box.querySelectorAll('.msg,.ic-message,.item'));
+  return nodes.find(n=>(n.textContent||'').includes(needle))||null;
+}
+function enhanceMessageActions(){
+  activeMessages().forEach(m=>{
+    const node=locateMessageNode(m);if(!node||node.querySelector('[data-icreply="'+m.id+'"]'))return;
+    let actions=node.querySelector('.member-actions,.ic-actions');
+    if(!actions){actions=document.createElement('div');actions.className='member-actions';node.appendChild(actions);}
+    const b=document.createElement('button');b.type='button';b.className='btn out small';b.dataset.icreply=m.id;b.textContent='Reply';b.addEventListener('click',()=>setReply(m.id));actions.insertBefore(b,actions.firstChild);
+    if(m.reply_to_id){
+      const parent=(typeof msgs!=='undefined'&&Array.isArray(msgs))?msgs.find(x=>x.id===m.reply_to_id):null;
+      if(parent&&!node.querySelector('.ic-reply-context-v3')){const q=document.createElement('div');q.className='ic-reply-context-v3';q.style.cssText='font-size:11px;border-left:3px solid var(--gold);padding:5px 8px;margin:4px 0 7px;background:rgba(201,151,58,.08)';q.innerHTML='<b>Reply to '+escHtml(msgAuthor(parent))+'</b>: '+escHtml(msgText(parent).slice(0,90))+(msgText(parent).length>90?'…':'');node.insertBefore(q,node.firstChild);}
+    }
+    if(Array.isArray(m.mentioned_user_ids)&&m.mentioned_user_ids.length&&!node.querySelector('.ic-mentioned-v3')){
+      const names=roster.filter(r=>m.mentioned_user_ids.includes(r.user_id)).map(r=>'@'+(r.full_name||r.email||'Member'));
+      if(names.length){const t=document.createElement('div');t.className='ic-mentioned-v3 muted';t.style.cssText='font-size:11px;margin-top:5px';t.textContent=names.join(' · ');node.appendChild(t);}
+    }
+  });
+}
+function wrapRender(){
+  if(typeof window.renderChat==='function'&&!window.renderChat.__intercomV3){const base=window.renderChat;window.renderChat=function(){pruneExpired();const out=base.apply(this,arguments);queueMicrotask(enhanceMessageActions);return out};window.renderChat.__intercomV3=true;}
+  if(typeof window.renderUpdatesWidget==='function'&&!window.renderUpdatesWidget.__intercomV3){const base=window.renderUpdatesWidget;window.renderUpdatesWidget=function(){pruneExpired();return base.apply(this,arguments)};window.renderUpdatesWidget.__intercomV3=true;}
+  if(typeof window.getUnreadCount==='function'&&!window.getUnreadCount.__intercomV3){const base=window.getUnreadCount;window.getUnreadCount=function(){pruneExpired();return base.apply(this,arguments)};window.getUnreadCount.__intercomV3=true;}
+}
+function patchSend(){
+  if(typeof window.sendMsg!=='function'||window.sendMsg.__intercomV3)return false;
+  window.sendMsg=async function(){
+    const content=(($id('chatInput')&&$id('chatInput').value)||'').trim();if(!content)return;
+    const c=getSb();if(!authUser&&c){if(typeof notice==='function')notice('You must be logged in to send messages.','err');return;}
+    const category=($id('chatCategory')&&$id('chatCategory').value)||'General';
+    const sender_name=(typeof authFullName!=='undefined'&&authFullName)||(authUser&&authUser.email)||'Team';
+    const sender_role=(typeof authRole!=='undefined'&&authRole==='partner')?'partner':'staff';
+    const sender_id=authUser?authUser.id:null;
+    try{
+      if(c&&roomId){
+        const payload={room_id:roomId,sender_id,created_by:sender_id,sender_name,sender_role,category,message:content,content:content,reply_to_id:replyToId,mentioned_user_ids:Array.from(selectedMentions)};
+        const {data,error}=await c.from('chat_messages').insert(payload).select('*').single();if(error)throw error;
+        if(typeof msgs!=='undefined'&&Array.isArray(msgs)&&!msgs.some(x=>x.id===data.id))msgs.push(data);
+      }else if(typeof msgs!=='undefined'&&Array.isArray(msgs)){
+        const now=new Date();msgs.push({id:(typeof uid==='function'?uid():String(Date.now())),message:content,content,room_id:roomId||null,sender_name,sender:sender_name,sender_id,sender_role,category,created_at:now.toISOString(),expires_at:new Date(now.getTime()+DAY).toISOString(),reply_to_id:replyToId,mentioned_user_ids:Array.from(selectedMentions),pinned:false});
+      }
+      if($id('chatInput'))$id('chatInput').value='';clearReply();clearMentions();if(typeof write==='function'&&typeof LS!=='undefined'&&LS.msgs)write(LS.msgs,msgs);if(typeof window.renderChat==='function')window.renderChat();const b=$id('chatBox');if(b)b.scrollTop=b.scrollHeight;
+    }catch(e){if(typeof notice==='function')notice('Message failed: '+(e&&e.message?e.message:'Unknown error'),'err');}
+  };
+  window.sendMsg.__intercomV3=true;return true;
+}
+function installPolicyNote(){
+  const page=$id('page-chat');if(!page||$id('icPolicyV3'))return;
+  const p=page.querySelector('p.muted.small');if(p){p.id='icPolicyV3';p.textContent='Internal coordination only. Normal messages disappear after 24 hours; pinned messages remain until unpinned.';}
+}
+function tick(){
+  const changed=pruneExpired();archiveExpired();if(changed){if(typeof window.renderChat==='function'&&typeof page!=='undefined'&&page==='chat')window.renderChat();if(typeof window.renderUpdatesWidget==='function')window.renderUpdatesWidget();}
+}
+function boot(){installComposerUI();installPolicyNote();wrapRender();patchSend();loadRoster();pruneExpired();archiveExpired();if(typeof window.renderChat==='function')window.renderChat();let tries=0;const setup=setInterval(()=>{installComposerUI();installPolicyNote();wrapRender();loadRoster();if(patchSend()||++tries>30)clearInterval(setup)},250);setInterval(tick,60*1000);}
+window.icReplyV3=setReply;
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+})();
