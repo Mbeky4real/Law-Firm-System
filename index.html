@@ -11,32 +11,27 @@
 <script>
 (function(){
   const frame=document.getElementById('molmsApp');
-  function ensureRuntime(d,id,src){
-    if(d.getElementById(id))return true;
-    const s=d.createElement('script');
-    s.id=id;
-    s.src=src;
-    s.async=false;
-    d.body.appendChild(s);
-    return true;
-  }
-  function injectDocumentRuntimes(){
+  function injectDocumentModule(){
     try{
       const d=frame.contentDocument;
       if(!d||!d.body)return false;
-      ensureRuntime(d,'molmsDocumentUploadRuntime','/js/document-upload-v1.js?v=20260908a');
-      ensureRuntime(d,'molmsDocumentDeleteRuntime','/js/document-delete-v1.js?v=20260908a');
+      if(d.getElementById('molmsDocumentModuleV3'))return true;
+      const s=d.createElement('script');
+      s.id='molmsDocumentModuleV3';
+      s.src='/js/document-module-v3.js?v=20260908b';
+      s.async=false;
+      d.body.appendChild(s);
       return true;
     }catch(e){
-      console.error('MOLMS document runtime load failed',e);
+      console.error('MOLMS document module load failed',e);
       return false;
     }
   }
-  frame.addEventListener('load',injectDocumentRuntimes);
-  frame.src='/app-core.html?v=20260908a';
+  frame.addEventListener('load',injectDocumentModule);
+  frame.src='/app-core.html?v=20260908b';
   let attempts=0;
   const fallback=setInterval(function(){
-    if(injectDocumentRuntimes()||++attempts>=20)clearInterval(fallback);
+    if(injectDocumentModule()||++attempts>=20)clearInterval(fallback);
   },250);
 })();
 </script>
