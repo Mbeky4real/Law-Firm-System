@@ -7,21 +7,31 @@
 <style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#faf8f4}#molmsApp{border:0;width:100%;height:100%;display:block}</style>
 </head>
 <body>
-<iframe id="molmsApp" src="/app-core.html" title="MOLMS"></iframe>
+<iframe id="molmsApp" title="MOLMS"></iframe>
 <script>
 (function(){
   const frame=document.getElementById('molmsApp');
-  frame.addEventListener('load',function(){
+  function injectDocumentRuntime(){
     try{
       const d=frame.contentDocument;
-      if(!d||d.getElementById('molmsDocumentUploadRuntime'))return;
+      if(!d||!d.body||d.getElementById('molmsDocumentUploadRuntime'))return false;
       const s=d.createElement('script');
       s.id='molmsDocumentUploadRuntime';
-      s.src='/js/document-upload-v1.js?v=20260907d';
-      s.defer=true;
+      s.src='/js/document-upload-v1.js?v=20260908a';
+      s.async=false;
       d.body.appendChild(s);
-    }catch(e){console.error('MOLMS document runtime load failed',e)}
-  });
+      return true;
+    }catch(e){
+      console.error('MOLMS document runtime load failed',e);
+      return false;
+    }
+  }
+  frame.addEventListener('load',injectDocumentRuntime);
+  frame.src='/app-core.html?v=20260908a';
+  let attempts=0;
+  const fallback=setInterval(function(){
+    if(injectDocumentRuntime()||++attempts>=20)clearInterval(fallback);
+  },250);
 })();
 </script>
 </body>
