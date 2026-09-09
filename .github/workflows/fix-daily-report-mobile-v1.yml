@@ -1,0 +1,102 @@
+name: fix-daily-report-mobile-v1
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/fix-daily-report-mobile-v1.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: main}
+      - name: Apply mobile Daily Report Details refinement
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('app-core.html')
+          s=p.read_text(errors='surrogateescape')
+          mark='MOLMS-REPORT-DETAILS-MOBILE-V1'
+          if mark in s:
+              raise SystemExit(0)
+          # Guard the exact report-details structure we inspected.
+          required=['id="page-reportdetails"','id="rdTitle"','id="rdReportInfo"','id="rdWorkPerformed"','id="rdAttention"','id="rdReview"','id="rdReviewActions"','id="rdDiaryEvent"','id="rdDocuments"','A. REPORT INFORMATION','B. WORK PERFORMED','C. PARTNER ATTENTION','D. PARTNER REVIEW']
+          for x in required:
+              assert x in s, 'missing report marker: '+x
+          css=r'''
+<style>
+/* MOLMS-REPORT-DETAILS-MOBILE-V1
+   Mobile-only presentation repair. No report data, review workflow or routing logic is changed. */
+@media (max-width:1199px){
+  body{overflow-x:hidden!important}
+  .topbar2{padding-top:calc(10px + env(safe-area-inset-top))!important}
+  #page-reportdetails{width:100%!important;max-width:100%!important;overflow-x:hidden!important}
+  #page-reportdetails>.card{width:100%!important;max-width:100%!important;margin:0!important;padding:14px!important;border-radius:18px!important;overflow:hidden!important}
+  #page-reportdetails>.card>div[style*="grid-template-columns:1fr 1fr"]{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:12px!important;align-items:stretch!important;margin-top:14px!important}
+  #page-reportdetails>.card>div[style*="grid-template-columns:1fr 1fr"]>div{min-width:0!important;width:100%!important}
+  #page-reportdetails .card .card{width:100%!important;max-width:100%!important;min-width:0!important;margin:0 0 12px!important;padding:15px!important;border-radius:16px!important;box-shadow:0 3px 12px rgba(15,36,64,.045)!important}
+  #page-reportdetails .card .card:last-child{margin-bottom:0!important}
+  #rdTitle{font-size:26px!important;line-height:1.12!important;overflow-wrap:anywhere!important}
+  #rdRef,#rdMatter{overflow-wrap:anywhere!important;word-break:normal!important}
+  #rdReportInfo,#rdWorkPerformed,#rdAttention,#rdReview,#rdDiaryEvent,#rdDocuments{width:100%!important;max-width:100%!important;min-width:0!important;overflow:hidden!important}
+  #rdReportInfo table,#rdWorkPerformed table,#rdAttention table,#rdReview table,#rdDiaryEvent table,#rdDocuments table{width:100%!important;max-width:100%!important;table-layout:fixed!important;border-collapse:collapse!important}
+  #rdReportInfo td,#rdWorkPerformed td,#rdAttention td,#rdReview td,#rdDiaryEvent td,#rdDocuments td{white-space:normal!important;vertical-align:top!important;overflow-wrap:anywhere!important;word-break:normal!important;line-height:1.38!important}
+  #rdReportInfo td:first-child,#rdWorkPerformed td:first-child,#rdAttention td:first-child,#rdReview td:first-child,#rdDiaryEvent td:first-child,#rdDocuments td:first-child{width:39%!important;padding:8px 8px 8px 0!important;color:var(--muted)!important}
+  #rdReportInfo td:last-child,#rdWorkPerformed td:last-child,#rdAttention td:last-child,#rdReview td:last-child,#rdDiaryEvent td:last-child,#rdDocuments td:last-child{width:61%!important;padding:8px 0 8px 8px!important;font-weight:700!important}
+  #rdReviewActions{display:grid!important;grid-template-columns:1fr!important;gap:8px!important;width:100%!important}
+  #rdReviewActions .btn{width:100%!important;min-height:42px!important;white-space:normal!important;text-align:center!important}
+  #rdArchiveBtn .btn{min-height:38px!important}
+  #rdStatusPill .pill{font-size:12px!important;padding:6px 10px!important}
+}
+@media (max-width:480px){
+  #page-reportdetails>.card{padding:12px!important}
+  #page-reportdetails .card .card{padding:14px 13px!important}
+  #rdTitle{font-size:24px!important}
+  #rdReportInfo td:first-child,#rdWorkPerformed td:first-child,#rdAttention td:first-child,#rdReview td:first-child,#rdDiaryEvent td:first-child,#rdDocuments td:first-child{width:40%!important}
+  #rdReportInfo td:last-child,#rdWorkPerformed td:last-child,#rdAttention td:last-child,#rdReview td:last-child,#rdDiaryEvent td:last-child,#rdDocuments td:last-child{width:60%!important}
+}
+</style>
+'''
+          m=re.search(r'</body>\s*</html>\s*$',s,re.I|re.S)
+          assert m, 'terminal document close missing'
+          s=s[:m.start()]+css+s[m.start():]
+          assert s.count(mark)==1
+          # Structure and core behavior markers must still be present.
+          for x in ['function rdRenderDetails','partnerReviewReport','openRevisionModal','go(\'reportdetails\')']:
+              assert x in s, 'behavior marker lost: '+x
+          p.write_text(s,errors='surrogateescape')
+
+          # Bust only the app-core shell cache so phones receive the refinement.
+          ip=Path('index.html'); idx=ip.read_text()
+          old="frame.src='/app-core.html?v=20260908k'"
+          new="frame.src='/app-core.html?v=20260910a'"
+          assert old in idx or new in idx, 'unexpected app-core cache token'
+          idx=idx.replace(old,new)
+          ip.write_text(idx)
+          PY
+      - name: Verify narrow presentation-only diff
+        run: |
+          git diff --stat -- app-core.html index.html
+          python - <<'PY'
+          import subprocess
+          d=subprocess.check_output(['git','diff','--numstat','--','app-core.html','index.html']).decode()
+          print(d)
+          rows=[r.split() for r in d.strip().splitlines() if r.strip()]
+          assert rows
+          for a,rem,path in rows:
+              assert int(rem) <= 2, (path,a,rem)
+          s=open('app-core.html',errors='ignore').read()
+          assert 'MOLMS-REPORT-DETAILS-MOBILE-V1' in s
+          assert 'grid-template-columns:minmax(0,1fr)!important' in s
+          assert 'table-layout:fixed!important' in s
+          PY
+      - name: Commit mobile report refinement
+        run: |
+          if git diff --quiet -- app-core.html index.html; then exit 0; fi
+          git config user.name 'MOLMS Production Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add app-core.html index.html
+          git commit -m 'fix(report): perfect Daily Report Details on mobile'
+          git push origin HEAD:main
