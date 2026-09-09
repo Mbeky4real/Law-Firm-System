@@ -17447,5 +17447,29 @@ async function invSubmitPayment(){
 <style>/* MOLMS Settings Protection Center V1 */
 @media(max-width:900px){#settingsProtectionCards{grid-template-columns:1fr!important}}
 </style>
+
+<style>
+/* MOLMS-REPORT-DETAILS-MOBILE-V1 */
+@media (max-width:1199px){
+body{overflow-x:hidden!important}.topbar2{padding-top:calc(10px + env(safe-area-inset-top))!important}
+#page-reportdetails{width:100%!important;max-width:100%!important;overflow-x:hidden!important}
+#page-reportdetails>.card{width:100%!important;max-width:100%!important;margin:0!important;padding:14px!important;border-radius:18px!important;overflow:hidden!important}
+#page-reportdetails>.card>div[style*="grid-template-columns:1fr 1fr"]{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:12px!important;align-items:stretch!important;margin-top:14px!important}
+#page-reportdetails>.card>div[style*="grid-template-columns:1fr 1fr"]>div{min-width:0!important;width:100%!important}
+#page-reportdetails .card .card{width:100%!important;max-width:100%!important;min-width:0!important;margin:0 0 12px!important;padding:15px!important;border-radius:16px!important;box-shadow:0 3px 12px rgba(15,36,64,.045)!important}
+#page-reportdetails .card .card:last-child{margin-bottom:0!important}
+#rdTitle{font-size:26px!important;line-height:1.12!important;overflow-wrap:anywhere!important}
+#rdRef,#rdMatter{overflow-wrap:anywhere!important;word-break:normal!important}
+#rdReportInfo,#rdWorkPerformed,#rdAttention,#rdReview,#rdDiaryEvent,#rdDocuments{width:100%!important;max-width:100%!important;min-width:0!important;overflow:hidden!important}
+#rdReportInfo table,#rdWorkPerformed table,#rdAttention table,#rdReview table,#rdDiaryEvent table,#rdDocuments table{width:100%!important;max-width:100%!important;table-layout:fixed!important;border-collapse:collapse!important}
+#rdReportInfo td,#rdWorkPerformed td,#rdAttention td,#rdReview td,#rdDiaryEvent td,#rdDocuments td{white-space:normal!important;vertical-align:top!important;overflow-wrap:anywhere!important;word-break:normal!important;line-height:1.38!important}
+#rdReportInfo td:first-child,#rdWorkPerformed td:first-child,#rdAttention td:first-child,#rdReview td:first-child,#rdDiaryEvent td:first-child,#rdDocuments td:first-child{width:39%!important;padding:8px 8px 8px 0!important;color:var(--muted)!important}
+#rdReportInfo td:last-child,#rdWorkPerformed td:last-child,#rdAttention td:last-child,#rdReview td:last-child,#rdDiaryEvent td:last-child,#rdDocuments td:last-child{width:61%!important;padding:8px 0 8px 8px!important;font-weight:700!important}
+#rdReviewActions{display:grid!important;grid-template-columns:1fr!important;gap:8px!important;width:100%!important}
+#rdReviewActions .btn{width:100%!important;min-height:42px!important;white-space:normal!important;text-align:center!important}
+#rdArchiveBtn .btn{min-height:38px!important}#rdStatusPill .pill{font-size:12px!important;padding:6px 10px!important}
+}
+@media (max-width:480px){#page-reportdetails>.card{padding:12px!important}#page-reportdetails .card .card{padding:14px 13px!important}#rdTitle{font-size:24px!important}#rdReportInfo td:first-child,#rdWorkPerformed td:first-child,#rdAttention td:first-child,#rdReview td:first-child,#rdDiaryEvent td:first-child,#rdDocuments td:first-child{width:40%!important}#rdReportInfo td:last-child,#rdWorkPerformed td:last-child,#rdAttention td:last-child,#rdReview td:last-child,#rdDiaryEvent td:last-child,#rdDocuments td:last-child{width:60%!important}}
+</style>
 </body>
 </html>
