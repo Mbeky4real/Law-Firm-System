@@ -1,94 +1,58 @@
 # MOLMS Refactor Roadmap
 
-## Current Stable Modules
+## Current Active Runtime Modules
 
-### js/ui.js
-- esc()
-- $()
-- val()
-- clear()
+- `js/time-format-v1.js` — system-wide 24-hour time formatting
+- `js/document-module-v3.js` — Documents runtime
+- `js/intercom-module-v3.js` — InterCom runtime
+- `js/matter-timeline-inline-v1.js` — inline matter report timeline
+- `js/diary-manual-events-v1.js` — manual Diary entries and matter-linked Diary work
+- `js/calendar-professional-v1.js` — professional Diary calendar layout
+- `js/calendar-holidays-v1.js` — Tanzania / international holiday layer
+- `js/partner-drawings-expenditure-v1.js` — Partner Drawings manual expenditure refinement
+- `js/manual-revenue-matter-picker-v1.js` — Cause List / Non-Lit matter picker for manual revenue
 
-### js/storage.js
-- write()
-- read()
-
-### js/constants.js
-- LS storage keys
-
-### js/utils.js
-- today()
-- searchText()
+The earlier `ui.js`, `storage.js`, `constants.js`, and `utils.js` extraction scaffolds were retired because they were not loaded by the production shell and duplicated logic still owned by `app-core.html`.
 
 ---
 
-# Current System Status
+## Current System Status
 
-## Stable
+### Stable
 - Supabase connection
 - Authentication
 - Dashboard loading
 - Reports
 - Diary
-- Basic rendering
-- Role rendering
-- Backup workflow
-- Rollback workflow
+- Cause List and Non-Lit matter workflows
+- Documents
+- InterCom
+- Finance runtime refinements
+- Backup / rollback safeguards
 - Vercel deployment
 
-## Needs Stabilization
-- Cause List rendering consistency
-- NonLit rendering consistency
-- Runtime module loading
-- Shared renderer normalization
+### Architectural debt
+- `app-core.html` remains monolithic and should only be decomposed incrementally after equivalent runtime modules are tested.
+- `index.html` remains the canonical same-origin shell and injects approved runtime modules into `app-core.html`.
+- Do not reintroduce obsolete patch workflows or one-shot repository scripts.
 
 ---
 
-# Planned Future Modules
+## Refactor Rules
 
-## UI Layer
-- ui.js
-
-## Storage Layer
-- storage.js
-
-## Config Layer
-- constants.js
-
-## Utility Layer
-- utils.js
-
-## Data Layer
-- supabase.js
-
-## Rendering Layer
-- renderers.js
-
-## Feature Modules
-- cases.js
-- nonlit.js
-- diary.js
-- reports.js
-- docs.js
-- chat.js
+1. Create a rollback branch before material production changes.
+2. Remove obsolete helpers only after confirming they are not loaded or referenced by production.
+3. Never remove inline logic before a tested replacement exists.
+4. Prefer small runtime modules over large one-shot patches.
+5. Avoid broad renderer changes without a rollback point.
+6. Verify Vercel deployment after production changes.
+7. Keep the repository free of temporary patch scripts, inspection workflows, debug artifacts and obsolete release files.
 
 ---
 
-# Refactor Rules
+## Current Priority
 
-1. Backup before major edits
-2. Commit after every stable milestone
-3. Never remove inline logic before testing module replacement
-4. Extract pure helpers first
-5. Avoid renderer edits without rollback point
-6. Test after every runtime change
-7. Prefer incremental stabilization over massive rewrites
-
----
-
-# Current Priority
-
-1. Stabilize rendering consistency
-2. Continue safe modular extraction
-3. Improve runtime module loading safely
-4. Separate renderers later
-5. Separate Supabase logic later
+1. Preserve production stability.
+2. Consolidate runtime refinements when multiple modules begin patching the same feature.
+3. Continue reducing duplicate and dead code safely.
+4. Decompose `app-core.html` only in tested, reversible stages.
