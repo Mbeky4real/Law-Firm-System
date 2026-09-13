@@ -150,9 +150,23 @@
     host.innerHTML=`<div style="font-size:11px;font-weight:800;color:${rows.length?'#b45309':'#16803c'}">${rows.length} item${rows.length===1?'':'s'} require follow-up</div>${rows.slice(0,4).map(r=>`<div style="display:flex;justify-content:space-between;gap:8px;border-top:1px solid var(--border);padding-top:6px"><span style="font-size:10px"><b>${esc(r.client||'Unknown client')}</b><br><small style="color:var(--muted)">${esc(r.label)}</small></span><b style="font-size:10px;color:#b42318">${money(r.currency,r.amount)}</b></div>`).join('')}<div style="font-size:9px;color:var(--muted);margin-top:5px">Open “View All” for totals, payments, balances and source records.</div>`;
   }
 
+  function vatPosition(){
+    const {start,end}=bounds(),{invoices}=data(),payable={TZS:0},pipeline={TZS:0};
+    let taxInvoiceCount=0,proformaCount=0;
+    invoices.filter(i=>date(i.invoice_date)>=start&&date(i.invoice_date)<=end).forEach(i=>{
+      const amount=Math.max(0,num(i.vat_amount)),type=String(i.invoice_type||'').toLowerCase(),status=String(i.status||'').toLowerCase();
+      if(type==='tax'&&!['draft','void','cancelled','superseded'].includes(status)){
+        add(payable,i.currency,amount);if(amount>0)taxInvoiceCount++;
+      }else if(type==='proforma'&&status==='issued'&&amount>0){
+        add(pipeline,i.currency,amount);proformaCount++;
+      }
+    });
+    return {payable,pipeline,taxInvoiceCount,proformaCount};
+  }
+
   function renderObligations(){
     const host=q('fdMonthlyObligationsStableV6')||q('fdMonthlyObligations');if(!host)return;let o;try{o=fdMonthlyObligations()}catch(e){return}if(o.payrollGenerated)return;
-    const month=new Date(o.month+'-01T00:00:00').toLocaleDateString('en-US',{month:'long',year:'numeric'}),vatLines=moneyLines(o.vatByCur||{TZS:o.vat},false);
+    const month=new Date(o.month+'-01T00:00:00').toLocaleDateString('en-US',{month:'long',year:'numeric'}),vat=vatPosition(),vatLines=moneyLines(vat.payable,false),pipelineLines=moneyLines(vat.pipeline,false).filter(x=>x.value>0);
     const pendingRow=label=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:4px 0;font-size:12px"><span style="color:var(--muted)">${label}</span><span style="font-weight:700;color:#92400e">Pending payroll</span></div>`;
     host.innerHTML=`<div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px;margin:0">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:2px">
@@ -160,12 +174,14 @@
         <span style="font-size:10px;font-weight:700;color:#92400e;background:#fef3c7;padding:2px 8px;border-radius:10px;white-space:nowrap">Payroll not generated</span>
       </div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:10px">${esc(month)}</div>
-      <div style="font-size:18px;font-weight:900;color:#92400e;margin-bottom:2px">Pending calculation</div>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Total to Provide For</div>
+      <div style="font-size:18px;font-weight:900;color:var(--navy);margin-bottom:2px">${vatLines.map(x=>esc(x.text)).join(' · ')}</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Confirmed invoice VAT · payroll obligations pending</div>
       <div style="border-top:1px solid var(--border);padding-top:6px">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:7px 8px;margin:0 -8px 4px;background:#f6f8fb;border-radius:8px;font-size:12px"><span style="font-weight:800;color:var(--navy)">Net Salaries</span><span style="font-weight:800;color:#92400e">Pending payroll</span></div>
         ${['PAYE','NSSF','Health Insurance','SDL','WCF'].map(pendingRow).join('')}
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:4px 0;font-size:12px"><span style="color:var(--muted)">VAT on Issued Tax Invoices</span><span style="font-weight:700">${vatLines.map(x=>x.text).join(' · ')}</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:7px 0 4px;margin-top:4px;border-top:1px solid var(--border);font-size:12px"><span style="font-weight:800;color:var(--navy)">VAT on Issued Tax Invoices</span><span style="font-weight:900;color:#1e40af">${vatLines.map(x=>esc(x.text)).join(' · ')}</span></div>
+        <div style="font-size:9px;color:var(--muted);text-align:right">${vat.taxInvoiceCount} VAT-bearing tax invoice${vat.taxInvoiceCount===1?'':'s'} in this period</div>
+        ${pipelineLines.length?`<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:7px 0 3px;margin-top:5px;border-top:1px dashed var(--border);font-size:11px"><span style="color:var(--muted)">Proforma VAT — not yet payable</span><span style="font-weight:700;color:#64748b">${pipelineLines.map(x=>esc(x.text)).join(' · ')}</span></div><div style="font-size:9px;color:var(--muted)">Moves to invoice VAT automatically when payment converts the proforma to a tax invoice.</div>`:''}
       </div>
     </div>`;
   }
@@ -212,5 +228,5 @@
       reconcileQueued=true;
       queueMicrotask(()=>{reconcileQueued=false;render()});
     }).observe(document.documentElement,{childList:true,subtree:true});
-  window.MOLMSFinanceV16={metrics,periodClientRows,allReceivables,render,refresh,audit:()=>{const m=metrics();return {version:16,period:bounds(),revenue:m.revenue,collected:m.collected,newReceivables:m.newReceivables,totalReceivables:m.totalReceivables,cash:m.cash.closingByCur,paymentLedgerRows:paymentRows.length}}};
+  window.MOLMSFinanceV16={metrics,periodClientRows,allReceivables,render,refresh,audit:()=>{const m=metrics();return {version:16,period:bounds(),revenue:m.revenue,collected:m.collected,newReceivables:m.newReceivables,totalReceivables:m.totalReceivables,cash:m.cash.closingByCur,vat:vatPosition(),paymentLedgerRows:paymentRows.length}}};
 })();
