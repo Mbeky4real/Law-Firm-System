@@ -7,7 +7,7 @@
 
   const q=id=>document.getElementById(id);
   const num=v=>Number(v||0);
-  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
   const date=v=>String(v||'').slice(0,10);
   const add=(o,c,v)=>{c=c||'TZS';o[c]=(o[c]||0)+num(v);return o;};
   const approved=t=>String(t?.status||(t?.is_approved?'approved':'pending')).toLowerCase()==='approved';
@@ -150,14 +150,25 @@
     host.innerHTML=`<div style="font-size:11px;font-weight:800;color:${rows.length?'#b45309':'#16803c'}">${rows.length} item${rows.length===1?'':'s'} require follow-up</div>${rows.slice(0,4).map(r=>`<div style="display:flex;justify-content:space-between;gap:8px;border-top:1px solid var(--border);padding-top:6px"><span style="font-size:10px"><b>${esc(r.client||'Unknown client')}</b><br><small style="color:var(--muted)">${esc(r.label)}</small></span><b style="font-size:10px;color:#b42318">${money(r.currency,r.amount)}</b></div>`).join('')}<div style="font-size:9px;color:var(--muted);margin-top:5px">Open “View All” for totals, payments, balances and source records.</div>`;
   }
 
+  function vatRecognitionDate(i){
+    const firstReceipt=receipts(i)
+      .filter(r=>num(r.cash)+num(r.wht)>0&&r.date)
+      .map(r=>r.date)
+      .sort()[0];
+    return firstReceipt||date(i.invoice_date);
+  }
+
   function vatPosition(){
     const {start,end}=bounds(),{invoices}=data(),payable={TZS:0},pipeline={TZS:0};
     let taxInvoiceCount=0,proformaCount=0;
-    invoices.filter(i=>date(i.invoice_date)>=start&&date(i.invoice_date)<=end).forEach(i=>{
+    invoices.forEach(i=>{
       const amount=Math.max(0,num(i.vat_amount)),type=String(i.invoice_type||'').toLowerCase(),status=String(i.status||'').toLowerCase();
       if(type==='tax'&&!['draft','void','cancelled','superseded'].includes(status)){
-        add(payable,i.currency,amount);if(amount>0)taxInvoiceCount++;
-      }else if(type==='proforma'&&status==='issued'&&amount>0){
+        const recognitionDate=vatRecognitionDate(i);
+        if(amount>0&&recognitionDate>=start&&recognitionDate<=end){
+          add(payable,i.currency,amount);taxInvoiceCount++;
+        }
+      }else if(type==='proforma'&&status==='issued'&&amount>0&&date(i.invoice_date)>=start&&date(i.invoice_date)<=end){
         add(pipeline,i.currency,amount);proformaCount++;
       }
     });
@@ -179,8 +190,8 @@
       <div style="border-top:1px solid var(--border);padding-top:6px">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:7px 8px;margin:0 -8px 4px;background:#f6f8fb;border-radius:8px;font-size:12px"><span style="font-weight:800;color:var(--navy)">Net Salaries</span><span style="font-weight:800;color:#92400e">Pending payroll</span></div>
         ${['PAYE','NSSF','Health Insurance','SDL','WCF'].map(pendingRow).join('')}
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:7px 0 4px;margin-top:4px;border-top:1px solid var(--border);font-size:12px"><span style="font-weight:800;color:var(--navy)">VAT on Issued Tax Invoices</span><span style="font-weight:900;color:#1e40af">${vatLines.map(x=>esc(x.text)).join(' · ')}</span></div>
-        <div style="font-size:9px;color:var(--muted);text-align:right">${vat.taxInvoiceCount} VAT-bearing tax invoice${vat.taxInvoiceCount===1?'':'s'} in this period</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:7px 0 4px;margin-top:4px;border-top:1px solid var(--border);font-size:12px"><span style="font-weight:800;color:var(--navy)">VAT on Tax Invoices</span><span style="font-weight:900;color:#1e40af">${vatLines.map(x=>esc(x.text)).join(' · ')}</span></div>
+        <div style="font-size:9px;color:var(--muted);text-align:right">${vat.taxInvoiceCount} VAT-bearing tax invoice${vat.taxInvoiceCount===1?'':'s'} recognised in this period</div>
         ${pipelineLines.length?`<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:7px 0 3px;margin-top:5px;border-top:1px dashed var(--border);font-size:11px"><span style="color:var(--muted)">Proforma VAT — not yet payable</span><span style="font-weight:700;color:#64748b">${pipelineLines.map(x=>esc(x.text)).join(' · ')}</span></div><div style="font-size:9px;color:var(--muted)">Moves to invoice VAT automatically when payment converts the proforma to a tax invoice.</div>`:''}
       </div>
     </div>`;
