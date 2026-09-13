@@ -187,7 +187,16 @@
     const d=data();
     const signature=[d.invoices.length,d.manual.length,d.entries.length,d.payroll.length,d.office.length,bounds().start,bounds().end].join('|');
     const legacyVisible=(kpi&&/OUTSTANDING PAYMENTS/.test(kpi.textContent||''))||(client&&/CLIENT\s*&\s*MATTER REVENUE/.test(client.textContent||''));
-    if(legacyVisible||signature!==lastDataSignature){lastDataSignature=signature;refresh()}
+    if(legacyVisible)render();
+    if(signature!==lastDataSignature){lastDataSignature=signature;refresh()}
   },500);
+  let reconcileQueued=false;
+  if(typeof MutationObserver!=='undefined')new MutationObserver(()=>{
+      const kpi=q('fdKpiRow'),client=q('fdClientMatterRevenueV2');
+      const legacyVisible=(kpi&&/OUTSTANDING PAYMENTS/.test(kpi.textContent||''))||(client&&/CLIENT\s*&\s*MATTER REVENUE/.test(client.textContent||''));
+      if(!legacyVisible||reconcileQueued)return;
+      reconcileQueued=true;
+      queueMicrotask(()=>{reconcileQueued=false;render()});
+    }).observe(document.documentElement,{childList:true,subtree:true});
   window.MOLMSFinanceV16={metrics,periodClientRows,allReceivables,render,refresh,audit:()=>{const m=metrics();return {version:16,period:bounds(),revenue:m.revenue,collected:m.collected,newReceivables:m.newReceivables,totalReceivables:m.totalReceivables,cash:m.cash.closingByCur,paymentLedgerRows:paymentRows.length}}};
 })();
