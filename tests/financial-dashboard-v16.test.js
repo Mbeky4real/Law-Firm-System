@@ -14,7 +14,7 @@ global._fdAllInvoices = [
   {id:'hesu',invoice_type:'tax',status:'issued',client_name:'HESU',currency:'TZS',invoice_date:'2026-08-26',total_due:1180000,amount_paid:0},
   {id:'zana',invoice_type:'tax',status:'paid',client_name:'Zana',currency:'TZS',invoice_date:'2026-08-26',updated_at:'2026-08-27',total_due:708000,amount_paid:678000,withholding_tax_amount:30000},
   {id:'royal',invoice_type:'tax',status:'issued',client_name:'Royal Oven',currency:'TZS',invoice_date:'2026-08-27',total_due:1000000,amount_paid:0},
-  {id:'kaisa',invoice_type:'proforma',status:'issued',client_name:'Kaisa',currency:'USD',invoice_date:'2026-09-01',total_due:3540,amount_paid:0},
+  {id:'kaisa',invoice_type:'proforma',status:'issued',client_name:'Kaisa',currency:'USD',invoice_date:'2026-09-01',vat_amount:540,total_due:3540,amount_paid:0},
   {id:'petra',invoice_type:'tax',status:'part_paid',client_name:'Petra',currency:'TZS',invoice_date:'2026-09-02',updated_at:'2026-09-05',total_due:6000000,amount_paid:5000000,notes:'[Payment 2026-09-03] Cash 5,000,000 · Cash'},
   {id:'pacific',invoice_type:'tax',status:'issued',client_name:'Pacific Oil',currency:'USD',invoice_date:'2026-09-07',total_due:250,amount_paid:0}
 ];
@@ -35,5 +35,9 @@ assert.deepEqual(audit.collected,{TZS:11000000,USD:0});
 assert.deepEqual(audit.newReceivables,{TZS:6200000,USD:250});
 assert.deepEqual(audit.totalReceivables,{TZS:11880000,USD:250});
 assert.deepEqual(audit.cash,{TZS:1258000});
+assert.deepEqual(audit.vat.payable,{TZS:0,USD:0});
+assert.deepEqual(audit.vat.pipeline,{TZS:0,USD:540});
+assert.equal(audit.vat.taxInvoiceCount,0);
+assert.equal(audit.vat.proformaCount,1);
 assert.equal(global.MOLMSFinanceV16.periodClientRows().find(r=>r.client==='Magnus').outstanding,2000000);
 console.log('financial-dashboard-v16 reconciliation: PASS');
