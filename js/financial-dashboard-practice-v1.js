@@ -1,10 +1,9 @@
-/* MOLMS Financial Dashboard Practice Analytics V4
- * Canonical practice-area renderer for all selected periods.
- * Reads authoritative finance tables directly, classifies every recognised
- * revenue row, owns the integrated BY PRACTICE AREA view, and removes the
- * obsolete standalone PRACTICE PERFORMANCE duplicate.
+/* MOLMS Financial Dashboard Practice Analytics V5
+ * Safe period-aware practice-area renderer.
+ * Reads authoritative finance tables directly for the selected period.
+ * Does not hide or remove dashboard containers.
  */
-(function financialDashboardPracticeV4(){
+(function financialDashboardPracticeV5(){
   'use strict';
 
   const q=id=>document.getElementById(id);
@@ -17,8 +16,6 @@
   let loaded=false;
   let rendering=false;
   let lastPeriodKey='';
-  let hostObserver=null;
-  let observedHost=null;
 
   function bounds(){
     try{return fdGetPeriodDates()}catch(e){
@@ -32,11 +29,9 @@
   function classify(row){
     const explicit=String(row.practice_area||'').toLowerCase();
     if(['litigation','non_litigation','general'].includes(explicit))return explicit;
-
     const matter=String(row.matter_ref||row.matter_title||row.receivable_matter_ref||row.description||'').toLowerCase();
     if(/(^|\b)lit:|mol\/lit\//.test(matter))return 'litigation';
     if(/(^|\b)nl:|mol\/nlt\//.test(matter))return 'non_litigation';
-
     if(String(row.service_type||'').toLowerCase()==='retainer'||row.retainer_period)return 'general';
     return 'general';
   }
@@ -59,30 +54,20 @@
 
       const invoices=(inv.data||[])
         .filter(i=>!['draft','void','cancelled','superseded'].includes(String(i.status||'').toLowerCase()))
-        .map(i=>({
-          kind:'invoice',currency:i.currency||'TZS',revenue:num(i.total_due),
-          practice:classify(i),client:i.client_name||'Unknown client',source:i.invoice_number||'—'
-        }));
+        .map(i=>({currency:i.currency||'TZS',revenue:num(i.total_due),practice:classify(i)}));
 
       const manual=(man.data||[])
         .filter(t=>String(t.status||t.approval_status||(t.is_approved?'approved':'')).toLowerCase()==='approved')
-        .map(t=>({
-          kind:'manual',currency:t.currency||'TZS',
-          revenue:t.client_receivable&&num(t.agreed_amount)>0?num(t.agreed_amount):num(t.amount),
-          practice:classify(t),client:t.receivable_client_name||t.counterparty||'Other revenue',
-          source:t.reference||'Manual revenue'
-        }));
+        .map(t=>({currency:t.currency||'TZS',revenue:t.client_receivable&&num(t.agreed_amount)>0?num(t.agreed_amount):num(t.amount),practice:classify(t)}));
 
       sourceRows=[...invoices,...manual];
       loaded=true;
       lastPeriodKey=periodKey();
       return true;
     }catch(e){
-      console.warn('[MOLMS practice analytics V4]',e);
+      console.warn('[MOLMS practice analytics V5]',e);
       return false;
-    }finally{
-      loading=false;
-    }
+    }finally{loading=false}
   }
 
   function card(label,value,total,currency,accent){
@@ -102,70 +87,14 @@
     rendering=true;
     try{
       const extras=[...new Set(sourceRows.map(r=>r.currency).filter(c=>c&&c!=='TZS'))].sort();
-      const currencies=['TZS',...extras];
-      host.dataset.practiceOwner='v4';
-      host.innerHTML=currencies.map((c,i)=>section(c,i?`${c} PRACTICE REVENUE`:'' )).join('');
+      host.innerHTML=['TZS',...extras].map((c,i)=>section(c,i?`${c} PRACTICE REVENUE`:'' )).join('');
     }finally{rendering=false}
   }
 
-  function hideStandaloneDuplicate(){
-    const nodes=[...document.querySelectorAll('div,h1,h2,h3,h4,h5,h6,span,p')];
-    const heading=nodes.find(el=>String(el.textContent||'').trim().replace(/\s+/g,' ')==='PRACTICE PERFORMANCE');
-    if(!heading)return false;
-    let node=heading;
-    for(let depth=0;node&&depth<8;depth++,node=node.parentElement){
-      const text=String(node.textContent||'').replace(/\s+/g,' ');
-      if(!/Litigation/.test(text)||!/Non-Litigation/.test(text)||!/Other\s*\/\s*General/.test(text))continue;
-      const rect=node.getBoundingClientRect();
-      if(rect.width>300){node.style.display='none';node.dataset.obsoletePracticeCard='hidden';return true}
-    }
-    heading.style.display='none';
-    return true;
-  }
+  async function refresh(){await loadRows();render()}
 
-  function ensureHostObserver(){
-    const host=q('fdRevByPractice');
-    if(!host||host===observedHost)return;
-    if(hostObserver)hostObserver.disconnect();
-    observedHost=host;
-    hostObserver=new MutationObserver(()=>{
-      if(rendering||!loaded)return;
-      if(host.dataset.practiceOwner!=='v4')queueMicrotask(render);
-    });
-    hostObserver.observe(host,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['data-practice-owner']});
-  }
+  window.addEventListener('load',()=>{setTimeout(refresh,700);setTimeout(refresh,1700)});
+  setInterval(async()=>{if(periodKey()!==lastPeriodKey)await refresh()},1500);
 
-  async function refresh(){
-    await loadRows();
-    hideStandaloneDuplicate();
-    ensureHostObserver();
-    render();
-    setTimeout(()=>{hideStandaloneDuplicate();ensureHostObserver();render()},120);
-  }
-
-  // Chain into the dashboard refresh lifecycle so month/year changes always
-  // reload the selected period rather than keeping September-specific data.
-  const priorRefresh=window.fdRefresh;
-  if(typeof priorRefresh==='function')window.fdRefresh=async function(){
-    const result=await priorRefresh.apply(this,arguments);
-    await refresh();
-    return result;
-  };
-
-  window.addEventListener('load',()=>{setTimeout(refresh,500);setTimeout(refresh,1500)});
-
-  // Fallback for legacy period controls that repaint without calling fdRefresh.
-  setInterval(async()=>{
-    hideStandaloneDuplicate();
-    ensureHostObserver();
-    if(periodKey()!==lastPeriodKey)await refresh();
-  },2000);
-
-  const documentObserver=new MutationObserver(()=>{
-    hideStandaloneDuplicate();
-    ensureHostObserver();
-  });
-  documentObserver.observe(document.documentElement,{childList:true,subtree:true});
-
-  window.MOLMSPracticeV4={classify,render,refresh,audit:()=>({period:bounds(),loaded,rows:sourceRows})};
+  window.MOLMSPracticeV5={classify,render,refresh,audit:()=>({period:bounds(),loaded,rows:sourceRows})};
 })();
