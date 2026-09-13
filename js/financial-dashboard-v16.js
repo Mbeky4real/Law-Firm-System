@@ -153,7 +153,21 @@
   function renderObligations(){
     const host=q('fdMonthlyObligationsStableV6')||q('fdMonthlyObligations');if(!host)return;let o;try{o=fdMonthlyObligations()}catch(e){return}if(o.payrollGenerated)return;
     const month=new Date(o.month+'-01T00:00:00').toLocaleDateString('en-US',{month:'long',year:'numeric'}),vatLines=moneyLines(o.vatByCur||{TZS:o.vat},false);
-    host.innerHTML=`<div style="display:flex;justify-content:space-between;gap:10px"><div><div style="font-size:11px;font-weight:800;color:var(--navy)">MONTHLY OBLIGATIONS</div><div style="font-size:10px;color:var(--muted)">${esc(month)}</div></div><span style="font-size:9px;font-weight:800;color:#92400e;background:#fef3c7;padding:3px 8px;border-radius:10px;height:max-content">PAYROLL NOT GENERATED</span></div><div style="font-size:18px;font-weight:900;color:#92400e;margin:10px 0 3px">Not yet calculated</div><div style="font-size:10px;color:var(--muted);margin-bottom:8px">Payroll-dependent amounts must not be presented as zero before payroll is generated.</div>${['Net Salaries','PAYE','NSSF','Health Insurance','SDL','WCF'].map(x=>`<div class="fd-ob-row"><span>${x}</span><b style="color:#92400e">Pending payroll</b></div>`).join('')}<div class="fd-ob-row"><span>VAT on issued tax invoices</span><b>${vatLines.map(x=>x.text).join(' · ')}</b></div>`;
+    const pendingRow=label=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:4px 0;font-size:12px"><span style="color:var(--muted)">${label}</span><span style="font-weight:700;color:#92400e">Pending payroll</span></div>`;
+    host.innerHTML=`<div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px;margin:0">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:2px">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.5px;color:var(--muted)">MONTHLY OBLIGATIONS</div>
+        <span style="font-size:10px;font-weight:700;color:#92400e;background:#fef3c7;padding:2px 8px;border-radius:10px;white-space:nowrap">Payroll not generated</span>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">${esc(month)}</div>
+      <div style="font-size:18px;font-weight:900;color:#92400e;margin-bottom:2px">Pending calculation</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Total to Provide For</div>
+      <div style="border-top:1px solid var(--border);padding-top:6px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:7px 8px;margin:0 -8px 4px;background:#f6f8fb;border-radius:8px;font-size:12px"><span style="font-weight:800;color:var(--navy)">Net Salaries</span><span style="font-weight:800;color:#92400e">Pending payroll</span></div>
+        ${['PAYE','NSSF','Health Insurance','SDL','WCF'].map(pendingRow).join('')}
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:4px 0;font-size:12px"><span style="color:var(--muted)">VAT on Issued Tax Invoices</span><span style="font-weight:700">${vatLines.map(x=>x.text).join(' · ')}</span></div>
+      </div>
+    </div>`;
   }
 
   function renderStatus(){
