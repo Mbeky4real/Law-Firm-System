@@ -177,5 +177,17 @@
   const baseRefresh=window.fdRefresh;
   if(typeof baseRefresh==='function')window.fdRefresh=async function(){const result=await baseRefresh.apply(this,arguments);await refresh();return result};
   window.addEventListener('load',()=>{setTimeout(refresh,900);setTimeout(refresh,1800)});
+  // The legacy application renders again after authentication and after its
+  // asynchronous financial queries complete. Reconcile after those paints so
+  // the canonical figures cannot be replaced by the old dashboard output.
+  let lastDataSignature='';
+  setInterval(()=>{
+    const kpi=q('fdKpiRow'),client=q('fdClientMatterRevenueV2');
+    if(!kpi&&!client)return;
+    const d=data();
+    const signature=[d.invoices.length,d.manual.length,d.entries.length,d.payroll.length,d.office.length,bounds().start,bounds().end].join('|');
+    const legacyVisible=(kpi&&/OUTSTANDING PAYMENTS/.test(kpi.textContent||''))||(client&&/CLIENT\s*&\s*MATTER REVENUE/.test(client.textContent||''));
+    if(legacyVisible||signature!==lastDataSignature){lastDataSignature=signature;refresh()}
+  },500);
   window.MOLMSFinanceV16={metrics,periodClientRows,allReceivables,render,refresh,audit:()=>{const m=metrics();return {version:16,period:bounds(),revenue:m.revenue,collected:m.collected,newReceivables:m.newReceivables,totalReceivables:m.totalReceivables,cash:m.cash.closingByCur,paymentLedgerRows:paymentRows.length}}};
 })();
