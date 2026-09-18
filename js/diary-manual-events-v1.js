@@ -29,7 +29,7 @@ function patchDelete(){
    const c=getSb();
    try{
      if(c){
-       const {error}=await c.from('office_events').update({deleted_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq('id',id).select('id').maybeSingle();
+       const {error}=await c.from('office_events').update({deleted_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq('id',id);
        if(error)throw error;
        if(typeof loadOfficeEvents==='function')await loadOfficeEvents();
      }else if(typeof officeEvents!=='undefined'){
