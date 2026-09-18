@@ -1,6 +1,19 @@
 /* MOLMS-CALENDAR-HOLIDAYS-V2 */
 (function(){'use strict';
 let holidays=[],showTZ=true,showIntl=true;
+function recurringEvents(year){
+  const out=[
+    {holiday_date:year+'-08-01',name:'Happy M&O Law Day',scope:'molaw',kind:'firm'},
+    {holiday_date:year+'-09-26',name:'Mwombeki’s Birthday',scope:'molaw',kind:'personal'},
+    {holiday_date:year+'-10-26',name:'Fatma’s Birthday',scope:'molaw',kind:'personal'}
+  ];
+  const nthSunday=(month,n)=>{const d=new Date(year,month-1,1),shift=(7-d.getDay())%7;return new Date(year,month-1,1+shift+(n-1)*7)};
+  const mothers=nthSunday(5,2),fathers=nthSunday(6,3);
+  const fmt=d=>year+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+  out.push({holiday_date:fmt(mothers),name:'Mother’s Day',scope:'family',kind:'observance'});
+  out.push({holiday_date:fmt(fathers),name:'Father’s Day',scope:'family',kind:'observance'});
+  return out;
+}
 const sbc=()=>typeof sb!=='undefined'?sb:(window.supabaseClient||null);
 const pad=n=>String(n).padStart(2,'0');
 
@@ -13,6 +26,7 @@ async function load(){
       .eq('is_active',true);
     if(error) throw error;
     holidays=(data||[]).map(h=>({...h,holiday_date:String(h.holiday_date).slice(0,10)}));
+    
   }catch(e){
     console.error('Calendar holiday load failed:',e);
   }
@@ -58,6 +72,49 @@ function controls(){
   if(intl)intl.onchange=e=>{showIntl=e.target.checked;decorate()};
 }
 
+function selectedEventsForDate(date){
+  return holidays.concat(recurringEvents(Number(date.slice(0,4)))).filter(h=>h.holiday_date===date&&(
+    h.scope==='tanzania'&&showTZ || h.scope==='international'&&showIntl ||
+    h.scope==='molaw' || h.scope==='family'
+  ));
+}
+function ensureDayPanel(){
+  const p=document.getElementById('page-diary'); if(!p)return null;
+  let panel=document.getElementById('calendarSelectedDayV1');
+  if(panel)return panel;
+  const cal=p.querySelector('.calendar'); if(!cal)return null;
+  panel=document.createElement('div'); panel.id='calendarSelectedDayV1';
+  panel.style.cssText='margin-top:12px;border:1px solid #ded6cb;border-radius:10px;background:#fff;padding:12px 14px;color:#24344d';
+  cal.parentNode.insertBefore(panel,cal.nextSibling); return panel;
+}
+function showSelectedDay(date){
+  const panel=ensureDayPanel(); if(!panel)return;
+  const events=selectedEventsForDate(date);
+  const dt=new Date(date+'T00:00:00');
+  const label=dt.toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  if(!events.length){
+    panel.innerHTML='<div style="font-size:12px;font-weight:800">'+label+'</div><div style="margin-top:5px;font-size:11px;color:#65738a">No holiday or special event on this date.</div>';
+    return;
+  }
+  panel.innerHTML='<div style="font-size:12px;font-weight:800">'+label+'</div><div style="margin-top:7px;display:flex;flex-direction:column;gap:5px">'+events.map(h=>{
+    const icon=h.scope==='tanzania'?'🇹🇿':h.scope==='international'?'🌐':h.scope==='molaw'?'⚖️':'❤️';
+    const type=h.scope==='tanzania'?'Tanzania Public Holiday':h.scope==='international'?'International Observance':h.scope==='molaw'?'M&O Law Office':'Family Observance';
+    return '<div style="display:flex;align-items:center;gap:7px;font-size:11px"><span>'+icon+'</span><b>'+escText(h.name)+'</b><span style="color:#7a8699">— '+type+(h.is_tentative?' (tentative)':'')+'</span></div>';
+  }).join('')+'</div>';
+}
+function escText(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function bindDayClicks(){
+  const p=document.getElementById('page-diary'); if(!p)return;
+  p.querySelectorAll('.calDay').forEach(cell=>{
+    if(cell.__holidayClickV1)return;
+    cell.__holidayClickV1=true;
+    cell.style.cursor='pointer';
+    cell.addEventListener('click',function(){
+      const date=ymdForCell(cell);
+      if(date)showSelectedDay(date);
+    });
+  });
+}
 function decorate(){
   controls();
   const p=document.getElementById('page-diary');
@@ -66,10 +123,7 @@ function decorate(){
   p.querySelectorAll('.calDay').forEach(cell=>{
     const date=ymdForCell(cell);
     if(!date)return;
-    holidays.filter(h=>h.holiday_date===date&&(
-      (h.scope==='tanzania'&&showTZ)||
-      (h.scope==='international'&&showIntl)
-    )).forEach(h=>{
+    selectedEventsForDate(date).forEach(h=>{
       const e=document.createElement('div');
       e.className='calEvent molmsHoliday';
       e.title=h.name+(h.is_tentative?' (tentative)':'');
@@ -80,6 +134,7 @@ function decorate(){
       cell.appendChild(e);
     });
   });
+  bindDayClicks();
 }
 
 function patch(){
@@ -87,7 +142,7 @@ function patch(){
   const base=renderCalendar;
   renderCalendar=function(){
     const r=base.apply(this,arguments);
-    requestAnimationFrame(()=>{controls();decorate()});
+    requestAnimationFrame(()=>{controls();decorate();bindDayClicks()});
     return r;
   };
   renderCalendar.__holidayV2=true;
