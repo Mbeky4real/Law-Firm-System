@@ -3,6 +3,27 @@
 let holidays=[],showTZ=true,showIntl=true;
 function recurringEvents(year){
   const out=[
+    {holiday_date:year+'-01-24',name:'International Day of Education',scope:'international',kind:'observance'},
+    {holiday_date:year+'-02-20',name:'World Day of Social Justice',scope:'international',kind:'observance'},
+    {holiday_date:year+'-03-08',name:'International Women’s Day',scope:'international',kind:'observance'},
+    {holiday_date:year+'-03-10',name:'International Day of Women Judges',scope:'international',kind:'observance'},
+    {holiday_date:year+'-03-21',name:'International Day for the Elimination of Racial Discrimination',scope:'international',kind:'observance'},
+    {holiday_date:year+'-04-26',name:'World Intellectual Property Day',scope:'international',kind:'observance'},
+    {holiday_date:year+'-05-03',name:'World Press Freedom Day',scope:'international',kind:'observance'},
+    {holiday_date:year+'-06-26',name:'United Nations International Day in Support of Victims of Torture',scope:'international',kind:'observance'},
+    {holiday_date:year+'-07-25',name:'International Day for Judicial Well-being',scope:'international',kind:'observance'},
+    {holiday_date:year+'-07-30',name:'World Day against Trafficking in Persons',scope:'international',kind:'observance'},
+    {holiday_date:year+'-08-30',name:'International Day of the Victims of Enforced Disappearances',scope:'international',kind:'observance'},
+    {holiday_date:year+'-09-15',name:'International Day of Democracy',scope:'international',kind:'observance'},
+    {holiday_date:year+'-09-21',name:'International Day of Peace',scope:'international',kind:'observance'},
+    {holiday_date:year+'-09-28',name:'International Day for Universal Access to Information',scope:'international',kind:'observance'},
+    {holiday_date:year+'-10-02',name:'International Day of Non-Violence',scope:'international',kind:'observance'},
+    {holiday_date:year+'-11-02',name:'International Day to End Impunity for Crimes Against Journalists',scope:'international',kind:'observance'},
+    {holiday_date:year+'-11-25',name:'International Day for the Elimination of Violence against Women',scope:'international',kind:'observance'},
+    {holiday_date:year+'-12-02',name:'International Day for the Abolition of Slavery',scope:'international',kind:'observance'},
+    {holiday_date:year+'-12-09',name:'International Anti-Corruption Day',scope:'international',kind:'observance'},
+    {holiday_date:year+'-12-10',name:'Human Rights Day',scope:'international',kind:'observance'},
+    {holiday_date:year+'-12-24',name:'International Anti-Cybercrime Day',scope:'international',kind:'observance'},
     {holiday_date:year+'-08-01',name:'Happy M&O Law Day',scope:'molaw',kind:'firm'},
     {holiday_date:year+'-09-26',name:'Mwombeki’s Birthday',scope:'molaw',kind:'personal'},
     {holiday_date:year+'-10-26',name:'Fatma’s Birthday',scope:'molaw',kind:'personal'}
