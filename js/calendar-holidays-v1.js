@@ -15,6 +15,7 @@ function recurringEvents(year){
     {holiday_date:year+'-07-30',name:'World Day against Trafficking in Persons',scope:'international',kind:'observance'},
     {holiday_date:year+'-08-30',name:'International Day of the Victims of Enforced Disappearances',scope:'international',kind:'observance'},
     {holiday_date:year+'-09-15',name:'International Day of Democracy',scope:'international',kind:'observance'},
+    {holiday_date:year+'-09-21',name:'International Day of Peace',scope:'international',kind:'observance'},
     {holiday_date:year+'-09-28',name:'International Day for Universal Access to Information',scope:'international',kind:'observance'},
     {holiday_date:year+'-10-02',name:'International Day of Non-Violence',scope:'international',kind:'observance'},
     {holiday_date:year+'-11-02',name:'International Day to End Impunity for Crimes Against Journalists',scope:'international',kind:'observance'},
