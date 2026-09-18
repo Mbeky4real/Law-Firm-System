@@ -48,6 +48,37 @@ function patchDelete(){
  deleteOfficeEvent.__diaryV2=true;
  return true;
 }
-function boot(){install();patchReset();patchOpen();patchEdit();patchSave();patchDelete();let n=0,t=setInterval(()=>{install();patchReset();patchOpen();patchEdit();patchSave();patchDelete();if(++n>30)clearInterval(t)},250)}
+function patchDeleteButtons(){
+ if(typeof renderOfficeEvents!=='function'||renderOfficeEvents.__diaryDeleteV2)return false;
+ const base=renderOfficeEvents;
+ renderOfficeEvents=function(){
+   const r=base.apply(this,arguments);
+   const list=document.getElementById('oeList');
+   if(!list)return r;
+   list.querySelectorAll('.item').forEach(item=>{
+     const buttons=[...item.querySelectorAll('button')];
+     const edit=buttons.find(b=>(b.textContent||'').trim()==='Edit');
+     const del=buttons.find(b=>(b.textContent||'').trim()==='Delete');
+     if(del)return;
+     if(!edit)return;
+     const m=(edit.getAttribute('onclick')||'').match(/editOfficeEvent\('([^']+)'\)/);
+     if(!m)return;
+     const id=m[1];
+     const e=typeof officeEvents!=='undefined'?officeEvents.find(x=>String(x.id)===String(id)):null;
+     const canManage=e&&((!authUser)||e.created_by===authUser.id||(typeof isAdmin==='function'&&isAdmin()));
+     if(!canManage)return;
+     const b=document.createElement('button');
+     b.className='btn red small';
+     b.textContent='Delete';
+     b.style.marginLeft='4px';
+     b.onclick=()=>deleteOfficeEvent(id);
+     (edit.parentElement||item).appendChild(b);
+   });
+   return r;
+ };
+ renderOfficeEvents.__diaryDeleteV2=true;
+ return true;
+}
+function boot(){install();patchReset();patchOpen();patchEdit();patchSave();patchDelete();patchDeleteButtons();let n=0,t=setInterval(()=>{install();patchReset();patchOpen();patchEdit();patchSave();patchDelete();patchDeleteButtons();if(++n>30)clearInterval(t)},250)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
