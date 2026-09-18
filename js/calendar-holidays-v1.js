@@ -26,8 +26,7 @@ async function load(){
       .eq('is_active',true);
     if(error) throw error;
     holidays=(data||[]).map(h=>({...h,holiday_date:String(h.holiday_date).slice(0,10)}));
-    const year=new Date().getFullYear();
-    holidays=holidays.concat(recurringEvents(year));
+    
   }catch(e){
     console.error('Calendar holiday load failed:',e);
   }
@@ -74,7 +73,7 @@ function controls(){
 }
 
 function selectedEventsForDate(date){
-  return holidays.filter(h=>h.holiday_date===date&&(
+  return holidays.concat(recurringEvents(Number(date.slice(0,4)))).filter(h=>h.holiday_date===date&&(
     h.scope==='tanzania'&&showTZ || h.scope==='international'&&showIntl ||
     h.scope==='molaw' || h.scope==='family'
   ));
