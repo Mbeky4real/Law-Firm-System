@@ -24,7 +24,7 @@ function recurringEvents(year){
     {holiday_date:year+'-12-09',name:'International Anti-Corruption Day',scope:'international',kind:'observance'},
     {holiday_date:year+'-12-10',name:'Human Rights Day',scope:'international',kind:'observance'},
     {holiday_date:year+'-12-24',name:'International Anti-Cybercrime Day',scope:'international',kind:'observance'},
-    {holiday_date:year+'-08-01',name:'Happy M&O Law Day',scope:'molaw',kind:'firm'},
+    {holiday_date:year+'-08-01',name:'M&O Law Office Anniversary',scope:'molaw',kind:'firm'},
     {holiday_date:year+'-09-26',name:'Mwombeki’s Birthday',scope:'molaw',kind:'personal'},
     {holiday_date:year+'-10-26',name:'Fatma’s Birthday',scope:'molaw',kind:'personal'}
   ];
