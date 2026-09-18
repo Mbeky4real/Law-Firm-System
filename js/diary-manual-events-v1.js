@@ -18,6 +18,36 @@ function patchSave(){if(typeof addOfficeEvent!=='function'||addOfficeEvent.__dia
 function patchReset(){if(typeof resetOfficeEventForm!=='function'||resetOfficeEventForm.__diaryV2)return;const base=resetOfficeEventForm;resetOfficeEventForm=function(){const r=base.apply(this,arguments);setTimeout(()=>{install();clearExtra()},0);return r};resetOfficeEventForm.__diaryV2=true}
 function patchOpen(){if(typeof oeOpenAddModal!=='function'||oeOpenAddModal.__diaryV2)return;const base=oeOpenAddModal;oeOpenAddModal=function(){const r=base.apply(this,arguments);setTimeout(()=>{install();clearExtra()},0);return r};oeOpenAddModal.__diaryV2=true}
 function patchEdit(){if(typeof editOfficeEvent!=='function'||editOfficeEvent.__diaryV2)return;const base=editOfficeEvent;editOfficeEvent=function(id){const r=base.apply(this,arguments);setTimeout(()=>{install();const e=typeof officeEvents!=='undefined'?officeEvents.find(x=>x.id===id):null;if(!e)return;const src=e.linked_case_id?'cause':e.linked_nonlit_id?'nonlit':'general';$id('oeSourceV1').value=src;populate();$id('oeMatterV1').value=e.linked_case_id||e.linked_nonlit_id||'';syncMode();if($id('oeWorkV2'))$id('oeWorkV2').value=e.work_type||e.type||'Court Appearance';if($id('oeIssueV2'))$id('oeIssueV2').value=e.issue||'';if($id('oeLocationV1'))$id('oeLocationV1').value=e.location||'';if($id('oeFormTitle'))$id('oeFormTitle').textContent='Edit Diary Entry'},0);return r};editOfficeEvent.__diaryV2=true}
-function boot(){install();patchReset();patchOpen();patchEdit();patchSave();let n=0,t=setInterval(()=>{install();patchReset();patchOpen();patchEdit();patchSave();if(++n>30)clearInterval(t)},250)}
+function patchDelete(){
+ if(typeof deleteOfficeEvent!=='function'||deleteOfficeEvent.__diaryV2)return false;
+ deleteOfficeEvent=async function(id){
+   const e=typeof officeEvents!=='undefined'?officeEvents.find(x=>String(x.id)===String(id)):null;
+   if(!e){notice('Diary entry not found.','err');return}
+   const canManage=(!authUser)||e.created_by===authUser.id||(typeof isAdmin==='function'&&isAdmin());
+   if(!canManage){notice('You can only delete your own Diary entries.','err');return}
+   if(!confirm('Delete this Diary entry?'))return;
+   const c=getSb();
+   try{
+     if(c){
+       const {error}=await c.from('office_events').update({deleted_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq('id',id).select('id').maybeSingle();
+       if(error)throw error;
+       if(typeof loadOfficeEvents==='function')await loadOfficeEvents();
+     }else if(typeof officeEvents!=='undefined'){
+       officeEvents=officeEvents.filter(x=>String(x.id)!==String(id));
+       if(typeof saveLocal==='function')saveLocal();
+     }
+     if(typeof renderOfficeEvents==='function')renderOfficeEvents();
+     if(typeof renderCalendar==='function')renderCalendar();
+     if(typeof renderDayDetail==='function')renderDayDetail();
+     notice('Diary entry deleted.');
+   }catch(e){
+     console.error('Diary delete failed:',e);
+     notice('Delete failed: '+(e?.message||'Unknown error'),'err');
+   }
+ };
+ deleteOfficeEvent.__diaryV2=true;
+ return true;
+}
+function boot(){install();patchReset();patchOpen();patchEdit();patchSave();patchDelete();let n=0,t=setInterval(()=>{install();patchReset();patchOpen();patchEdit();patchSave();patchDelete();if(++n>30)clearInterval(t)},250)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
