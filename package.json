@@ -9,5 +9,8 @@
     "@capacitor/android": "7.4.4",
     "@capacitor/cli": "7.4.4",
     "@capacitor/core": "7.4.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2"
   }
 }
