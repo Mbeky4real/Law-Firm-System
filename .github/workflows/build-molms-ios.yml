@@ -1,0 +1,52 @@
+name: Build MOLMS iOS
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/build-molms-ios.yml'
+      - 'package.json'
+      - 'capacitor.config.ts'
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout MOLMS
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Prepare Capacitor iOS
+        run: |
+          mkdir -p www
+          npx cap add ios
+          npx cap sync ios
+
+      - name: Build iOS simulator app
+        run: |
+          xcodebuild -workspace ios/App/App.xcworkspace             -scheme App             -sdk iphonesimulator             -configuration Debug             -derivedDataPath build             CODE_SIGNING_ALLOWED=NO             build
+
+      - name: Package simulator app
+        run: |
+          mkdir -p MOLMS-iOS-Simulator
+          cp -R build/Build/Products/Debug-iphonesimulator/App.app MOLMS-iOS-Simulator/MOLMS.app
+          zip -r MOLMS-iOS-Simulator.zip MOLMS-iOS-Simulator
+
+      - name: Upload MOLMS iOS simulator build
+        uses: actions/upload-artifact@v4
+        with:
+          name: MOLMS-iOS-Simulator
+          path: MOLMS-iOS-Simulator.zip
+          retention-days: 30
