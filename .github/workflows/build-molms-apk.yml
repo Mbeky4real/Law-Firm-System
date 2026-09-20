@@ -37,10 +37,14 @@ jobs:
         run: |
           sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
-      - name: Create Capacitor Android wrapper
+      - name: Install Capacitor
         run: |
           npm install
-          npx cap add android
+          mkdir -p www
+          npx cap init MOLMS tz.co.molaw.molms --web-dir www
+
+      - name: Configure MOLMS live server
+        run: |
           node -e "const fs=require('fs'); const p='capacitor.config.ts'; fs.writeFileSync(p, \`import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
@@ -55,6 +59,7 @@ const config: CapacitorConfig = {
 
 export default config;
 \`);"
+          npx cap add android
           npx cap sync android
 
       - name: Build debug APK
@@ -62,7 +67,7 @@ export default config;
         run: ./gradlew assembleDebug --no-daemon
 
       - name: Rename APK
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk MOLMS.apk
+        run: cp app/build/outputs/apk/debug/app-debug.apk ../MOLMS.apk
 
       - name: Upload MOLMS APK
         uses: actions/upload-artifact@v4
