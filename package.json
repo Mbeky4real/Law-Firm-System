@@ -1,0 +1,13 @@
+{
+  "name": "molms-android-wrapper",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "build": "mkdir -p www"
+  },
+  "dependencies": {
+    "@capacitor/android": "7.4.4",
+    "@capacitor/cli": "7.4.4",
+    "@capacitor/core": "7.4.4"
+  }
+}
