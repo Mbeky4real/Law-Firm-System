@@ -1,0 +1,72 @@
+name: Build MOLMS Android APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/build-molms-apk.yml"
+      - "package.json"
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout MOLMS
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        run: |
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Create Capacitor Android wrapper
+        run: |
+          npm install
+          npx cap add android
+          node -e "const fs=require('fs'); const p='capacitor.config.ts'; fs.writeFileSync(p, \`import type { CapacitorConfig } from '@capacitor/cli';
+
+const config: CapacitorConfig = {
+  appId: 'tz.co.molaw.molms',
+  appName: 'MOLMS',
+  webDir: 'www',
+  server: {
+    url: 'https://admin.molaw.co.tz',
+    cleartext: false
+  }
+};
+
+export default config;
+\`);"
+          npx cap sync android
+
+      - name: Build debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Rename APK
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk MOLMS.apk
+
+      - name: Upload MOLMS APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MOLMS-Android-APK
+          path: MOLMS.apk
+          retention-days: 30
