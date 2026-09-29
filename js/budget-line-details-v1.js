@@ -98,14 +98,19 @@
       const category=cells[2]?.querySelector('div');
       if(category && !category.querySelector('.bd-item-link')){
         const label=category.textContent||'Budget line';
-        category.innerHTML='<button type="button" class="bd-item-link" onclick="bdViewLineItems(\\''+esc(line.id)+'\\')">'+esc(label)+'</button>';
+        category.innerHTML='<button type="button" class="bd-item-link" data-bd-line-id="'+esc(line.id)+'">'+esc(label)+'</button>';
       }
 
       // Replace the raw item count with a clear review affordance.
       const count=cells[3];
       if(count && !count.querySelector('.bd-item-view')){
-        count.innerHTML='<button type="button" class="bd-item-view" onclick="bdViewLineItems(\\''+esc(line.id)+'\\')" title="View the individual items in this category">'+items.length+' '+(items.length===1?'item':'items')+' ▸</button>';
+        count.innerHTML='<button type="button" class="bd-item-view" data-bd-line-id="'+esc(line.id)+'" title="View the individual items in this category">'+items.length+' '+(items.length===1?'item':'items')+' ▸</button>';
       }
+      row.querySelectorAll('[data-bd-line-id]').forEach(btn=>{
+        if(btn.dataset.bdBound==='1') return;
+        btn.dataset.bdBound='1';
+        btn.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();showItems(btn.dataset.bdLineId);});
+      });
     });
   }
 
