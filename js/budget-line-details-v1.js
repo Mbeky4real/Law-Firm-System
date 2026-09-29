@@ -51,13 +51,13 @@
   function findBudgetRef(){
     const root=document.getElementById('page-budget')||document.body;
     const text=root.innerText||'';
-    const refs=[...text.matchAll(/MOL\\/BUD\\/\\d+\\/\\d{2}\\/\\d{2}\\/\\d{2}\\/[A-Z]{2}/g)].map(m=>m[0]);
+    const refs=[...text.matchAll(/MOL\/BUD\/\d+\/\d{2}\/\d{2}\/\d{2}\/[A-Z]{2}/g)].map(m=>m[0]);
     return refs[0]||null;
   }
 
   function rowCategory(row){
     const cells=row.querySelectorAll('td');
-    if(cells.length>=3) return (cells[2].innerText||cells[2].textContent||'').replace(/\\s+/g,' ').trim();
+    if(cells.length>=3) return (cells[2].innerText||cells[2].textContent||'').replace(/\s+/g,' ').trim();
     return '';
   }
 
@@ -189,13 +189,13 @@
       if(!categoryCell||!countCell) return;
 
       if(!categoryCell.querySelector('.bd-item-link')){
-        const label=(categoryCell.innerText||categoryCell.textContent||'Budget line').replace(/\\s+/g,' ').trim();
+        const label=(categoryCell.innerText||categoryCell.textContent||'Budget line').replace(/\s+/g,' ').trim();
         categoryCell.innerHTML='<button type="button" class="bd-item-link" title="View budget line items">'+esc(label)+'</button>';
       }
 
       if(!countCell.querySelector('.bd-item-view')){
         const raw=(countCell.innerText||countCell.textContent||'').trim();
-        const n=(raw.match(/\\d+/)||['0'])[0];
+        const n=(raw.match(/\d+/)||['0'])[0];
         countCell.innerHTML='<button type="button" class="bd-item-view" title="View the individual items">'+esc(n)+' '+(n==='1'?'item':'items')+' ▸</button>';
       }
 
