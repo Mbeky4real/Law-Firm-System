@@ -71,6 +71,25 @@
       .filter(r=>rowCategory(r)===cat).length-1;
   }
 
+  function normalizeText(v){
+    return String(v||'').replace(/\\s+/g,' ').trim().toLowerCase();
+  }
+
+  function visibleBudgetRows(){
+    const tbody=document.getElementById('bdLinesBody');
+    if(!tbody) return [];
+    return [...tbody.querySelectorAll('tr')].filter(r=>{
+      if(r.querySelector('td[colspan]')) return false;
+      const cells=r.querySelectorAll('td');
+      return cells.length>=4;
+    });
+  }
+
+  function rowPosition(row){
+    const rows=visibleBudgetRows();
+    return rows.indexOf(row);
+  }
+
   async function resolveLine(row){
     const client=getSb();
     if(!client) throw new Error('Budget data service is not available.');
@@ -86,9 +105,6 @@
     if(docError) throw docError;
     if(!doc) throw new Error('The selected budget could not be loaded.');
 
-    const category=rowCategory(row);
-    const occurrence=rowIndexForCategory(row);
-
     const {data:lines,error:lineError}=await client
       .from('budget_lines')
       .select('id,category,reason,description,notes,requested_amount,status,created_at')
@@ -96,8 +112,32 @@
       .order('created_at',{ascending:true});
     if(lineError) throw lineError;
 
-    const matches=(lines||[]).filter(x=>String(x.category||'').trim()===category);
-    const line=matches[occurrence]||matches[0];
+    const allLines=lines||[];
+    if(!allLines.length) throw new Error('No budget lines were found for this budget.');
+
+    /*
+     * The budget table is rendered in the same logical line order as the
+     * budget_lines collection. Use the visible row position first. This is
+     * important because the UI displays both category and purpose, and the
+     * text in a cell may therefore contain the category more than once.
+     */
+    const pos=rowPosition(row);
+    let line=(pos>=0 && pos<allLines.length) ? allLines[pos] : null;
+
+    /*
+     * Safe fallback for filtered/reordered rows: match the visible text
+     * against category/reason/description instead of requiring exact text.
+     */
+    if(!line){
+      const cells=row.querySelectorAll('td');
+      const visible=normalizeText(cells[2]?.innerText||'');
+      line=allLines.find(x=>{
+        const candidates=[x.category,x.reason,x.description]
+          .map(normalizeText).filter(Boolean);
+        return candidates.some(v=>v===visible || visible.includes(v) || v.includes(visible));
+      })||null;
+    }
+
     if(!line) throw new Error('The budget line could not be matched to this row.');
 
     const {data:items,error:itemError}=await client
