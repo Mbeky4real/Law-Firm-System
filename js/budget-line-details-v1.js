@@ -91,9 +91,8 @@
 
     const {data:lines,error:lineError}=await client
       .from('budget_lines')
-      .select('id,category,reason,description,notes,requested_amount,status,display_order,created_at')
+      .select('id,category,reason,description,notes,requested_amount,status,created_at')
       .eq('budget_document_id',doc.id)
-      .order('display_order',{ascending:true})
       .order('created_at',{ascending:true});
     if(lineError) throw lineError;
 
