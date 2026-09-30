@@ -3490,7 +3490,7 @@ async function loadAuthRole(){
 
     if(!memberRes.error && memberRes.data){
       const r = (memberRes.data.role || '').toLowerCase().trim();
-      authRole = (r==='partner'||r==='admin') ? 'partner' : r==='hr_officer' ? 'hr_officer' : r==='office_manager' ? 'office_manager' : 'staff';
+      authRole = (r==='partner'||r==='admin') ? 'partner' : r==='office_admin' ? 'office_admin' : r==='hr_officer' ? 'hr_officer' : r==='office_manager' ? 'office_manager' : 'staff';
       authFullName = memberRes.data.full_name || memberRes.data.name || memberRes.data.email || authUser.email;
       // If members table returned only an email, prefer the locally saved profile name
       if(authFullName === authUser.email){
@@ -8747,7 +8747,7 @@ async function saveMemberUpdate(userId){
   const position=val('memPosition');
   const phone=val('memPhone');
   const role=val('memRole');
-  if(!['staff','office_manager','hr_officer','partner'].includes(role)){ notice('Invalid member role.','err'); return; }
+  if(!['staff','office_manager','hr_officer','office_admin','partner'].includes(role)){ notice('Invalid member type.','err'); return; }
   const msg=$('memberCreateMsg');
   if(!full_name){
     if(msg) msg.innerHTML='<div class="notice err">Full name is required.</div>';
