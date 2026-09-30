@@ -266,3 +266,52 @@
   ensureStyles();
   window.molmsPayrollEmployeeTreatmentV2={render,loadEmployees,loadTreatments};
 })();
+
+
+/* V2 payroll display patch: distinguish employee PAYE from employer-covered PAYE. */
+(function(){
+  'use strict';
+  const getSb=()=>typeof sb!=='undefined'?sb:(window.supabaseClient||null);
+  const esc2=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const money2=v=>Number(v||0).toLocaleString();
+  if(window.__molmsPayrollDisplayPatchV2) return;
+  window.__molmsPayrollDisplayPatchV2=true;
+
+  async function patchRunDetail(id){
+    const client=getSb(); const el=document.getElementById('prDetailLines');
+    if(!client||!el) return;
+    const {data,error}=await client.from('hr_payroll_lines')
+      .select('employee_id,emp_number_snapshot,full_name_snapshot,agreed_net_pay,gross_salary,salary_basis,nssf_employee,nssf_employer,paye,paye_employee,paye_employer,paye_bearer,nssf_employee_share_bearer,sdl,wcf,loan_deduction_amount,health_insurance_amount,health_insurance_cost_bearer,net_salary,employer_cost')
+      .eq('payroll_run_id',id).order('emp_number_snapshot');
+    if(error||!data) return;
+
+    const run=(window._prRuns||[]).find(r=>r.id===id)||{};
+    const isLocked=run.status==='locked';
+    const hasExtra=data.some(l=>Number(l.loan_deduction_amount||0)>0||Number(l.health_insurance_amount||0)>0);
+    const cols=['Employee','Agreed Salary','Basis','Gross','Emp NSSF','PAYE — Employee','PAYE — Employer','Take-Home Pay','Empr NSSF','SDL','WCF'];
+    if(hasExtra) cols.push('Loan / Health');
+    cols.push('Employer Cost');
+    if(isLocked) cols.push('Payslip');
+
+    el.innerHTML='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:1120px">'+
+      '<thead><tr style="background:#f5f0e8">'+cols.map(c=>'<th style="padding:7px 8px;text-align:right;font-weight:900;color:var(--navy);white-space:nowrap">'+c+'</th>').join('')+'</tr></thead>'+
+      '<tbody>'+data.map(l=>{
+        const cells=[l.agreed_net_pay,(l.salary_basis==='gross'?'Gross':'Net / protected'),l.gross_salary,l.nssf_employee,l.paye_employee,l.paye_employer,l.net_salary,l.nssf_employer,l.sdl||0,l.wcf||0];
+        if(hasExtra) cells.push(Number(l.loan_deduction_amount||0)+Number(l.health_insurance_amount||0));
+        cells.push(l.employer_cost);
+        return '<tr style="border-bottom:1px solid #f0ece6">'+
+          '<td style="padding:7px 8px;text-align:left;white-space:nowrap"><b>'+esc2(l.emp_number_snapshot||'')+'</b> '+esc2(l.full_name_snapshot||'')+'</td>'+
+          cells.map((v,i)=>'<td style="padding:7px 8px;text-align:right">'+(typeof v==='string'?esc2(v):money2(v))+'</td>').join('')+
+          (isLocked?'<td style="padding:7px 8px;text-align:right"><button class="btn out small" onclick="prPrintPayslip(\''+id+'\',\''+l.employee_id+'\')">Payslip</button></td>':'')+
+        '</tr>';
+      }).join('')+'</tbody></table></div>';
+  }
+
+  const originalView=window.prViewRun;
+  if(typeof originalView==='function'){
+    window.prViewRun=async function(id){
+      await originalView(id);
+      await patchRunDetail(id);
+    };
+  }
+})();
