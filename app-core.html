@@ -4079,7 +4079,7 @@ async function addCaseOnline(payload){
     sb.from('cause_list_v2').insert(payload).select()
   );
 }
-function moduleAllowed(p){ if(!authUser) return true; if(authRole==='partner'||authRole==='admin') return true; if(authRole==='office_admin') return ['dashboard','cause','nonlit','reports','diary','documents','chat','members','settings','hr','payroll','invoice'].includes(p); if(p==='findash') return false; if(p==='budget'||p==='expenses'||p==='invoice') return authRole==='office_manager'; return true; }
+function moduleAllowed(p){ if(!authUser) return true; if(authRole==='partner'||authRole==='admin') return true; if(authRole==='office_admin') return ['dashboard','cause','nonlit','reports','diary','documents','chat','members','settings','hr','payroll','invoice'].includes(p); if(p==='findash') return false; if(p==='budget'||p==='expenses'||p==='invoice') return authRole==='partner'||authRole==='office_manager'||authRole==='office_admin'; return true; }
 function go(p){ if(!moduleAllowed(p)){ notice('You do not have access to this module.','err'); return; } if(p!=='diary'&&oeEditId!==null){oeEditId=null;resetOfficeEventForm();} if(p!=='documents'&&docEditId!==null){docEditId=null;resetDocForm();} if(p!=='members'&&memberEditId!==null){memberEditId=null;resetMemberEditForm();} if(p!=='chat'&&icEditingId!==null){icCancelEdit();} if(p!=='cause'&&caseEditId!==null){cancelCaseEdit();} if(p!=='reports'&&repEditId!==null){cancelReportEdit();} if(p!=='nonlit'&&nlEditId!==null){cancelNonLitEdit();} if(p==='reports'&&page!=='reports'){repResetOnEntry();} page=p;if(p!=='dashboard')markModuleSeen(p);document.querySelectorAll('section[id^="page-"]').forEach(s=>s.classList.add('hidden'));$('page-'+p).classList.remove('hidden');document.querySelectorAll('[data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===p));const mobileMore=$('mobileMoreBtn');if(mobileMore)mobileMore.classList.toggle('active',!['dashboard','cause','nonlit','diary'].includes(p));closeMobileMenu();const names={dashboard:'Dashboard',cause:'Cause List (Court Matters)',matterdetails:'Matter Details',nonlit:'Non-Litigation Matters',nonlitdetails:'Matter Details',reports:'Daily Work Reports',reportdetails:'Report Details',diary:'Legal Diary & Calendar',documents:'Document Management',chat:'InterCom',members:'Team Members',settings:'Settings',hr:'HR — Employee Management',payroll:'HR — Payroll',budget:'Office Budget',expenses:'Expense Register',invoice:'Invoices',findash:'Financial Dashboard'};$('title').textContent=names[p]||p;render()}
 function filter(arr,fields){const q=($('search').value||'').toLowerCase();return !q?arr:arr.filter(x=>fields.some(f=>(x[f]||'').toString().toLowerCase().includes(q)))}
 function countFor(p){let map={dashboard:cases.length+nonlits.length+reports.length+officeEvents.length+docs.length+msgs.length,cause:cases.length,nonlit:nonlits.length,reports:reports.length,diary:officeEvents.length,documents:docs.length,chat:msgs.length,members:members.length};return map[p]||0}
@@ -4099,8 +4099,8 @@ function render(){globalSearch();badges();renderTopbarProfile();if(clockInterval
     page==='expenses'?'Track how approved budget money was received and spent':page==='invoice'?'Create, manage and track client invoices':page==='findash'?'Real-time financial overview of M&O Law Office':
     'Interactive snapshot prioritising urgent and important activities';
 }if($('modeNotice')){const fs=readObj(LS.firmSettings);const ann=fs.dashAnnouncement;const wm=fs.dashWelcome;const modeStr=(online?'Connected to Supabase. ':'Local/offline mode. ')+'Logged in as '+me().name+' — '+(isAdmin()?'Partner/Admin':'Staff');$('modeNotice').innerHTML=esc(ann&&ann.trim()?ann:wm&&wm.trim()?wm:modeStr);} if($('currentUser')){$('currentUser').style.display=authUser?'none':'block';}if($('dropMembersBtn')) $('dropMembersBtn').style.display=isAdmin()?'flex':'none';if(page==='dashboard')renderDashboard();applyFirmIdentity();if(page==='cause')renderCases();if(page==='nonlit')renderNonLit();if(page==='reports'){initRepStaffField();renderReports();}if(page==='diary'){renderCalendar();renderDayDetail();renderOfficeEvents();notifCheckDiaryReminders();}if(page==='documents')renderDocs();if(page==='chat')renderChat();if(page==='members')renderMembers();if(page==='settings')renderSettings();if(page==='hr')hrRender();if(page==='payroll')prRender();if(page==='budget')bdRender();if(page==='expenses')exRender();if(page==='invoice')invRender();if(page==='findash')fdRender();const hrNav=$('sbHR');if(hrNav)hrNav.style.display=authUser?'':'none';/* all authenticated staff see HR (limited self-service) */const prNav=$('sbPayroll');if(prNav)prNav.style.display='';/* all staff see Payroll (self-service) */
-const bdNav=document.querySelector('[data-nav="budget"]');if(bdNav)bdNav.style.display=(authRole==='partner'||authRole==='office_manager')?'':'none';
-const exNav=$('sbExpenses');if(exNav)exNav.style.display=(authRole==='partner'||authRole==='office_manager')?'':'none';
+const bdNav=document.querySelector('[data-nav="budget"]');if(bdNav)bdNav.style.display=(authRole==='partner'||authRole==='office_manager'||authRole==='office_admin')?'':'none';
+const exNav=$('sbExpenses');if(exNav)exNav.style.display=(authRole==='partner'||authRole==='office_manager'||authRole==='office_admin')?'':'none';
 const invNav=$('sbInvoice');if(invNav)invNav.style.display=(authRole==='partner'||authRole==='office_manager'||authRole==='office_admin')?'':'none';
 const fdNav=$('sbFinDash');if(fdNav)fdNav.style.display=(authRole==='partner'||authRole==='admin')?'':'none';
 // Show expense budget selector in topbar only on expenses page
@@ -9471,8 +9471,8 @@ async function loadSystemSettings(){
 // (directory, Who's Away Today, their own Leave/ED). This is deliberately
 // separate from hrCanManage() (employee-record administration authority).
 function hrCanAccess()  { return !!authUser; }
-function hrCanManage()  { return authRole==='partner'||authRole==='hr_officer'||authRole==='office_admin'; }
-function hrCanWrite()   { return authRole==='partner'||authRole==='hr_officer'||authRole==='office_admin'; }
+function hrCanManage()  { return authRole==='partner'||authRole==='hr_officer'; }
+function hrCanWrite()   { return authRole==='partner'||authRole==='hr_officer'; }
 function hrIsPartner()  { return authRole==='partner'; }
 
 // ── HR STATE ─────────────────────────────────────────────────────────────────
@@ -10472,6 +10472,8 @@ async function prRenderSelfService(){
     :'<div style="padding:20px;color:var(--muted);text-align:center">No payslips available yet.</div>'}`;
 }
 function prCanGenerate(){ return authRole==='partner'||authRole==='hr_officer'||authRole==='office_admin'; }
+function prCanSend(){ return authRole==='hr_officer'||authRole==='office_admin'; }
+function prCanCancel(){ return authRole==='partner'||authRole==='hr_officer'; }
 function prCanApprove() { return authRole==='partner'; }  // approve, lock, cancel
 
 // ── STATUS BADGE ──────────────────────────────────────────────────────────────
@@ -10480,6 +10482,7 @@ function prBadge(status){
     draft:     'background:#f0ece6;color:#65738A',
     approved:  'background:#d1fae5;color:#065f46',
     locked:    'background:#dbeafe;color:#1e40af',
+    submitted: 'background:#dbeafe;color:#1e40af',
     cancelled: 'background:#fee2e2;color:#991b1b',
   };
   const st=map[status]||map.draft;
@@ -10597,9 +10600,10 @@ async function prRenderRuns(){
       </div>
       <div class="member-actions">
         <button class="btn out small" onclick="prViewRun('${r.id}')">View</button>
-        ${prCanApprove()&&r.status==='draft'?`<button class="btn gold small" onclick="prApprove('${r.id}')">Approve</button>`:''}
+        ${prCanApprove()&&(r.status==='draft'||r.status==='submitted')?`<button class="btn gold small" onclick="prApprove('${r.id}')">Approve</button>`:''}
+        ${prCanSend()&&r.status==='draft'?`<button class="btn gold small" onclick="prSend('${r.id}')">Send for Approval</button>`:''}
         ${prCanApprove()&&r.status==='approved'?`<button class="btn gold small" onclick="prLock('${r.id}')">Lock</button>`:''}
-        ${prCanGenerate()&&r.status==='draft'?`<button class="btn red small" onclick="prCancel('${r.id}')">Cancel</button>`:''}
+        ${prCanCancel()&&r.status==='draft'?`<button class="btn red small" onclick="prCancel('${r.id}')">Cancel</button>`:''}
       </div>
     </div>`;
   }).join('');
@@ -10685,14 +10689,14 @@ function prCloseDetail(){
 async function prApprove(id){
   if(!prCanApprove()){ notice('Only partners can approve payroll.','err'); return; }
   const run=_prRuns.find(r=>r.id===id);
-  if(!run||run.status!=='draft'){ notice('Only draft payroll runs can be approved.','err'); return; }
+  if(!run||!['draft','submitted'].includes(run.status)){ notice('Only draft or submitted payroll runs can be approved.','err'); return; }
   if(!confirm('Approve payroll for '+run.payroll_month+'?\n\nOnce approved, payroll becomes read-only. Corrections require a new run.')) return;
 
   const {error}=await sb
     .from('hr_payroll_runs')
     .update({status:'approved',approved_by:authUser?.id,approved_at:new Date().toISOString(),updated_at:new Date().toISOString()})
     .eq('id',id)
-    .eq('status','draft');  // guard: only update if still draft
+    .in('status',['draft','submitted']);  // guard: only draft/submitted runs can be approved
 
   if(error){ notice('Approval failed: '+error.message,'err'); return; }
   await prRender();
@@ -10722,8 +10726,20 @@ async function prLock(id){
 
 // ── CANCEL ────────────────────────────────────────────────────────────────────
 // Partner or HR Officer on draft only. Cancelled runs are retained for audit.
+async function prSend(id){
+  if(!prCanSend()){ notice('Only HR Officers or Office Admin can send payroll for Partner approval.','err'); return; }
+  const run=_prRuns.find(r=>r.id===id);
+  if(!run||run.status!=='draft'){ notice('Only draft payroll runs can be sent for approval.','err'); return; }
+  if(!confirm('Send payroll for '+run.payroll_month+' to the Partner for approval?')) return;
+  const {data,error}=await sb.rpc('submit_payroll_for_approval',{p_run_id:id,p_user_id:authUser?.id});
+  if(error||!data?.ok){ notice('Send failed: '+(error?.message||data?.error||'Unknown error'),'err'); return; }
+  await prRender();
+  if(_prSelectedId===id) await prViewRun(id);
+  notice('Payroll sent to the Partner for approval.');
+}
+
 async function prCancel(id){
-  if(!prCanGenerate()){ notice('Permission denied.','err'); return; }
+  if(!prCanCancel()){ notice('Only Partners or HR Officers can cancel payroll.','err'); return; }
   const run=_prRuns.find(r=>r.id===id);
   if(!run||run.status!=='draft'){ notice('Only draft payroll runs can be cancelled.','err'); return; }
   const reason=prompt('Reason for cancelling payroll for '+run.payroll_month+'?\n(Required for audit trail)');
@@ -11201,11 +11217,13 @@ async function prViewRun(id){
 
   if(actions){
     let btns='';
-    if(prCanApprove()&&run.status==='draft')
+    if(prCanApprove()&&(run.status==='draft'||run.status==='submitted'))
       btns+=`<button class="btn gold" onclick="prApprove('${id}')">Approve</button> `;
+    if(prCanSend()&&run.status==='draft')
+      btns+=`<button class="btn gold" onclick="prSend('${id}')">Send for Approval</button> `;
     if(prCanApprove()&&run.status==='approved')
       btns+=`<button class="btn gold" onclick="prLock('${id}')">Lock</button> `;
-    if(prCanGenerate()&&run.status==='draft')
+    if(prCanCancel()&&run.status==='draft')
       btns+=`<button class="btn red" onclick="prCancel('${id}')">Cancel</button> `;
     if(prCanApprove()&&run.status==='locked'&&!run.period_closed)
       btns+=`<button class="btn out" onclick="prClosePeriod('${id}')">Close Period</button> `;
@@ -11346,9 +11364,9 @@ let _bdLoading  = false;
 
 // ── RBAC ──────────────────────────────────────────────────────────────────────
 // Office Manager and Partners can create/submit. Partners approve (future).
-function bdCanCreate() { return authRole==='partner'||authRole==='office_manager'; }
-function bdCanAccess() { return authRole==='partner'||authRole==='office_manager'; }
-function bdCanSubmit() { return authRole==='partner'||authRole==='office_manager'; }
+function bdCanCreate() { return authRole==='partner'||authRole==='office_manager'||authRole==='office_admin'; }
+function bdCanAccess() { return authRole==='partner'||authRole==='office_manager'||authRole==='office_admin'; }
+function bdCanSubmit() { return authRole==='partner'||authRole==='office_manager'||authRole==='office_admin'; }
 
 // ── STATUS BADGE ──────────────────────────────────────────────────────────────
 // bdStatusDisplay: normalises lowercase DB values → display strings
@@ -12929,7 +12947,8 @@ const EX_CATEGORIES = [
 ];
 
 // ── RBAC ──────────────────────────────────────────────────────────────────────
-function exCanEdit(){ return authRole==='partner'||authRole==='office_manager'; }
+function exCanEdit(){ return authRole==='partner'||authRole==='office_manager'||authRole==='office_admin'; }
+function exCanDelete(){ return authRole==='partner'||authRole==='office_manager'; }
 function exCanClose(){ return authRole==='partner'; }
 
 // ── START EXPENSE REGISTER ────────────────────────────────────────────────────
@@ -13109,7 +13128,7 @@ async function exLoadRegister(budgetId){
   // Show/hide action buttons
   const addRecBtn=$('exBtnAddReceipt'); if(addRecBtn) addRecBtn.style.display=canEdit?'':'none';
   const addExpBtn=$('exBtnAddExpense'); if(addExpBtn) addExpBtn.style.display=canEdit?'':'none';
-  const closeBtn=$('exBtnCloseMonth'); if(closeBtn) closeBtn.style.display=canEdit?'':'none';
+  const closeBtn=$('exBtnCloseMonth'); if(closeBtn) closeBtn.style.display=(exCanClose()&&isOpen)?'':'none';
 
   // Status badge
   const badge=$('exStatusBadge');
@@ -13382,7 +13401,7 @@ function exRenderReceipts(){
     <td style="padding:7px 8px;font-size:12px;text-align:right;font-weight:600">${Number(r.amount||0).toLocaleString()}</td>
     <td style="padding:7px 8px;font-size:12px;color:var(--muted)">${esc(r.notes||'')}</td>
     <td style="padding:7px 4px;text-align:center">
-      <button onclick="exDeleteReceipt('${r.id}')" style="border:none;background:none;cursor:pointer;color:#dc2626;font-size:14px">🗑</button>
+      ${exCanDelete()?`<button onclick="exDeleteReceipt('${r.id}')" style="border:none;background:none;cursor:pointer;color:#dc2626;font-size:14px">🗑</button>`:''}
     </td>
   </tr>`).join('');
   if($('exTotalReceived')) $('exTotalReceived').textContent=FinanceUtils.fmtTZS(total);
@@ -13437,7 +13456,7 @@ function exRenderExpenses(){
         </td>
         <td style="padding:10px 4px;white-space:nowrap">
           <button title="Edit" onclick="exShowEditExpense('${e.id}')" style="border:none;background:none;cursor:pointer;color:var(--navy);font-size:14px">✎</button>
-          <button title="Delete" onclick="exDeleteExpense('${e.id}')" style="border:none;background:none;cursor:pointer;color:#dc2626;font-size:14px">🗑</button>
+          ${exCanDelete()?`<button title="Delete" onclick="exDeleteExpense('${e.id}')" style="border:none;background:none;cursor:pointer;color:#dc2626;font-size:14px">🗑</button>`:''}
         </td>
       </tr>`;
     }).join('');
