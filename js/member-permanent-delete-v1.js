@@ -7,22 +7,29 @@
   let decorateTimer = null;
 
   function client() {
+    try { if (typeof sb !== 'undefined' && sb) return sb; } catch (e) {}
     return window.supabaseClient || window.sb || window.supabase || null;
   }
 
   async function currentAdmin() {
+    try {
+      if (typeof authRole !== 'undefined' && String(authRole).toLowerCase() === 'admin') return true;
+    } catch (e) {}
+
     const s = client();
     if (!s || !s.auth) return false;
 
-    const { data: { user } } = await s.auth.getUser();
-    if (!user) return false;
-
-    const { data } = await s.from('roles')
-      .select('role,active')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    return !!data && data.active === true && String(data.role || '').toLowerCase() === 'admin';
+    try {
+      const { data: { user } } = await s.auth.getUser();
+      if (!user) return false;
+      const { data } = await s.from('roles')
+        .select('role,active')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      return !!data && data.active === true && String(data.role || '').toLowerCase() === 'admin';
+    } catch (e) {
+      return false;
+    }
   }
 
   function addButton(container, type, id, name) {
@@ -57,7 +64,46 @@
     return candidates[0] || null;
   }
 
-  async function decorateMembers() {
+
+  function trashIcon() {
+    return '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+      '<polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14H6L5 6"></path>' +
+      '<path d="M10 11v6M14 11v6"></path><path d="M9 6V4h6v2"></path></svg>';
+  }
+
+  function decorateActualMemberCards() {
+    let isAdminNow = false;
+    try { isAdminNow = typeof authRole !== 'undefined' && String(authRole).toLowerCase() === 'admin'; } catch (e) {}
+    if (!isAdminNow) return;
+
+    const list = document.getElementById('inactiveMembersList');
+    if (!list) return;
+
+    list.querySelectorAll('.item').forEach((row, index) => {
+      if (row.querySelector('[data-molms-permanent-delete="member"]')) return;
+
+      const member = (typeof members !== 'undefined' && Array.isArray(members))
+        ? members.filter(m => m && m.active === false)[index]
+        : null;
+      if (!member || !member.id) return;
+
+      const actions = row.querySelector('.member-actions') || row;
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.dataset.molmsPermanentDelete = 'member';
+      button.dataset.targetId = member.id;
+      button.dataset.targetName = member.name || member.email || 'this member';
+      button.title = 'Permanently delete member';
+      button.setAttribute('aria-label', 'Permanently delete member');
+      button.innerHTML = trashIcon();
+      button.style.cssText =
+        'display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;' +
+        'margin-left:6px;padding:0;border:1px solid #b42318;border-radius:6px;' +
+        'background:#fff;color:#b42318;cursor:pointer;';
+      actions.appendChild(button);
+    });
+  }
+\n  async function decorateMembers() {
     const s = client();
     if (!s || !(await currentAdmin())) return;
 
@@ -177,6 +223,7 @@
     decorateTimer = setTimeout(() => {
       decorateMembers();
       decorateEmployees();
+      decorateActualMemberCards();
     }, 300);
   }
 
@@ -190,6 +237,7 @@
     observer.observe(document.body, { childList: true, subtree: true });
 
     setTimeout(scheduleDecorate, 800);
+    setInterval(decorateActualMemberCards, 1000);
   }
 
   install();
