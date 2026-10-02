@@ -162,6 +162,18 @@ function bindDayClicks(){
       if(date)showSelectedDay(date);
     });
   });
+  // Clicking the holiday label itself must also open the details below the calendar.
+  p.querySelectorAll('.molmsHoliday').forEach(event=>{
+    if(event.__holidayDetailV1)return;
+    event.__holidayDetailV1=true;
+    event.style.cursor='pointer';
+    event.addEventListener('click',function(e){
+      e.stopPropagation();
+      const cell=event.closest('.calDay');
+      const date=cell&&ymdForCell(cell);
+      if(date)showSelectedDay(date);
+    });
+  });
 }
 function decorate(){
   controls();
