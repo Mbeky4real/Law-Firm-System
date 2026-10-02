@@ -1,4 +1,4 @@
-/* MOLMS-CALENDAR-HOLIDAYS-V2 */
+/* MOLMS-CALENDAR-HOLIDAYS-V3 */
 (function(){'use strict';
 let holidays=[],showTZ=true,showIntl=true;
 function recurringEvents(year){
@@ -80,6 +80,23 @@ function ymdForCell(cell){
   const cells=[...document.querySelectorAll('#page-diary .calDay')];
   const idx=cells.indexOf(cell);
   if(idx<0)return null;
+
+  // Anchor the grid to the cell displaying day "1". This avoids assuming
+  // Sunday-first or Monday-first week layouts and keeps holiday dates tied
+  // to the actual day cells rendered by the base calendar.
+  const dayCells=cells.map((c,i)=>({
+    cell:c,index:i,
+    number:Number.parseInt((c.querySelector('.calNum')?.textContent||'').trim(),10)
+  }));
+  const firstOfMonth=dayCells.find(x=>x.number===1);
+  if(firstOfMonth){
+    const d=new Date(cm.year,cm.month-1,1+(idx-firstOfMonth.index));
+    const date=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+    cell.dataset.calendarDate=date;
+    return date;
+  }
+
+  // Fallback only if the base renderer exposes no visible day numbers.
   const first=new Date(cm.year,cm.month-1,1);
   const firstWeekday=first.getDay();
   const d=new Date(cm.year,cm.month-1,1-firstWeekday+idx);
@@ -169,14 +186,14 @@ function decorate(){
 }
 
 function patch(){
-  if(typeof renderCalendar!=='function'||renderCalendar.__holidayV2)return;
+  if(typeof renderCalendar!=='function'||renderCalendar.__holidayV3)return;
   const base=renderCalendar;
   renderCalendar=function(){
     const r=base.apply(this,arguments);
     requestAnimationFrame(()=>{controls();decorate();bindDayClicks()});
     return r;
   };
-  renderCalendar.__holidayV2=true;
+  renderCalendar.__holidayV3=true;
 }
 
 function boot(){
