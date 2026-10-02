@@ -133,9 +133,12 @@
     if (!s || !(await currentAdmin())) return;
 
     const { data, error } = await s.from('hr_employees')
-      .select('id,full_name,status,deleted_at');
+      .select('id,full_name,employee_number,status,deleted_at');
 
-    if (error || !data) return;
+    if (error || !data) {
+      console.error('MOLMS employee delete decoration:', error?.message || 'no data');
+      return;
+    }
 
     data
       .filter(employee =>
@@ -143,12 +146,24 @@
         String(employee.status || '').toLowerCase() !== 'active'
       )
       .forEach(employee => {
-        if (!employee.full_name) return;
+        if (!employee.id) return;
 
-        const row = bestRowForText(employee.full_name);
+        // First try the exact employee name. This works with the existing
+        // HR table/card markup without depending on a particular DOM shape.
+        let row = employee.full_name ? bestRowForText(employee.full_name) : null;
+
+        // Fallback to employee number where the name is rendered differently.
+        if (!row && employee.employee_number) {
+          row = bestRowForText(employee.employee_number);
+        }
+
         if (!row) return;
 
-        addButton(row, 'employee', employee.id, employee.full_name);
+        // Put the control in the row's action area where possible.
+        const container =
+          row.querySelector('.member-actions,.employee-actions,.actions,.item-actions') || row;
+
+        addButton(container, 'employee', employee.id, employee.full_name || employee.employee_number);
       });
   }
 
