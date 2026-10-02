@@ -13,7 +13,7 @@
 
   async function currentAdmin() {
     try {
-      if (typeof authRole !== 'undefined' && String(authRole).toLowerCase() === 'admin') return true;
+      if (typeof authRole !== 'undefined' && ['admin','partner'].includes(String(authRole).toLowerCase())) return true;
     } catch (e) {}
 
     const s = client();
@@ -26,7 +26,7 @@
         .select('role,active')
         .eq('user_id', user.id)
         .maybeSingle();
-      return !!data && data.active === true && String(data.role || '').toLowerCase() === 'admin';
+      return !!data && data.active === true && ['admin','partner'].includes(String(data.role || '').toLowerCase());
     } catch (e) {
       return false;
     }
@@ -73,7 +73,7 @@
 
   function decorateActualMemberCards() {
     let isAdminNow = false;
-    try { isAdminNow = typeof authRole !== 'undefined' && String(authRole).toLowerCase() === 'admin'; } catch (e) {}
+    try { isAdminNow = typeof authRole !== 'undefined' && ['admin','partner'].includes(String(authRole).toLowerCase()); } catch (e) {}
     if (!isAdminNow) return;
 
     const list = document.getElementById('inactiveMembersList');
