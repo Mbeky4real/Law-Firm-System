@@ -40,18 +40,21 @@ const pad=n=>String(n).padStart(2,'0');
 
 async function load(){
   const c=sbc();
-  if(!c){decorate();return}
+  if(!c){decorate();return false}
   try{
     const {data,error}=await c.from('calendar_holidays')
       .select('holiday_date,name,scope,is_tentative')
       .eq('is_active',true);
     if(error) throw error;
-    holidays=(data||[]).map(h=>({...h,holiday_date:String(h.holiday_date).slice(0,10)}));
-    
+    holidays=(data||[])
+      .map(h=>({...h,holiday_date:String(h.holiday_date).slice(0,10)}))
+      .filter(h=>h.scope==='tanzania'||h.scope==='international');
+    decorate();
+    return true;
   }catch(e){
     console.error('Calendar holiday load failed:',e);
+    return false;
   }
-  decorate();
 }
 
 function currentCalendarMonth(){
@@ -71,11 +74,18 @@ function currentCalendarMonth(){
 }
 
 function ymdForCell(cell){
-  const num=Number.parseInt((cell.querySelector('.calNum')?.textContent||'').trim(),10);
-  if(!Number.isInteger(num)||num<1||num>31)return null;
+  if(!cell)return null;
   const cm=currentCalendarMonth();
   if(!cm)return null;
-  return cm.year+'-'+pad(cm.month)+'-'+pad(num);
+  const cells=[...document.querySelectorAll('#page-diary .calDay')];
+  const idx=cells.indexOf(cell);
+  if(idx<0)return null;
+  const first=new Date(cm.year,cm.month-1,1);
+  const firstWeekday=first.getDay();
+  const d=new Date(cm.year,cm.month-1,1-firstWeekday+idx);
+  const date=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+  cell.dataset.calendarDate=date;
+  return date;
 }
 
 function controls(){
@@ -171,12 +181,18 @@ function patch(){
 
 function boot(){
   patch();
-  load();
+  let loaded=false;
+  const tryLoad=async()=>{
+    if(loaded)return;
+    loaded=await load();
+  };
+  tryLoad();
   let n=0,t=setInterval(()=>{
     patch();
     controls();
     decorate();
-    if(++n>40)clearInterval(t);
+    if(!loaded)tryLoad();
+    if(++n>60)clearInterval(t);
   },300);
 }
 
