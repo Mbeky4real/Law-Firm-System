@@ -103,7 +103,8 @@
       actions.appendChild(button);
     });
   }
-\n  async function decorateMembers() {
+
+  async function decorateMembers() {
     const s = client();
     if (!s || !(await currentAdmin())) return;
 
