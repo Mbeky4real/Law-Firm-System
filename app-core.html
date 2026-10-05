@@ -7089,11 +7089,11 @@ function editNonLitigation(id){
   if($('nlContactOrganisation'))$('nlContactOrganisation').value=n.client_contact_person?n.primary_contact_organisation||n.client||'':'';
   if($('nlContactPhone'))$('nlContactPhone').value=n.client_phone||'';
   if($('nlContactEmail'))$('nlContactEmail').value=n.client_email||'';
-  if($('nlInstitutionContactPerson'))$('nlInstitutionContactPerson').value=n.institution_contact_person||'';
-  if($('nlInstitutionContactPosition'))$('nlInstitutionContactPosition').value=n.institution_contact_position||'';
-  if($('nlInstitutionContactOrganisation'))$('nlInstitutionContactOrganisation').value=n.institution_contact_organisation||n.institution||'';
-  if($('nlInstitutionContactPhone'))$('nlInstitutionContactPhone').value=n.institution_contact_phone||'';
-  if($('nlInstitutionContactEmail'))$('nlInstitutionContactEmail').value=n.institution_contact_email||'';
+  if($('nlInstitutionContactPerson'))$('nlInstitutionContactPerson').value=n.institution_contact_person||n.primary_contact_person||'';
+  if($('nlInstitutionContactPosition'))$('nlInstitutionContactPosition').value=n.institution_contact_position||n.primary_contact_position||'';
+  if($('nlInstitutionContactOrganisation'))$('nlInstitutionContactOrganisation').value=n.institution_contact_organisation||n.primary_contact_organisation||n.institution||'';
+  if($('nlInstitutionContactPhone'))$('nlInstitutionContactPhone').value=n.institution_contact_phone||n.primary_contact_phone||'';
+  if($('nlInstitutionContactEmail'))$('nlInstitutionContactEmail').value=n.institution_contact_email||n.primary_contact_email||'';
   // Reassignment/status/archive are explicit administrative actions (Matter
   // Details header), not part of general master-info correction. DB trigger
   // enforces this regardless (nl_enforce_privileged_fields) — this matches
