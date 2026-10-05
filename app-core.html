@@ -1026,8 +1026,10 @@ body.mobile-menu-open{overflow:hidden}
                 <div id="nlmMatterInfo"></div>
               </div>
               <div class="card" style="margin:0">
-                <div style="font-weight:800;color:var(--navy);margin-bottom:10px">PRIMARY CONTACT</div>
-                <div id="nlmPrimaryContact"></div>
+                <div style="font-weight:800;color:var(--navy);margin-bottom:10px">CLIENT CONTACT</div>
+                <div id="nlmClientContact"></div>
+                <div style="font-weight:800;color:var(--navy);margin:16px 0 10px">INSTITUTION / AUTHORITY CONTACT</div>
+                <div id="nlmInstitutionContact"></div>
               </div>
             </div>
             <div class="card" style="margin:0">
@@ -5651,17 +5653,24 @@ function nlRenderMatterDetails(id){
     rows.map(([l,v])=>`<tr style="border-bottom:1px solid #f0ece6"><td style="padding:6px 8px;color:var(--muted);white-space:nowrap">${esc(l)}</td><td style="padding:6px 8px;font-weight:700">${esc(v)}</td></tr>`).join('')
   }</table>`;
 
-  // PRIMARY CONTACT
-  const pcRows=[
-    ['Contact Person', n.primary_contact_person||'—'],
-    ['Position', n.primary_contact_position||'—'],
-    ['Organisation', n.primary_contact_organisation||'—'],
-    ['Phone Number', n.primary_contact_phone||'—'],
-    ['Email Address', n.primary_contact_email||'—']
+  // CLIENT + INSTITUTION CONTACTS
+  const clientRows=[
+    ['Contact Person', n.client_contact_person||'—'],
+    ['Phone Number', n.client_phone||'—'],
+    ['Email Address', n.client_email||'—']
   ];
-  if($('nlmPrimaryContact'))$('nlmPrimaryContact').innerHTML=`<table style="width:100%;font-size:12.5px;border-collapse:collapse">${
-    pcRows.map(([l,v])=>`<tr style="border-bottom:1px solid #f0ece6"><td style="padding:6px 8px;color:var(--muted);white-space:nowrap">${esc(l)}</td><td style="padding:6px 8px;font-weight:700">${esc(v)}</td></tr>`).join('')
-  }</table>`;
+  const institutionRows=[
+    ['Contact Person', n.institution_contact_person||n.primary_contact_person||'—'],
+    ['Position', n.institution_contact_position||n.primary_contact_position||'—'],
+    ['Organisation', n.institution_contact_organisation||n.primary_contact_organisation||n.institution||'—'],
+    ['Phone Number', n.institution_contact_phone||n.primary_contact_phone||'—'],
+    ['Email Address', n.institution_contact_email||n.primary_contact_email||'—']
+  ];
+  const contactTable=(rows)=>'<table style="width:100%;font-size:12.5px;border-collapse:collapse">'+
+    rows.map(([l,v])=>'<tr style="border-bottom:1px solid #f0ece6"><td style="padding:6px 8px;color:var(--muted);white-space:nowrap">'+esc(l)+'</td><td style="padding:6px 8px;font-weight:700">'+esc(v)+'</td></tr>').join('')+
+    '</table>';
+  if($('nlmClientContact'))$('nlmClientContact').innerHTML=contactTable(clientRows);
+  if($('nlmInstitutionContact'))$('nlmInstitutionContact').innerHTML=contactTable(institutionRows);
 
   nlRenderTimeline(id);
 
