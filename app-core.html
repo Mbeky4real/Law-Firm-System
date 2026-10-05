@@ -4041,6 +4041,9 @@ async function loadNonLitigations(){
         matter_reference: n.matter_reference||null,
         opening_date: n.opening_date||null,
         description: n.description||null,
+        client_contact_person: n.client_contact_person||null,
+        client_phone: n.client_phone||null,
+        client_email: n.client_email||null,
         primary_contact_person: n.primary_contact_person||null,
         primary_contact_position: n.primary_contact_position||null,
         primary_contact_organisation: n.primary_contact_organisation||null,
@@ -6973,6 +6976,9 @@ async function addNonLitigation(){
           status:         item.status,
           opening_date:   val('nlOpeningDate')||null,
           description:    val('nlDescription')||null,
+          client_contact_person:       val('nlContactPerson')||null,
+          client_phone:               val('nlContactPhone')||null,
+          client_email:               val('nlContactEmail')||null,
           primary_contact_person:       val('nlContactPerson')||null,
           primary_contact_position:     val('nlContactPosition')||null,
           primary_contact_organisation: val('nlContactOrganisation')||item.client||null,
@@ -7055,11 +7061,11 @@ function editNonLitigation(id){
   if($('nlDeadline')) $('nlDeadline').value=n.deadline||'';
   if($('nlStatus'))   $('nlStatus').value=n.status||'';
   if($('nlDescription'))$('nlDescription').value=n.description||'';
-  if($('nlContactPerson'))$('nlContactPerson').value=n.primary_contact_person||'';
+  if($('nlContactPerson'))$('nlContactPerson').value=n.client_contact_person||'';
   if($('nlContactPosition'))$('nlContactPosition').value=n.primary_contact_position||'';
-  if($('nlContactOrganisation'))$('nlContactOrganisation').value=n.primary_contact_organisation||n.client||'';
-  if($('nlContactPhone'))$('nlContactPhone').value=n.primary_contact_phone||'';
-  if($('nlContactEmail'))$('nlContactEmail').value=n.primary_contact_email||'';
+  if($('nlContactOrganisation'))$('nlContactOrganisation').value=n.client_contact_person?n.primary_contact_organisation||n.client||'':'';
+  if($('nlContactPhone'))$('nlContactPhone').value=n.client_phone||'';
+  if($('nlContactEmail'))$('nlContactEmail').value=n.client_email||'';
   if($('nlInstitutionContactPerson'))$('nlInstitutionContactPerson').value=n.institution_contact_person||'';
   if($('nlInstitutionContactPosition'))$('nlInstitutionContactPosition').value=n.institution_contact_position||'';
   if($('nlInstitutionContactOrganisation'))$('nlInstitutionContactOrganisation').value=n.institution_contact_organisation||n.institution||'';
@@ -7096,6 +7102,9 @@ async function saveNonLitigationUpdate(id){
     deadline:    val('nlDeadline')||null,
     status:      val('nlStatus')||null,
     description: val('nlDescription')||null,
+    client_contact_person:       val('nlContactPerson')||null,
+    client_phone:               val('nlContactPhone')||null,
+    client_email:               val('nlContactEmail')||null,
     primary_contact_person:       val('nlContactPerson')||null,
     primary_contact_position:     val('nlContactPosition')||null,
     primary_contact_organisation: val('nlContactOrganisation')||null,
