@@ -109,14 +109,14 @@ function contactInputs(form){
 function ensureContacts(form){
   if(form.dataset.molmsContacts==='1')return;
   const client=findInput(form,[/^client\b/,/client name/,/\bclient\b/]);
-  if(!client)return;
+  if(!client||!title)return;
   const kind=matterKind(form);
   if(!kind)return;
   addField(form,'person','Client Contact Person','Name of primary client contact person');
   addField(form,'phone','Client Phone','Client telephone / mobile number');
   addField(form,'email','Client Email','Client email address');
   form.dataset.molmsContacts='1';
-  const save=async()=>saveContacts(form,kind);
+  const load=async()=>loadContacts(form,kind);\n  const save=async()=>saveContacts(form,kind);\n  setTimeout(load,300);
   ['change','blur'].forEach(ev=>Object.values(contactInputs(form)).forEach(i=>i?.addEventListener(ev,save)));
   form.addEventListener('submit',()=>setTimeout(save,900),true);
   [...form.querySelectorAll('button,input[type=submit]')].forEach(b=>{
@@ -128,7 +128,7 @@ function fieldValue(form,patterns){
   return (findInput(form,patterns)?.value||'').trim();
 }
 
-async function saveContacts(form,kind){
+async function loadContacts(form,kind){\n  const c=getSb(); if(!c)return;\n  const client=fieldValue(form,[/^client\\b/,/client name/,/\\bclient\\b/]);\n  const title=fieldValue(form,[/^title\\b/,/matter title/,/subject/]);\n  if(!client||!title)return;\n  const table=kind==='cause'?'cause_list_v2':'non_litigations';\n  const clientCol=kind==='cause'?'client_name':'client';\n  const r=await c.from(table).select('client_contact_person,client_phone,client_email').is('deleted_at',null).ilike(clientCol,client).ilike('title',title).order('updated_at',{ascending:false}).limit(1);\n  if(r.error||!r.data?.length)return;\n  const v=contactInputs(form), row=r.data[0];\n  if(v.person&&!v.person.value)v.person.value=row.client_contact_person||'';\n  if(v.phone&&!v.phone.value)v.phone.value=row.client_phone||'';\n  if(v.email&&!v.email.value)v.email.value=row.client_email||'';\n}\n\nasync function saveContacts(form,kind){
   const c=getSb(); if(!c)return;
   const client=fieldValue(form,[/^client\b/,/client name/,/\bclient\b/]);
   const title=fieldValue(form,[/^title\b/,/matter title/,/subject/]);
