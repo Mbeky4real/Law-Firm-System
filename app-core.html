@@ -876,6 +876,10 @@ body.mobile-menu-open{overflow:hidden}
                 <div style="display:flex;align-items:center;gap:6px;font-weight:800;color:var(--navy);margin-bottom:10px">A. MATTER INFORMATION (MASTER RECORD) <span class="muted small" style="font-weight:400">🔒 Read-only in normal operation</span></div>
                 <div id="clmMatterInfo"></div>
               </div>
+              <div class="card" style="margin:0 0 16px">
+                <div style="font-weight:800;color:var(--navy);margin-bottom:10px">CLIENT CONTACT</div>
+                <div id="clmClientContact"></div>
+              </div>
               <div class="card" style="margin:0">
                 <div style="font-weight:800;color:var(--navy);margin-bottom:10px">OPPOSING COUNSEL</div>
                 <div id="clmOpposingCounsel"></div>
@@ -5157,16 +5161,26 @@ function clRenderMatterDetails(id){
     rows.map(([l,v])=>`<tr style="border-bottom:1px solid #f0ece6"><td style="padding:6px 8px;color:var(--muted);white-space:nowrap">${esc(l)}</td><td style="padding:6px 8px;font-weight:700">${esc(v)}</td></tr>`).join('')
   }</table>`;
 
-  // B. OPPOSING COUNSEL
+  // B. CLIENT CONTACT
+  const ccRows=[
+    ['Contact Person', c.client_contact_person||'—'],
+    ['Phone Number', c.client_phone||'—'],
+    ['Email Address', c.client_email||'—']
+  ];
+  if($('clmClientContact'))$('clmClientContact').innerHTML='<table style="width:100%;font-size:12.5px;border-collapse:collapse">'+
+    ccRows.map(([l,v])=>'<tr style="border-bottom:1px solid #f0ece6"><td style="padding:6px 8px;color:var(--muted);white-space:nowrap">'+esc(l)+'</td><td style="padding:6px 8px;font-weight:700">'+esc(v)+'</td></tr>').join('')+
+    '</table>';
+
+  // C. OPPOSING COUNSEL
   const ocRows=[
     ['Name', c.opposing_advocate||'—'],
     ['Law Firm', c.opposing_law_firm||'—'],
     ['Phone Number', c.opposing_phone||'—'],
     ['Email Address', c.opposing_email||'—']
   ];
-  if($('clmOpposingCounsel'))$('clmOpposingCounsel').innerHTML=`<table style="width:100%;font-size:12.5px;border-collapse:collapse">${
-    ocRows.map(([l,v])=>`<tr style="border-bottom:1px solid #f0ece6"><td style="padding:6px 8px;color:var(--muted);white-space:nowrap">${esc(l)}</td><td style="padding:6px 8px;font-weight:700">${esc(v)}</td></tr>`).join('')
-  }</table>`;
+  if($('clmOpposingCounsel'))$('clmOpposingCounsel').innerHTML='<table style="width:100%;font-size:12.5px;border-collapse:collapse">'+
+    ocRows.map(([l,v])=>'<tr style="border-bottom:1px solid #f0ece6"><td style="padding:6px 8px;color:var(--muted);white-space:nowrap">'+esc(l)+'</td><td style="padding:6px 8px;font-weight:700">'+esc(v)+'</td></tr>').join('')+
+    '</table>';
 
   clRenderTimeline(id);
 
