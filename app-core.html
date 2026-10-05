@@ -817,7 +817,11 @@ body.mobile-menu-open{overflow:hidden}
             <p class="muted small">Master litigation record only. Hearing outcomes, next actions and progress are recorded through Daily Reports, not here.</p>
             <div class="row">
               <div><label>Case Title</label><input id="caseTitle"></div><div><label>Case Number</label><input id="caseNumber"></div>
-              <div><label>Client Name</label><input id="caseClient"></div><div><label>Filing Date</label><input id="caseFilingDate" type="date"></div>
+              <div><label>Client Name</label><input id="caseClient"></div>
+              <div><label>Client Contact Person</label><input id="caseClientContactPerson" placeholder="Primary client contact"></div>
+              <div><label>Client Phone</label><input id="caseClientPhone" placeholder="+255 ..."></div>
+              <div><label>Client Email</label><input id="caseClientEmail" type="email" placeholder="client@example.com"></div>
+              <div><label>Filing Date</label><input id="caseFilingDate" type="date"></div>
               <div><label>Court / Division</label><select id="caseCourt"></select></div><div><label>Presiding Judge / Magistrate</label><input id="caseJudge"></div>
               <div><label>Representation / Side</label><select id="caseRepresentation"></select></div>
               <div><label>Cause of Action / Matter Type</label><select id="caseCauseOfAction"></select></div>
@@ -974,12 +978,17 @@ body.mobile-menu-open{overflow:hidden}
               <div><label>Priority Level</label><select id="nlPriority"><option>low</option><option>medium</option><option>high</option><option>urgent</option></select></div>
               <div><label>Status</label><select id="nlStatus"></select></div>
               <div style="grid-column:1/-1"><label>Description</label><textarea id="nlDescription" rows="2" placeholder="Brief description of the matter"></textarea></div>
-              <div style="grid-column:1/-1;font-weight:800;color:var(--navy);margin-top:6px">Primary Contact</div>
-              <div><label>Contact Person</label><input id="nlContactPerson"></div>
+              <div style="grid-column:1/-1;font-weight:800;color:var(--navy);margin-top:6px">Client Contact</div>
+              <div><label>Client Contact Person</label><input id="nlContactPerson"></div>
               <div><label>Position</label><input id="nlContactPosition"></div>
-              <div><label>Organisation</label><input id="nlContactOrganisation"></div>
-              <div><label>Phone Number</label><input id="nlContactPhone"></div>
-              <div><label>Email Address</label><input id="nlContactEmail" type="email"></div>
+              <div><label>Client Contact Phone</label><input id="nlContactPhone"></div>
+              <div><label>Client Contact Email</label><input id="nlContactEmail" type="email"></div>
+              <div style="grid-column:1/-1;font-weight:800;color:var(--navy);margin-top:6px">Institution / Authority Contact</div>
+              <div><label>Institution Contact Person</label><input id="nlInstitutionContactPerson"></div>
+              <div><label>Position</label><input id="nlInstitutionContactPosition"></div>
+              <div><label>Institution / Organisation</label><input id="nlInstitutionContactOrganisation"></div>
+              <div><label>Institution Contact Phone</label><input id="nlInstitutionContactPhone"></div>
+              <div><label>Institution Contact Email</label><input id="nlInstitutionContactEmail" type="email"></div>
             </div><p><button class="btn gold" id="nlSaveBtn" onclick="nlEditId?saveNonLitigationUpdate(nlEditId):addNonLitigation()">Save Non-Litigation Matter</button> <button class="btn out hidden" id="nlCancelBtn" onclick="cancelNonLitEdit()">Cancel Edit</button></p>
           </div>
         </div>
@@ -1139,18 +1148,15 @@ body.mobile-menu-open{overflow:hidden}
               <div><label>Activity / Task</label>
                 <select id="repActivityType">
                   <option value="">-- Select Activity Type --</option>
-                  <option value="Court Appearance">Court Appearance</option>
-                  <option value="Drafting">Drafting</option>
-                  <option value="Research">Research</option>
-                  <option value="Client Meeting">Client Meeting</option>
-                  <option value="Negotiation">Negotiation</option>
-                  <option value="Filing">Filing</option>
-                  <option value="Document Review">Document Review</option>
-                  <option value="Compliance Work">Compliance Work</option>
-                  <option value="Follow-up">Follow-up</option>
-                  <option value="Administrative">Administrative</option>
-                  <option value="Training">Training</option>
-                  <option value="Other">Other</option>
+                  <option value="Court Appearance">Court Appearance</option><option value="Mention">Mention</option><option value="Hearing">Hearing</option><option value="Trial">Trial</option>
+                  <option value="Judgment">Judgment</option><option value="Ruling">Ruling</option><option value="Filing / Lodging Documents">Filing / Lodging Documents</option><option value="Court Registry Follow-up">Court Registry Follow-up</option>
+                  <option value="Drafting">Drafting</option><option value="Document Review">Document Review</option><option value="Document Collection">Document Collection</option><option value="Legal Research">Legal Research</option>
+                  <option value="Client Consultation">Client Consultation</option><option value="Client Meeting">Client Meeting</option><option value="Telephone Call">Telephone Call</option><option value="Email Correspondence">Email Correspondence</option><option value="Letter Correspondence">Letter Correspondence</option>
+                  <option value="Mediation">Mediation</option><option value="Negotiation">Negotiation</option><option value="Conciliation">Conciliation</option><option value="Settlement Discussion">Settlement Discussion</option><option value="Arbitration">Arbitration</option><option value="Visitation">Visitation</option>
+                  <option value="Site Visit / Inspection">Site Visit / Inspection</option><option value="Client Premises Visit">Client Premises Visit</option><option value="Government Office Follow-up">Government Office Follow-up</option><option value="Police Follow-up">Police Follow-up</option><option value="Prison Visit">Prison Visit</option><option value="Bail / Police Bond Follow-up">Bail / Police Bond Follow-up</option>
+                  <option value="Service of Documents">Service of Documents</option><option value="Process Serving">Process Serving</option><option value="Witness Interview">Witness Interview</option><option value="Affidavit Preparation">Affidavit Preparation</option><option value="Swearing / Commissioning">Swearing / Commissioning</option><option value="Notarisation / Certification">Notarisation / Certification</option>
+                  <option value="Execution Follow-up">Execution Follow-up</option><option value="Legal Opinion">Legal Opinion</option><option value="Contract Drafting / Review">Contract Drafting / Review</option><option value="Due Diligence">Due Diligence</option><option value="Company / Business Registration">Company / Business Registration</option>
+                  <option value="Immigration Follow-up">Immigration Follow-up</option><option value="Land / Survey / Valuation Follow-up">Land / Survey / Valuation Follow-up</option><option value="Tax / TRA Follow-up">Tax / TRA Follow-up</option><option value="Internal Conference">Internal Conference</option><option value="Partner Consultation">Partner Consultation</option><option value="Administrative">Administrative</option><option value="Training">Training</option><option value="Other">Other</option>
                 </select>
               </div>
               <div><label>Location / Channel</label>
@@ -1177,10 +1183,11 @@ body.mobile-menu-open{overflow:hidden}
                   <option>Other Government / Regulatory Office</option>
                   </optgroup>
                   <optgroup label="Other Locations">
-                  <option>Client Office</option><option>Opposing Counsel's Office</option><option>Firm Office</option>
-                  <option>Bank / Financial Institution</option><option>Prison / Detention Facility</option>
-                  <option>Site / Property Inspection</option><option>Field Visit</option><option>Telephone</option>
-                  <option>Email</option><option>Virtual Meeting</option><option>Other</option>
+                  <option>Client Office / Premises</option><option>Opposing Counsel's Office</option><option>Firm Office</option>
+                  <option>Police Station</option><option>Prison / Detention Facility</option><option>Government Office</option><option>BRELA</option><option>TRA</option>
+                  <option>Immigration Office</option><option>Land Registry / Ministry of Lands</option><option>Municipal / City / District Council</option>
+                  <option>Bank / Financial Institution</option><option>Commissioner for Oaths / Notary</option><option>Mediation / Arbitration Centre</option>
+                  <option>Site / Property Inspection</option><option>Field Visit</option><option>Telephone</option><option>Email</option><option>Virtual Meeting</option><option>Other</option><option>Other</option>
                   </optgroup>
                 </select>
               </div>
@@ -4038,7 +4045,12 @@ async function loadNonLitigations(){
         primary_contact_position: n.primary_contact_position||null,
         primary_contact_organisation: n.primary_contact_organisation||null,
         primary_contact_phone: n.primary_contact_phone||null,
-        primary_contact_email: n.primary_contact_email||null
+        primary_contact_email: n.primary_contact_email||null,
+        institution_contact_person: n.institution_contact_person||null,
+        institution_contact_position: n.institution_contact_position||null,
+        institution_contact_organisation: n.institution_contact_organisation||null,
+        institution_contact_phone: n.institution_contact_phone||null,
+        institution_contact_email: n.institution_contact_email||null
       }));
 
       write(LS.nonlits, nonlits);
@@ -6667,6 +6679,9 @@ function editCase(id){
   if($('caseTitle'))$('caseTitle').value=c.title||'';
   if($('caseNumber'))$('caseNumber').value=c.case_number||'';
   if($('caseClient'))$('caseClient').value=c.client_name||'';
+  if($('caseClientContactPerson'))$('caseClientContactPerson').value=c.client_contact_person||'';
+  if($('caseClientPhone'))$('caseClientPhone').value=c.client_phone||'';
+  if($('caseClientEmail'))$('caseClientEmail').value=c.client_email||'';
   if($('caseFilingDate'))$('caseFilingDate').value=c.filing_date||'';
   if($('caseCourt')){$('caseCourt').innerHTML=taxonomyOptions(COURT_OPTIONS,c.court||'','-- Select Court / Division --');}
   if($('caseJudge'))$('caseJudge').value=c.judge||'';
@@ -6709,6 +6724,9 @@ async function saveCaseUpdate(id){
     title,
     case_number:val('caseNumber')||null,
     client_name:val('caseClient')||null,
+    client_contact_person:val('caseClientContactPerson')||null,
+    client_phone:val('caseClientPhone')||null,
+    client_email:val('caseClientEmail')||null,
     filing_date:val('caseFilingDate')||null,
     court:val('caseCourt')||null,
     judge:val('caseJudge')||null,
@@ -6807,7 +6825,7 @@ async function deleteCase(id){
 
 function cancelCaseEdit(){caseEditId=null;resetCaseForm();}
 function resetCaseForm(){
-  ['caseTitle','caseNumber','caseClient','caseFilingDate','caseJudge','caseDescription','caseAdvocate','caseOpposingLawFirm','casePhone','caseOpposingEmail'].forEach(clear);
+  ['caseTitle','caseNumber','caseClient','caseClientContactPerson','caseClientPhone','caseClientEmail','caseFilingDate','caseJudge','caseDescription','caseAdvocate','caseOpposingLawFirm','casePhone','caseOpposingEmail'].forEach(clear);
   if($('caseCourt'))$('caseCourt').innerHTML=taxonomyOptions(COURT_OPTIONS,'','-- Select Court / Division --');
   if($('caseRepresentation'))$('caseRepresentation').innerHTML=taxonomyOptions(LITIGATION_POSITIONS,'','-- Select Representation / Side --');
   if($('caseCauseOfAction'))$('caseCauseOfAction').innerHTML=taxonomyOptions(LITIGATION_CAUSES,'','-- Select Cause of Action --');
@@ -6841,6 +6859,9 @@ async function addCase(){
       title,
       case_number:val('caseNumber')||null,
       client_name:val('caseClient')||null,
+      client_contact_person:val('caseClientContactPerson')||null,
+      client_phone:val('caseClientPhone')||null,
+      client_email:val('caseClientEmail')||null,
       filing_date:val('caseFilingDate')||null,
       court:val('caseCourt')||null,
       judge:val('caseJudge')||null,
@@ -6892,7 +6913,7 @@ async function addCase(){
           }));
         }
       }
-      ['caseTitle','caseNumber','caseClient','caseFilingDate','caseCourt','caseJudge','caseDescription','caseAdvocate','caseOpposingLawFirm','casePhone','caseOpposingEmail'].forEach(clear);
+      ['caseTitle','caseNumber','caseClient','caseClientContactPerson','caseClientPhone','caseClientEmail','caseFilingDate','caseCourt','caseJudge','caseDescription','caseAdvocate','caseOpposingLawFirm','casePhone','caseOpposingEmail'].forEach(clear);
       // Full reload — the realtime INSERT event will also arrive but the guard
       // in subscribeCases() deduplicates by id, so no double-render occurs.
       await loadCases();
@@ -6904,7 +6925,7 @@ async function addCase(){
       const localCase={...payload, id:uid(), created_at:new Date().toISOString()};
       cases.unshift(localCase);
       saveLocal();
-      ['caseTitle','caseNumber','caseClient','caseFilingDate','caseCourt','caseJudge','caseDescription','caseAdvocate','caseOpposingLawFirm','casePhone','caseOpposingEmail'].forEach(clear);
+      ['caseTitle','caseNumber','caseClient','caseClientContactPerson','caseClientPhone','caseClientEmail','caseFilingDate','caseCourt','caseJudge','caseDescription','caseAdvocate','caseOpposingLawFirm','casePhone','caseOpposingEmail'].forEach(clear);
       populateMatterSelects();
       renderCases();
       notice('Cause List item saved locally (offline mode).');
@@ -6954,9 +6975,14 @@ async function addNonLitigation(){
           description:    val('nlDescription')||null,
           primary_contact_person:       val('nlContactPerson')||null,
           primary_contact_position:     val('nlContactPosition')||null,
-          primary_contact_organisation: val('nlContactOrganisation')||null,
+          primary_contact_organisation: val('nlContactOrganisation')||item.client||null,
           primary_contact_phone:        val('nlContactPhone')||null,
           primary_contact_email:        val('nlContactEmail')||null,
+          institution_contact_person:       val('nlInstitutionContactPerson')||null,
+          institution_contact_position:     val('nlInstitutionContactPosition')||null,
+          institution_contact_organisation: val('nlInstitutionContactOrganisation')||item.institution||null,
+          institution_contact_phone:        val('nlInstitutionContactPhone')||null,
+          institution_contact_email:        val('nlInstitutionContactEmail')||null,
           created_by:     authUser?.id || null
           // matter_reference — omitted; server trigger (trg_nl_set_reference)
           // assigns it. stage/next_action/waiting_reason — omitted; DB keeps
@@ -7031,9 +7057,14 @@ function editNonLitigation(id){
   if($('nlDescription'))$('nlDescription').value=n.description||'';
   if($('nlContactPerson'))$('nlContactPerson').value=n.primary_contact_person||'';
   if($('nlContactPosition'))$('nlContactPosition').value=n.primary_contact_position||'';
-  if($('nlContactOrganisation'))$('nlContactOrganisation').value=n.primary_contact_organisation||'';
+  if($('nlContactOrganisation'))$('nlContactOrganisation').value=n.primary_contact_organisation||n.client||'';
   if($('nlContactPhone'))$('nlContactPhone').value=n.primary_contact_phone||'';
   if($('nlContactEmail'))$('nlContactEmail').value=n.primary_contact_email||'';
+  if($('nlInstitutionContactPerson'))$('nlInstitutionContactPerson').value=n.institution_contact_person||'';
+  if($('nlInstitutionContactPosition'))$('nlInstitutionContactPosition').value=n.institution_contact_position||'';
+  if($('nlInstitutionContactOrganisation'))$('nlInstitutionContactOrganisation').value=n.institution_contact_organisation||n.institution||'';
+  if($('nlInstitutionContactPhone'))$('nlInstitutionContactPhone').value=n.institution_contact_phone||'';
+  if($('nlInstitutionContactEmail'))$('nlInstitutionContactEmail').value=n.institution_contact_email||'';
   // Reassignment/status/archive are explicit administrative actions (Matter
   // Details header), not part of general master-info correction. DB trigger
   // enforces this regardless (nl_enforce_privileged_fields) — this matches
@@ -7070,6 +7101,11 @@ async function saveNonLitigationUpdate(id){
     primary_contact_organisation: val('nlContactOrganisation')||null,
     primary_contact_phone:        val('nlContactPhone')||null,
     primary_contact_email:        val('nlContactEmail')||null,
+    institution_contact_person:       val('nlInstitutionContactPerson')||null,
+    institution_contact_position:     val('nlInstitutionContactPosition')||null,
+    institution_contact_organisation: val('nlInstitutionContactOrganisation')||null,
+    institution_contact_phone:        val('nlInstitutionContactPhone')||null,
+    institution_contact_email:        val('nlInstitutionContactEmail')||null,
     updated_at:  new Date().toISOString(),
     updated_by:  authUser?authUser.id:null
   };
@@ -7123,7 +7159,7 @@ async function deleteNonLitigation(id){
 }
 function cancelNonLitEdit(){nlEditId=null;resetNonLitForm();}
 function resetNonLitForm(){
-  ['nlTitle','nlClient','nlOpeningDate','nlDeadline','nlDescription','nlContactPerson','nlContactPosition','nlContactOrganisation','nlContactPhone','nlContactEmail'].forEach(clear);
+  ['nlTitle','nlClient','nlOpeningDate','nlDeadline','nlDescription','nlContactPerson','nlContactPosition','nlContactOrganisation','nlContactPhone','nlContactEmail','nlInstitutionContactPerson','nlInstitutionContactPosition','nlInstitutionContactOrganisation','nlInstitutionContactPhone','nlInstitutionContactEmail'].forEach(clear);
   if($('nlInstitution'))$('nlInstitution').innerHTML=taxonomyOptions(NONLIT_AUTHORITIES,'','-- Select Authority / Institution --');
   if($('nlNature'))$('nlNature').innerHTML=taxonomyOptions(NONLIT_MATTER_TYPES,'','-- Select Matter Type --');
   if($('nlPriority')) $('nlPriority').value='medium';
@@ -7725,6 +7761,7 @@ async function addReport(){
         next_action:      o.next_action,
         notes:            o.outcome||null,
         followup_date:    o.followup_date||null,
+        followup_time:    o.followup_time||null,
         status:           o.status,
         challenge_level:  o.challenge_level,
         challenge:        o.challenge||null,
