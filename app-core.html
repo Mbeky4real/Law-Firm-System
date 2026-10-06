@@ -3250,7 +3250,7 @@ body.mobile-menu-open{overflow:hidden}
   
 <script>
 let sb=null, online=false, page='dashboard', roomId=null, calDate=new Date(), authUser=null, authRole=null, authFullName=null;
-let _invIssuerName='', _invIssuerRole='';
+
 let cases=[], nonlits=[], diary=[], officeEvents=[], docs=[], msgs=[], members=[], reports=[], currentMemberId=null, viewed={};
 let diaryEditId=null, oeEditId=null, docEditId=null, memberEditId=null, chatChannel=null, calSelectedDate=null;
 let reportsChannel=null;
@@ -13245,7 +13245,7 @@ async function invLoadSavedList(){
 }
 
 
-async async function invLoadInvoice(id){
+async function invLoadInvoice(id){
   if(!sb) return;
   const {data:inv}=await sb.from('invoices').select('*').eq('id',id).maybeSingle();
   if(!inv) return;
@@ -13264,15 +13264,6 @@ async async function invLoadInvoice(id){
   set('invRetainerPeriod', inv.retainer_period);
   invServiceTypeChanged(); // shows/hides matter row + retainer period correctly
   _invLoadedStatus = inv.status;
-  _invIssuerName = '';
-  _invIssuerRole = '';
-  if(inv.status !== 'draft' && inv.issued_by){
-    try{
-      const {data:issuer}=await sb.from('roles').select('full_name,role,position').eq('user_id',inv.issued_by).maybeSingle();
-      _invIssuerName = issuer?.full_name || '';
-      _invIssuerRole = String(issuer?.role || '').toLowerCase();
-    }catch(e){}
-  }
   _invLoadedPayment = {amount_paid:Number(inv.amount_paid||0), withholding_tax_amount:Number(inv.withholding_tax_amount||0)};
 
   // Invoice type
@@ -14257,8 +14248,6 @@ function invNewInvoice(){
   _invBankManuallyChosen=false;
   _invLoadedStatus=null;
   _invLoadedPayment=null;
-  _invIssuerName=authFullName||'';
-  _invIssuerRole=authRole||'';
   _invPrevCurrency='TZS';
   invNumberEdited=false;
   const numEl=$('invNumber'); if(numEl){ numEl.value=''; numEl.removeAttribute('readonly'); }
@@ -14774,10 +14763,6 @@ function invRenderPreview(){
   const bank=_invSelectedBank;
   const notes=val('invNotes')||'Thank you for your continued trust in our services.';
   const fmt=(n)=>n.toLocaleString();
-  const signatureName = (_invLoadedStatus && _invLoadedStatus!=='draft' && _invIssuerName)
-    ? _invIssuerName : (authFullName || 'Office Manager');
-  const signatureTitle = (_invLoadedStatus && _invLoadedStatus!=='draft' && _invIssuerRole==='partner')
-    ? '(Partner)' : '(Prepared by — Office Manager)';
   const voidStamp=_invLoadedStatus==='void'?`<div style="position:absolute;top:40%;left:0;right:0;text-align:center;font-size:56px;font-weight:900;color:rgba(153,27,27,.35);transform:rotate(-18deg);pointer-events:none;letter-spacing:6px">VOID</div>`:'';
 
   el.innerHTML=`
@@ -14871,8 +14856,8 @@ function invRenderPreview(){
     <!-- Signature area -->
     <div style="display:flex;align-items:flex-end;gap:16px;margin-bottom:16px;margin-top:8px">
       <div style="flex:1;border-bottom:1px solid #ccc;padding-bottom:4px">
-        <div style="font-size:10px;color:#555;margin-top:20px">${esc(signatureName)}</div>
-        <div style="font-size:9px;color:#888">${signatureTitle}</div>
+        <div style="font-size:10px;color:#555;margin-top:20px">${esc(authFullName||'Partner')}</div>
+        <div style="font-size:9px;color:#888">(Partner)</div>
       </div>
       <div style="width:80px;height:80px;border-radius:50%;border:2px solid #8b3a0f;display:flex;align-items:center;justify-content:center;text-align:center">
         <div style="font-size:7px;font-weight:700;color:#8b3a0f;line-height:1.2">M&O LAW<br>OFFICE<br>DAR ES SALAAM</div>
