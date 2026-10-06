@@ -41,6 +41,9 @@ function neutraliseManagerIssueControls(){
 
 function correctManagerIdentityLabels(){
   const p=invoicePage(); if(!p||!manager())return;
+  // Issued invoices must retain the actual Partner signatory.
+  const statusText=text(p).toLowerCase();
+  if(statusText.includes('issued') && !statusText.includes('draft')) return;
   const walker=document.createTreeWalker(p,NodeFilter.SHOW_TEXT);
   const nodes=[];
   while(walker.nextNode())nodes.push(walker.currentNode);
