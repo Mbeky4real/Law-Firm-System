@@ -80,11 +80,14 @@
       try{
         if(typeof bdRecordAudit==='function') await bdRecordAudit('approved','Budget approved by Partner after partial review. Pending lines remain pending; rejected lines remain rejected.');
       }catch(auditError){console.warn('[MOLMS budget approval audit]',auditError);}
-      if(typeof bdOpenDocument==='function') await bdOpenDocument(docId);
       if(typeof bdLoadDocs==='function') await bdLoadDocs();
       if(typeof bdRenderKpiCards==='function') bdRenderKpiCards();
       if(typeof bdRenderList==='function') bdRenderList();
-      notice('Reviewed budget approved. Pending lines remain pending; rejected lines remain rejected.');
+      if(typeof bdOpenDocument==='function') await bdOpenDocument(docId);
+      const {data:verifyRow,error:verifyError}=await sb.from('budget_documents').select('id,status').eq('id',docId).maybeSingle();
+      if(verifyError) throw verifyError;
+      if(!verifyRow || String(verifyRow.status||'').toLowerCase()!=='approved') throw new Error('Approval did not persist. Database status is '+String(verifyRow?.status||'unavailable')+'. Please retry or contact the system administrator.');
+      notice('Database confirmed the budget status as Approved. Pending lines remain pending; rejected lines remain rejected.');
     }catch(error){
       console.error('[MOLMS budget approval]',error);
       notice('Budget approval failed: '+(error && error.message ? error.message : String(error)),'err');
