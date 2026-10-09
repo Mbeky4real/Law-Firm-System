@@ -61,7 +61,7 @@
         return;
       }
       const pending=Array.isArray(_bdLines)?_bdLines.filter(l=>['pending','returned','on_hold','on-hold'].includes(String(l.status||'pending').toLowerCase())).length:0;
-      const yes=confirm('Approve the reviewed portion of this budget?\\n\\nApproved lines remain approved and rejected lines remain rejected.'+(pending?'\\n\\n'+pending+' line(s) are still pending review and will remain pending.':'')+'\\n\\nThe budget document will be marked approved.');
+      const yes=confirm('Approve the reviewed portion of this budget?\n\nApproved lines remain approved and rejected lines remain rejected.'+(pending?'\n\n'+pending+' line(s) are still pending review and will remain pending.':'')+'\n\nThe budget document will be marked approved.');
       if(!yes)return;
       if(typeof sb==='undefined'||!sb){
         notice('Database connection is unavailable.','err');return;
