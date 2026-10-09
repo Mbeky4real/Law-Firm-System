@@ -1,7 +1,6 @@
-/* MOLMS Budget Final Approval V2
- * Partner-only approval after partial review is permitted once at least one line
- * has been reviewed and approved. Pending lines remain pending; rejected lines
- * remain rejected. The confirmation makes the partial decision explicit.
+/* MOLMS Budget Final Approval V3
+ * Fixes click handling and active-document ID resolution. Reports database failures
+ * and verifies that the document row was actually updated.
  */
 (function(){
   'use strict';
@@ -24,13 +23,14 @@
         window.__bdFinalApprovalOriginal(status,id);
         const panel=get('bdPanelActions');
         if(!panel) return;
+        if(id) panel.dataset.bdBudgetId=String(id);
         panel.querySelectorAll('[data-bd-finalize]').forEach(x=>x.remove());
         if(canFinalize() && !['Approved','approved'].includes(status)){
           const b=document.createElement('button');
           b.type='button'; b.className='btn gold'; b.setAttribute('data-bd-finalize','1');
           b.textContent='✓ Approve Reviewed Budget';
           b.title='Approve the reviewed portion of this budget. Pending lines remain pending; rejected lines remain rejected.';
-          b.onclick=()=>window.bdFinalizeBudget(_bdActiveId);
+          b.onclick=()=>window.bdFinalizeBudget(panel.dataset.bdBudgetId || (typeof _bdActiveId!=='undefined' ? _bdActiveId : null));
           panel.appendChild(b);
         }
       };
@@ -42,27 +42,53 @@
       b.type='button'; b.className='btn gold'; b.setAttribute('data-bd-finalize','1');
       b.textContent='✓ Approve Reviewed Budget';
       b.title='Approve the reviewed portion of this budget. Pending lines remain pending; rejected lines remain rejected.';
-      b.onclick=()=>window.bdFinalizeBudget(_bdActiveId);
+      b.onclick=()=>window.bdFinalizeBudget(panel.dataset.bdBudgetId || (typeof _bdActiveId!=='undefined' ? _bdActiveId : null));
       panel.appendChild(b);
     }
   }
   window.bdFinalizeBudget=async function(id){
-    if(typeof authRole==='undefined'||authRole!=='partner'){notice('Only Partners can finalise a budget.','err');return;}
-    if(!canFinalize()){notice('Review and approve at least one budget line before approving the reviewed budget.','err');return;}
-    const pending=Array.isArray(_bdLines)?_bdLines.filter(l=>['pending','returned','on_hold','on-hold'].includes(String(l.status||'pending').toLowerCase())).length:0;
-    const yes=confirm('Approve the reviewed portion of this budget?\n\nApproved lines remain approved and rejected lines remain rejected.'+(pending?'\n\n'+pending+' line(s) are still pending review and will remain pending.':'')+'\n\nThe budget document will be marked approved.');
-    if(!yes)return;
-    if(!sb){notice('Database connection is unavailable.','err');return;}
-    const {error}=await sb.from('budget_documents').update({
-      status:'approved', updated_at:new Date().toISOString(), updated_by:authUser?.id
-    }).eq('id',id);
-    if(error){console.error('[Budget finalise]',error);notice('Unable to finalise budget: '+error.message,'err');return;}
-    try{await bdRecordAudit('approved','Budget approved by Partner after partial review. Pending lines remain pending; rejected lines remain rejected.');}catch(e){console.warn(e);}
-    if(typeof bdOpenDocument==='function') await bdOpenDocument(id);
-    if(typeof bdLoadDocs==='function') await bdLoadDocs();
-    if(typeof bdRenderKpiCards==='function') bdRenderKpiCards();
-    if(typeof bdRenderList==='function') bdRenderList();
-    notice('Reviewed budget approved. Pending lines remain pending; rejected lines remain rejected.');
+    try{
+      if(typeof authRole==='undefined'||authRole!=='partner'){
+        notice('Only Partners can approve a reviewed budget.','err');return;
+      }
+      if(!canFinalize()){
+        notice('Review and approve at least one budget line before approving the reviewed budget.','err');return;
+      }
+      const docId=id || (typeof _bdActiveId!=='undefined' ? _bdActiveId : null);
+      if(!docId){
+        notice('Could not identify the selected budget. Close the budget and open it again, then retry.','err');
+        console.error('[MOLMS budget approval] Missing document ID', {id, activeId:typeof _bdActiveId!=='undefined'?_bdActiveId:null});
+        return;
+      }
+      const pending=Array.isArray(_bdLines)?_bdLines.filter(l=>['pending','returned','on_hold','on-hold'].includes(String(l.status||'pending').toLowerCase())).length:0;
+      const yes=confirm('Approve the reviewed portion of this budget?\\n\\nApproved lines remain approved and rejected lines remain rejected.'+(pending?'\\n\\n'+pending+' line(s) are still pending review and will remain pending.':'')+'\\n\\nThe budget document will be marked approved.');
+      if(!yes)return;
+      if(typeof sb==='undefined'||!sb){
+        notice('Database connection is unavailable.','err');return;
+      }
+      const updatePayload={status:'approved',updated_at:new Date().toISOString()};
+      if(typeof authUser!=='undefined' && authUser && authUser.id) updatePayload.updated_by=authUser.id;
+      const {data,error}=await sb.from('budget_documents')
+        .update(updatePayload)
+        .eq('id',docId)
+        .select('id,status')
+        .maybeSingle();
+      if(error) throw error;
+      if(!data){
+        throw new Error('No budget record was updated. This may be a permissions/RLS issue or the selected budget ID is incorrect.');
+      }
+      try{
+        if(typeof bdRecordAudit==='function') await bdRecordAudit('approved','Budget approved by Partner after partial review. Pending lines remain pending; rejected lines remain rejected.');
+      }catch(auditError){console.warn('[MOLMS budget approval audit]',auditError);}
+      if(typeof bdOpenDocument==='function') await bdOpenDocument(docId);
+      if(typeof bdLoadDocs==='function') await bdLoadDocs();
+      if(typeof bdRenderKpiCards==='function') bdRenderKpiCards();
+      if(typeof bdRenderList==='function') bdRenderList();
+      notice('Reviewed budget approved. Pending lines remain pending; rejected lines remain rejected.');
+    }catch(error){
+      console.error('[MOLMS budget approval]',error);
+      notice('Budget approval failed: '+(error && error.message ? error.message : String(error)),'err');
+    }
   };
   function install(){
     decorate();
