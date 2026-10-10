@@ -1,31 +1,34 @@
-/* MOLMS Budget Final Approval V4: explicit update and persistence verification. */
+/* MOLMS Budget Final Approval V5: stable approval control and explicit persistence verification. */
 (function () {
   'use strict';
-  if (window.__budgetFinalApprovalV4) return;
-  window.__budgetFinalApprovalV4 = true;
+  if (window.__budgetFinalApprovalV5) return;
+  window.__budgetFinalApprovalV5 = true;
 
-  function getId() {
+  function activeId() {
     var panel = document.getElementById('bdPanelActions');
-    return (panel && panel.dataset.bdBudgetId) || window._bdActiveId || null;
+    return (panel && panel.dataset.bdBudgetId) || window._bdActiveId ||
+      (typeof _bdActiveId !== 'undefined' ? _bdActiveId : null);
   }
-  function getLines() {
-    return Array.isArray(window._bdLines) ? window._bdLines : [];
+  function lines() {
+    if (Array.isArray(window._bdLines)) return window._bdLines;
+    if (typeof _bdLines !== 'undefined' && Array.isArray(_bdLines)) return _bdLines;
+    return [];
   }
-  function partner() {
+  function isPartner() {
     return String(window.authRole || (typeof authRole !== 'undefined' ? authRole : '')).toLowerCase() === 'partner';
   }
-  function message(text, type) {
+  function notify(text, type) {
     if (typeof window.notice === 'function') window.notice(text, type);
     else if (typeof notice === 'function') notice(text, type);
     else window.alert(text);
   }
   async function approve(id) {
     try {
-      if (!partner()) throw new Error('Only a Partner can approve a budget.');
-      var docId = id || getId();
+      if (!isPartner()) throw new Error('Only a Partner can approve a budget.');
+      var docId = id || activeId();
       if (!docId) throw new Error('No selected budget ID was found. Close and reopen the budget.');
-      if (!getLines().some(function (line) { return String(line.status || '').toLowerCase() === 'approved'; })) {
-        throw new Error('Approve at least one budget line before final approval.');
+      if (!lines().some(function (line) { return String(line.status || '').toLowerCase() === 'approved'; })) {
+        throw new Error('No approved budget lines were found. Review and approve at least one line first.');
       }
       var client = (typeof sb !== 'undefined' && sb) || window.sb;
       if (!client || !client.from) throw new Error('Budget database connection is unavailable.');
@@ -49,29 +52,32 @@
       if (typeof bdRenderKpiCards === 'function') bdRenderKpiCards();
       if (typeof bdRenderList === 'function') bdRenderList();
       if (typeof bdOpenDocument === 'function') await bdOpenDocument(docId);
-      message('Approved: database status verified.');
+      notify('Approved: database status verified.');
     } catch (e) {
-      console.error('[Budget approval V4]', e);
-      message('Budget approval failed: ' + (e && e.message ? e.message : String(e)), 'err');
+      console.error('[Budget approval V5]', e);
+      notify('Budget approval failed: ' + (e && e.message ? e.message : String(e)), 'err');
     }
   }
   window.bdFinalizeBudget = approve;
   function install() {
     var panel = document.getElementById('bdPanelActions');
-    if (!panel) return;
-    var prior = panel.querySelector('[data-bd-finalize]');
-    if (prior) prior.remove();
-    if (!partner() || !getLines().some(function (line) { return String(line.status || '').toLowerCase() === 'approved'; })) return;
+    if (!panel || !isPartner()) return;
+    // Idempotent: never remove/recreate the button during observer callbacks.
+    if (panel.querySelector('[data-bd-finalize]')) return;
     var button = document.createElement('button');
     button.type = 'button';
     button.className = 'btn gold';
     button.setAttribute('data-bd-finalize', '1');
     button.textContent = '✓ Approve Reviewed Budget';
-    button.addEventListener('click', function (event) { event.preventDefault(); event.stopPropagation(); approve(getId()); });
+    button.addEventListener('click', function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      approve(activeId());
+    });
     panel.appendChild(button);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', install);
   else install();
-  var observer = new MutationObserver(install);
+  var observer = new MutationObserver(function () { install(); });
   observer.observe(document.body, { childList: true, subtree: true });
 })();
