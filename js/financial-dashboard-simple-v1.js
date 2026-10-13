@@ -36,15 +36,15 @@
     let node = el;
     while (node && node.parentElement && node.parentElement !== scroll) {
       if (node.matches && node.matches('div') &&
-          /border-radius:\\s*12px/i.test(node.getAttribute('style') || '') &&
-          /background:\\s*#fff/i.test(node.getAttribute('style') || '')) return node;
+          /border-radius:\s*12px/i.test(node.getAttribute('style') || '') &&
+          /background:\s*#fff/i.test(node.getAttribute('style') || '')) return node;
       node = node.parentElement;
     }
     return node && node.parentElement === scroll ? node : null;
   }
 
   function textOf(cell) {
-    return String(cell && (cell.innerText || cell.textContent) || '').replace(/\\s+/g, ' ').trim();
+    return String(cell && (cell.innerText || cell.textContent) || '').replace(/\s+/g, ' ').trim();
   }
 
   function compactTable(id, page) {
@@ -84,7 +84,7 @@
     const page = document.getElementById('page-findash');
     if (!page) return;
     installStyle();
-    const scroll = Array.from(page.children).find(el => /overflow-y:\\s*auto/i.test(el.getAttribute('style') || ''));
+    const scroll = Array.from(page.children).find(el => /overflow-y:\s*auto/i.test(el.getAttribute('style') || ''));
     if (!scroll) return;
 
     const manualBody = page.querySelector('#fdManualBody');
