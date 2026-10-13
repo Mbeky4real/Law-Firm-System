@@ -15,6 +15,7 @@
     style.textContent = `
       #page-findash #fdKpiRow { grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px!important;padding:14px 20px!important; }
       #page-findash #fdKpiRow>* { min-width:0; }
+      #page-findash #fdKpiRow>div:nth-child(3) { display:block!important; }
       #page-findash>div[style*="overflow-y:auto"] { padding:16px 20px!important; }
       #page-findash .fd-simple-quick-actions { display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:12px; }
       #page-findash .fd-simple-quick-actions strong { font-size:11px;color:var(--navy);margin-right:4px; }
