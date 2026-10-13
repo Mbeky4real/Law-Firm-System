@@ -35,7 +35,7 @@ global._fdAllManual = [
 require('../js/financial-dashboard-v16.js');
 const audit=global.MOLMSFinanceV16.audit();
 assert.deepEqual(audit.revenue,{TZS:17200000,USD:250});
-assert.deepEqual(audit.collected,{TZS:11000000});
+assert.deepEqual(audit.collected,{TZS:12180000}); // includes TZS 1,180,000 received in-period on an August invoice
 assert.deepEqual(audit.newReceivables,{TZS:6200000,USD:250});
 assert.deepEqual(audit.expenses,{TZS:25000});
 assert.deepEqual(audit.totalReceivables,{TZS:11880000,USD:250});
