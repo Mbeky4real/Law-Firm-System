@@ -95,13 +95,13 @@
 
   function totals(rows,key){const out={TZS:0};rows.forEach(r=>add(out,r.currency,r[key]));return out}
 
+  // Actual expenditure is sourced ONLY from approved manual financial
+  // transactions. Expense Register, Office Expenses, payroll calculations,
+  // historical payroll summaries and budgets are operational/obligation data;
+  // importing them here would count unpaid items as cash already spent.
   function periodExpenses(){
-    const {start,end}=bounds(),{entries,payroll,office,historical,manual}=data(),out={TZS:0};
-    entries.filter(e=>date(e.date)>=start&&date(e.date)<=end&&String(e.status||'').toLowerCase()!=='cancelled').forEach(e=>add(out,'TZS',e.amount));
-    payroll.filter(p=>date((p.payroll_month||'')+'-01')>=start&&date((p.payroll_month||'')+'-01')<=end&&String(p.status||'').toLowerCase()!=='cancelled').forEach(p=>add(out,'TZS',p.total_net));
-    office.filter(e=>date(e.expense_date)>=start&&date(e.expense_date)<=end).forEach(e=>add(out,'TZS',e.amount));
-    historical.filter(h=>date((h.period_month||'')+'-01')>=start&&date((h.period_month||'')+'-01')<=end).forEach(h=>add(out,'TZS',h.amount));
-    manual.filter(t=>approved(t)&&t.tx_type==='expenditure'&&date(t.date)>=start&&date(t.date)<=end).forEach(t=>add(out,t.currency,t.amount));
+    const {start,end}=bounds(),{manual}=data(),out={TZS:0};
+    manual.filter(t=>approved(t)&&String(t.tx_type||'').toLowerCase()==='expenditure'&&date(t.date)>=start&&date(t.date)<=end&&String(t.status||'').toLowerCase()!=='cancelled').forEach(t=>add(out,t.currency,t.amount));
     return out;
   }
 
@@ -248,5 +248,5 @@
       reconcileQueued=true;
       queueMicrotask(()=>{reconcileQueued=false;render()});
     }).observe(document.documentElement,{childList:true,subtree:true});
-  window.MOLMSFinanceV16={metrics,periodClientRows,allReceivables,render,refresh,audit:()=>{const m=metrics();return {version:16,period:bounds(),revenue:m.revenue,collected:m.collected,newReceivables:m.newReceivables,totalReceivables:m.totalReceivables,cash:m.cash.closingByCur,vat:vatPosition(),paymentLedgerRows:paymentRows.length}}};
+  window.MOLMSFinanceV16={metrics,periodClientRows,allReceivables,render,refresh,audit:()=>{const m=metrics();return {version:16,period:bounds(),revenue:m.revenue,collected:m.collected,newReceivables:m.newReceivables,totalReceivables:m.totalReceivables,cash:m.cash.closingByCur,expenses:m.expenses,vat:vatPosition(),paymentLedgerRows:paymentRows.length}}};
 })();
