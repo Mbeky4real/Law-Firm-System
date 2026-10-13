@@ -20,6 +20,7 @@ global._fdAllInvoices = [
   {id:'pacific',invoice_type:'tax',status:'issued',client_name:'Pacific Oil',currency:'USD',invoice_date:'2026-09-07',total_due:250,amount_paid:0}
 ];
 global._fdAllManual = [
+  {id:'expense-test',status:'approved',tx_type:'expenditure',date:'2026-09-06',amount:25000,currency:'TZS'},
   {id:'b1',status:'approved',tx_type:'revenue',date:'2026-09-01',amount:1000000,currency:'TZS',client_receivable:true,agreed_amount:1200000,outstanding_amount:200000,receivable_client_name:'Bassam'},
   {id:'b2',status:'approved',tx_type:'revenue',date:'2026-09-03',amount:1000000,currency:'TZS',client_receivable:true,agreed_amount:2000000,outstanding_amount:1000000,receivable_client_name:'Bassam'},
   {id:'magnus',status:'approved',tx_type:'revenue',date:'2026-09-11',amount:3000000,currency:'TZS',client_receivable:true,agreed_amount:5000000,outstanding_amount:2000000,receivable_client_name:'Magnus'},
@@ -34,6 +35,7 @@ const audit=global.MOLMSFinanceV16.audit();
 assert.deepEqual(audit.revenue,{TZS:17200000,USD:250});
 assert.deepEqual(audit.collected,{TZS:11000000,USD:0});
 assert.deepEqual(audit.newReceivables,{TZS:6200000,USD:250});
+assert.deepEqual(audit.expenses,{TZS:25000});
 assert.deepEqual(audit.totalReceivables,{TZS:11880000,USD:250});
 assert.deepEqual(audit.cash,{TZS:1258000});
 assert.deepEqual(audit.vat.payable,{TZS:180000,USD:0});
