@@ -70,8 +70,9 @@
         escapeHtml(label) + (note ? '<span class="fd-simple-summary-note">' + escapeHtml(note) + '</span>' : '') +
         '</span><span class="fd-simple-summary-value">' + escapeHtml(value) + '</span></div>';
     }).filter(Boolean);
-    list.innerHTML = items.length ? items.join('') :
+    const summaryHtml = items.length ? items.join('') :
       '<div class="fd-simple-summary-item"><span class="fd-simple-summary-label">No summary entries for this period.</span></div>';
+    if (list.innerHTML !== summaryHtml) list.innerHTML = summaryHtml;
     table.style.display = 'none';
     list.style.display = 'grid';
   }
