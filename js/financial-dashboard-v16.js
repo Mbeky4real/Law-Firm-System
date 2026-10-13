@@ -95,6 +95,19 @@
 
   function totals(rows,key){const out={TZS:0};rows.forEach(r=>add(out,r.currency,r[key]));return out}
 
+  // Collections are period cash-flow: use the actual payment date, not the
+  // invoice date. Keep recognised revenue/receivables on their invoice period.
+  // Legacy invoices without a payment ledger retain the best available date
+  // inferred by receipts(); new payments should use invoice_payments rows.
+  function periodCollections(){
+    const {start,end}=bounds(),{invoices,manual}=data(),out={TZS:0};
+    invoices.filter(validTax).forEach(i=>{
+      receipts(i).filter(r=>r.date>=start&&r.date<=end).forEach(r=>add(out,i.currency,num(r.cash)+num(r.wht)));
+    });
+    manual.filter(t=>approved(t)&&String(t.tx_type||'').toLowerCase()==='revenue'&&date(t.date)>=start&&date(t.date)<=end&&String(t.status||'').toLowerCase()!=='cancelled').forEach(t=>add(out,t.currency,t.amount));
+    return out;
+  }
+
   // Actual expenditure is sourced ONLY from approved manual financial
   // transactions. Expense Register, Office Expenses, payroll calculations,
   // historical payroll summaries and budgets are operational/obligation data;
@@ -110,7 +123,7 @@
   }
 
   function metrics(){
-    const rows=periodClientRows(),revenue=totals(rows,'revenue'),collected=totals(rows,'paid'),newReceivables=totals(rows,'outstanding'),expenses=periodExpenses(),cash=cashPosition();
+    const rows=periodClientRows(),revenue=totals(rows,'revenue'),collected=periodCollections(),newReceivables=totals(rows,'outstanding'),expenses=periodExpenses(),cash=cashPosition();
     return {rows,revenue,collected,newReceivables,expenses,cash,totalReceivables:totals(allReceivables(),'outstanding')};
   }
 
@@ -185,7 +198,25 @@
   }
 
   function renderObligations(){
-    const host=q('fdMonthlyObligationsStableV6')||q('fdMonthlyObligations');if(!host)return;let o;try{o=fdMonthlyObligations()}catch(e){return}if(o.payrollGenerated)return;
+    const host=q('fdMonthlyObligationsStableV6')||q('fdMonthlyObligations');if(!host)return;
+    // A draft/submitted payroll is a planning figure, not a final obligation.
+    // Wrap the existing calculator once, preserving its VAT/statutory detail
+    // while allowing only an approved or locked run to be treated as generated.
+    try{
+      if(typeof fdMonthlyObligations==='function'&&!fdMonthlyObligations.__v16Authoritative){
+        const original=fdMonthlyObligations;
+        const authoritative=function(){
+          const o=original.apply(this,arguments)||{};
+          const status=String(o.run?.status||'').toLowerCase();
+          const finalised=['approved','locked'].includes(status);
+          if(o.payrollGenerated&&!finalised)return {...o,payrollGenerated:false,run:null,netSalaries:0,paye:0,nssf:0,health:0,sdl:0,wcf:0,total:0};
+          return o;
+        };
+        authoritative.__v16Authoritative=true;
+        fdMonthlyObligations=authoritative;
+      }
+    }catch(e){}
+    let o;try{o=fdMonthlyObligations()}catch(e){return}if(o.payrollGenerated)return;
     const month=new Date(o.month+'-01T00:00:00').toLocaleDateString('en-US',{month:'long',year:'numeric'}),vat=vatPosition(),vatLines=moneyLines(vat.payable,false),pipelineLines=moneyLines(vat.pipeline,false).filter(x=>x.value>0);
     const pendingRow=label=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:4px 0;font-size:12px"><span style="color:var(--muted)">${label}</span><span style="font-weight:700;color:#92400e">Pending payroll</span></div>`;
     host.innerHTML=`<div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px;margin:0">
