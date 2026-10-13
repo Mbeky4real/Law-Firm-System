@@ -38,7 +38,7 @@ assert.deepEqual(audit.newReceivables,{TZS:6200000,USD:250});
 assert.deepEqual(audit.expenses,{TZS:25000});
 assert.deepEqual(audit.totalReceivables,{TZS:11880000,USD:250});
 assert.deepEqual(audit.cash,{TZS:1258000});
-assert.deepEqual(audit.vat.payable,{TZS:180000,USD:0});
+assert.deepEqual(audit.vat.payable,{TZS:180000});
 assert.deepEqual(audit.vat.pipeline,{TZS:0,USD:540});
 assert.equal(audit.vat.taxInvoiceCount,1);
 assert.equal(audit.vat.proformaCount,1);
