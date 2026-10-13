@@ -2,6 +2,8 @@ const assert = require('node:assert/strict');
 
 global.window = global;
 global.addEventListener = ()=>{};
+global.setInterval = ()=>0;
+global.setTimeout = ()=>0;
 global.document = {getElementById(){return null},addEventListener(){}};
 global.fdGetPeriodDates = ()=>({start:'2026-09-01',end:'2026-09-13',monthStr:'2026-09'});
 global.fdCashContinuity = ()=>({openingByCur:{TZS:358000},closingByCur:{TZS:1258000}});
