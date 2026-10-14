@@ -41,21 +41,33 @@
     return String(i.invoice_type||'tax').toLowerCase()==='tax'&&!['draft','void','cancelled','superseded'].includes(st);
   }
 
+  // Payment dates and amounts come only from Invoice Module ledger rows.
+  // Notes and updated_at are not payment evidence and must never be used as fallback.
   function receipts(i){
-    const ledger=paymentRows.filter(p=>p.invoice_id===i.id).map(p=>({date:date(p.payment_date),cash:num(p.cash_amount),wht:num(p.withholding_tax_amount)}));
-    const ledgerCash=ledger.reduce((s,r)=>s+r.cash,0),ledgerWht=ledger.reduce((s,r)=>s+r.wht,0);
-    const storedCash=Math.max(0,num(i.amount_paid)),storedWht=Math.max(0,num(i.withholding_tax_amount));
-    if(ledger.length&&Math.abs(ledgerCash-storedCash)<.01&&Math.abs(ledgerWht-storedWht)<.01)return ledger;
-    const parsed=[];let m;
-    const re=/\[Payment\s+(\d{4}-\d{2}-\d{2})\]\s+Cash\s+([\d,]+(?:\.\d+)?)(?:\s+\+\s+WHT\s+([\d,]+(?:\.\d+)?))?/gi;
-    while((m=re.exec(String(i.notes||'')))!==null)parsed.push({date:m[1],cash:num(m[2].replace(/,/g,'')),wht:num((m[3]||'0').replace(/,/g,''))});
-    const parsedCash=parsed.reduce((s,r)=>s+r.cash,0),parsedWht=parsed.reduce((s,r)=>s+r.wht,0);
-    if(parsed.length&&Math.abs(parsedCash-storedCash)<.01&&Math.abs(parsedWht-storedWht)<.01)return parsed;
-    if(storedCash||storedWht)return [{date:date(i.updated_at||i.invoice_date),cash:storedCash,wht:storedWht,legacy:true}];
-    return [];
+    return paymentRows.filter(p=>p.invoice_id===i.id).map(p=>({
+      date:date(p.payment_date),cash:num(p.cash_amount),wht:num(p.withholding_tax_amount),
+      estimated:p.payment_date_is_estimated===true,
+      origin:String(p.entry_origin||'')
+    }));
   }
 
-  function invoicePaidAsOf(i,end){return receipts(i).filter(r=>r.date<=end).reduce((s,r)=>s+r.cash+r.wht,0)}
+  function paymentIntegrity(i){
+    const rows=receipts(i),cash=rows.reduce((s,r)=>s+r.cash,0),wht=rows.reduce((s,r)=>s+r.wht,0);
+    const storedCash=Math.max(0,num(i.amount_paid)),storedWht=Math.max(0,num(i.withholding_tax_amount));
+    return {
+      missing:!rows.length&&(storedCash>.01||storedWht>.01),
+      mismatch:Math.abs(cash-storedCash)>.01||Math.abs(wht-storedWht)>.01,
+      estimated:rows.some(r=>r.estimated),
+      ledgerRows:rows.length,
+      cash,wht,
+      needsReconciliation:(!rows.length&&(storedCash>.01||storedWht>.01))||
+        Math.abs(cash-storedCash)>.01||Math.abs(wht-storedWht)>.01||rows.some(r=>r.estimated)
+    };
+  }
+
+  function invoicePaidAsOf(i,end){
+    return receipts(i).filter(r=>!r.estimated&&r.date&&r.date<=end).reduce((s,r)=>s+r.cash+r.wht,0);
+  }
 
   function periodClientRows(){
     const {start,end}=bounds(),{invoices,manual}=data(),rows=[];
@@ -95,17 +107,30 @@
 
   function totals(rows,key){const out={TZS:0};rows.forEach(r=>add(out,r.currency,r[key]));return out}
 
-  // Collections are period cash-flow: use the actual payment date, not the
-  // invoice date. Keep recognised revenue/receivables on their invoice period.
-  // Legacy invoices without a payment ledger retain the best available date
-  // inferred by receipts(); new payments should use invoice_payments rows.
+  // Cash collections use verified, non-estimated cash payment events only.
+  // WHT is tracked separately as invoice settlement, never as cash received.
+  // Manual client-fee/receivable entries are not counted here: they have no
+  // invoice-payment link and could duplicate an Invoice Module receipt.
   function periodCollections(){
-    const {start,end}=bounds(),{invoices,manual}=data(),out={TZS:0};
+    const {start,end}=bounds(),{invoices}=data(),out={TZS:0};
     invoices.filter(validTax).forEach(i=>{
-      receipts(i).filter(r=>r.date>=start&&r.date<=end).forEach(r=>add(out,i.currency,num(r.cash)+num(r.wht)));
+      receipts(i).filter(r=>!r.estimated&&r.date>=start&&r.date<=end).forEach(r=>add(out,i.currency,r.cash));
     });
-    manual.filter(t=>approved(t)&&String(t.tx_type||'').toLowerCase()==='revenue'&&date(t.date)>=start&&date(t.date)<=end&&String(t.status||'').toLowerCase()!=='cancelled').forEach(t=>add(out,t.currency,t.amount));
     return out;
+  }
+
+  function periodWithholdingTax(){
+    const {start,end}=bounds(),{invoices}=data(),out={TZS:0};
+    invoices.filter(validTax).forEach(i=>{
+      receipts(i).filter(r=>!r.estimated&&r.date>=start&&r.date<=end).forEach(r=>add(out,i.currency,r.wht));
+    });
+    return out;
+  }
+
+  function reconciliationIssues(){
+    const {invoices}=data();
+    return invoices.filter(validTax).map(i=>({invoice:i,integrity:paymentIntegrity(i)}))
+      .filter(x=>x.integrity.needsReconciliation);
   }
 
   // Actual expenditure is sourced ONLY from approved manual financial
@@ -137,7 +162,8 @@
       card('RECOGNISED REVENUE',m.revenue,'#16a34a',`Full agreed/invoiced fees · ${label}`),
       card('OPERATING EXPENSES',m.expenses,'#dc2626',`Recorded expenses · ${label}`),
       card('PERIOD RESULT',Object.fromEntries(Object.keys({...m.revenue,...m.expenses}).map(c=>[c,num(m.revenue[c])-num(m.expenses[c])])),'#16a34a',label),
-      card('PAYMENTS RECEIVED',m.collected,'#065f46',`Actual settlements · ${label}`),
+      card('CASH RECEIVED',m.collected,'#065f46',`Verified cash receipts only · ${label}`),
+      card('WITHHOLDING TAX',periodWithholdingTax(),'#475569',`Verified WHT settlements · ${label}`),
       card('NEW RECEIVABLES',m.newReceivables,'#d97706',`Unpaid recognised fees · ${label}`),
       card('CASH AVAILABLE',m.cash.closingByCur||{TZS:0},num(m.cash.closingByCur?.TZS)>=0?'#16a34a':'#dc2626',`Exact ${money('TZS',m.cash.closingByCur?.TZS)} · as at ${bounds().end}`)
     ].join('');
@@ -240,7 +266,11 @@
   function renderStatus(){
     const m=metrics(),ratio=num(m.revenue.TZS)?num(m.collected.TZS)/num(m.revenue.TZS):0,cash=num(m.cash.closingByCur?.TZS),payrollPending=!(()=>{try{return fdMonthlyObligations().payrollGenerated}catch(e){return false}})();
     let level='Healthy',color='#16a34a';if(cash<0){level='Critical';color='#dc2626'}else if(ratio<.8||payrollPending){level='Stable';color='#b45309'}
+    const issues=reconciliationIssues();
+    if(issues.length){level='Needs Reconciliation';color='#b45309'}
     const text=q('fdStatusText');if(text)text.textContent=`Financial Status: ${level} · ${typeof fdPeriodLabel==='function'?fdPeriodLabel():'Selected period'}`;
+    const warning=q('fdPaymentReconciliationWarning');
+    if(warning)warning.innerHTML=issues.length?`<div style="padding:10px 12px;margin:8px 0;border:1px solid #f59e0b;border-radius:8px;background:#fffbeb;color:#92400e;font-size:12px"><b>Payment reconciliation required:</b> ${issues.length} invoice(s) have missing, inconsistent or estimated payment-ledger records. Their payment dates are excluded from period cash totals until verified.</div>`:'';
     const box=q('fdStatusIndicator');if(box){box.style.color=color;box.style.background=level==='Healthy'?'#f0fdf4':level==='Critical'?'#fef2f2':'#fffbeb'}
     const intel=q('fdIntelligence');if(intel)intel.innerHTML=`<b>${level}:</b> ${Math.round(ratio*100)}% of TZS recognised revenue collected. Cash available is <b>${money('TZS',cash)}</b>.${payrollPending?' September payroll obligations are pending calculation.':''}`;
   }
@@ -251,7 +281,7 @@
   }
 
   async function loadPayments(){
-    try{if(typeof sb==='undefined'||!sb)return;const {data:rows,error}=await sb.from('invoice_payments').select('id,invoice_id,payment_date,cash_amount,withholding_tax_amount,reference,created_at');if(error)throw error;paymentRows=rows||[]}catch(e){console.warn('[MOLMS finance V16 payments]',e)}
+    try{if(typeof sb==='undefined'||!sb)return;const {data:rows,error}=await sb.from('invoice_payments').select('id,invoice_id,payment_date,cash_amount,withholding_tax_amount,reference,created_at,entry_origin,payment_date_is_estimated');if(error)throw error;paymentRows=rows||[]}catch(e){console.warn('[MOLMS finance V16 payments]',e)}
   }
 
   async function refresh(){await loadPayments();render();setTimeout(render,30);setTimeout(render,180)}
@@ -279,5 +309,9 @@
       reconcileQueued=true;
       queueMicrotask(()=>{reconcileQueued=false;render()});
     }).observe(document.documentElement,{childList:true,subtree:true});
-  window.MOLMSFinanceV16={metrics,periodClientRows,allReceivables,render,refresh,audit:()=>{const m=metrics();return {version:16,period:bounds(),revenue:m.revenue,collected:m.collected,newReceivables:m.newReceivables,totalReceivables:m.totalReceivables,cash:m.cash.closingByCur,expenses:m.expenses,vat:vatPosition(),paymentLedgerRows:paymentRows.length}}};
+  window.MOLMSFinanceV16={metrics,periodClientRows,allReceivables,render,refresh,
+    setPaymentRowsForTest(rows){paymentRows=Array.isArray(rows)?rows:[]},
+    paymentIntegrity,
+    audit:()=>{const m=metrics();return {version:17,period:bounds(),revenue:m.revenue,collected:m.collected,withholdingTax:periodWithholdingTax(),reconciliationIssues:reconciliationIssues().length,newReceivables:m.newReceivables,totalReceivables:m.totalReceivables,cash:m.cash.closingByCur,expenses:m.expenses,vat:vatPosition(),paymentLedgerRows:paymentRows.length}}
+  };
 })();
