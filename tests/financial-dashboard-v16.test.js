@@ -52,6 +52,11 @@ assert.equal(global.MOLMSFinanceV16.periodClientRows().find(r=>r.client==='Magnu
 
 // October collections must follow payment dates even when the invoices were
 // issued in September. Those receipts must not become October recognised revenue.
+global._fdAllInvoices.push(
+  {id:'hesu-oct',invoice_type:'tax',status:'part_paid',client_name:'HESU October receipt',currency:'TZS',invoice_date:'2026-09-02',total_due:1180000,amount_paid:1180000,notes:'[Payment 2026-10-03] Cash 1,180,000'},
+  {id:'mercury-oct',invoice_type:'tax',status:'part_paid',client_name:'Mercury October receipt',currency:'TZS',invoice_date:'2026-09-08',total_due:2000000,amount_paid:500000,notes:'[Payment 2026-10-08] Cash 500,000'},
+  {id:'zana-bora-oct',invoice_type:'tax',status:'paid',client_name:'Zana Bora October receipt',currency:'TZS',invoice_date:'2026-09-10',total_due:708000,amount_paid:708000,notes:'[Payment 2026-10-12] Cash 708,000'}
+);
 selectedPeriod={start:'2026-10-01',end:'2026-10-14',monthStr:'2026-10'};
 const october=global.MOLMSFinanceV16.audit();
 assert.deepEqual(october.collected,{TZS:2388000});
