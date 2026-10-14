@@ -19,6 +19,7 @@
   };
 
   let paymentRows=[];
+  let paymentLedgerLoadError=false;
   let rendering=false;
 
   function data(){
@@ -290,7 +291,7 @@
     const m=metrics(),ratio=num(m.revenue.TZS)?num(m.collected.TZS)/num(m.revenue.TZS):0,cash=num(m.cash.closingByCur?.TZS),payrollPending=!(()=>{try{return fdMonthlyObligations().payrollGenerated}catch(e){return false}})();
     let level='Healthy',color='#16a34a';if(cash<0){level='Critical';color='#dc2626'}else if(ratio<.8||payrollPending){level='Stable';color='#b45309'}
     const issues=reconciliationIssues();
-    if(issues.length){level='Needs Reconciliation';color='#b45309'}
+    if(issues.length||paymentLedgerLoadError){level='Needs Reconciliation';color='#b45309'}
     const text=q('fdStatusText');if(text)text.textContent=`Financial Status: ${level} · ${typeof fdPeriodLabel==='function'?fdPeriodLabel():'Selected period'}`;
     let warning=q('fdPaymentReconciliationWarning');
     if(!warning&&typeof document.createElement==='function'){
@@ -298,7 +299,7 @@
       const anchor=q('fdStatusIndicator')?.parentElement||q('fdKpiRow')?.parentElement;
       if(anchor)anchor.insertBefore(warning,anchor.firstChild);
     }
-    if(warning)warning.innerHTML=issues.length?`<div style="padding:10px 12px;margin:8px 0;border:1px solid #f59e0b;border-radius:8px;background:#fffbeb;color:#92400e;font-size:12px"><b>Payment reconciliation required:</b> ${issues.length} invoice(s) have missing, inconsistent or estimated payment-ledger records. Their payment dates are excluded from period cash totals until verified.<div style="margin-top:5px;font-weight:700">${issues.slice(0,5).map(x=>esc(x.invoice.invoice_number||x.invoice.id)).join(', ')}${issues.length>5?' and '+(issues.length-5)+' more':''}</div></div>`:'';
+    if(warning)warning.innerHTML=(issues.length||paymentLedgerLoadError)?`<div style="padding:10px 12px;margin:8px 0;border:1px solid #f59e0b;border-radius:8px;background:#fffbeb;color:#92400e;font-size:12px"><b>Payment reconciliation required:</b> ${paymentLedgerLoadError?'The Invoice Module payment ledger could not be loaded. ':''}${issues.length?`${issues.length} invoice(s) have missing, inconsistent or estimated payment-ledger records. Their payment dates are excluded from period cash totals until verified.`:''}<div style="margin-top:5px;font-weight:700">${issues.slice(0,5).map(x=>esc(x.invoice.invoice_number||x.invoice.id)).join(', ')}${issues.length>5?' and '+(issues.length-5)+' more':''}</div></div>`:'';
     const box=q('fdStatusIndicator');if(box){box.style.color=color;box.style.background=level==='Healthy'?'#f0fdf4':level==='Critical'?'#fef2f2':'#fffbeb'}
     const intel=q('fdIntelligence');if(intel)intel.innerHTML=`<b>${level}:</b> ${Math.round(ratio*100)}% of TZS recognised revenue collected. Cash available is <b>${money('TZS',cash)}</b>.${payrollPending?' September payroll obligations are pending calculation.':''}`;
   }
@@ -327,10 +328,12 @@
       const {data:rows,error}=await sb.from('invoice_payments').select('id,invoice_id,payment_date,cash_amount,withholding_tax_amount,reference,created_at,entry_origin,payment_date_is_estimated');
       if(error)throw error;
       paymentRows=rows||[];
+      paymentLedgerLoadError=false;
       installLedgerReceiptAdapter();
     }catch(e){
       console.warn('[MOLMS finance V16 payments]',e);
       paymentRows=[];
+      paymentLedgerLoadError=true;
     }
   }
 
@@ -360,7 +363,7 @@
       queueMicrotask(()=>{reconcileQueued=false;render()});
     }).observe(document.documentElement,{childList:true,subtree:true});
   window.MOLMSFinanceV16={metrics,periodClientRows,allReceivables,render,refresh,
-    setPaymentRowsForTest(rows){paymentRows=Array.isArray(rows)?rows:[]},
+    setPaymentRowsForTest(rows){paymentRows=Array.isArray(rows)?rows:[];paymentLedgerLoadError=false},
     paymentIntegrity,
     audit:()=>{const m=metrics();return {version:17,period:bounds(),revenue:m.revenue,collected:m.collected,withholdingTax:periodWithholdingTax(),reconciliationIssues:reconciliationIssues().length,newReceivables:m.newReceivables,totalReceivables:m.totalReceivables,cash:m.cash.closingByCur,expenses:m.expenses,vat:vatPosition(),paymentLedgerRows:paymentRows.length}}
   };
