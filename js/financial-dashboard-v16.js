@@ -97,13 +97,18 @@
 
   // Receivables are a live balance, not a period-flow metric. Always reconcile
   // against payments recorded through today, even when the dashboard is set to
-  // a prior reporting period; otherwise a payment made after that period-end is
-  // incorrectly shown as unpaid in the live receivables card.
+  // a prior reporting period. Issued proformas are shown here as open client
+  // commitments, but remain excluded from recognised revenue and period KPIs.
   function allReceivables(){
     const end=localToday(),{invoices,manual}=data(),rows=[];
-    invoices.filter(i=>validTax(i)&&date(i.invoice_date)<=end).forEach(i=>{
+    invoices.filter(i=>{
+      const type=String(i.invoice_type||'tax').toLowerCase(),status=String(i.status||'').toLowerCase();
+      const activeTax=validTax(i);
+      const issuedProforma=type==='proforma'&&status==='issued';
+      return (activeTax||issuedProforma)&&date(i.invoice_date)<=end;
+    }).forEach(i=>{
       const total=num(i.total_due),paid=invoicePaidTotal(i),outstanding=Math.max(0,total-paid);
-      if(outstanding>.01)rows.push({kind:'invoice',id:i.id,client:i.client_name||'Unknown client',matter:i.matter_ref||i.matter_title||'General / Unlinked',source:i.invoice_number||'—',currency:i.currency||'TZS',revenue:total,paid,outstanding,status:paymentIntegrity(i).needsReconciliation?'Needs Reconciliation':paid>0?'Part Paid':'Unpaid'});
+      if(outstanding>.01)rows.push({kind:'invoice',id:i.id,client:i.client_name||'Unknown client',matter:i.matter_ref||i.matter_title||'General / Unlinked',source:i.invoice_number||'—',currency:i.currency||'TZS',revenue:total,paid,outstanding,status:String(i.invoice_type||'').toLowerCase()==='proforma'?'Proforma Outstanding':paymentIntegrity(i).needsReconciliation?'Needs Reconciliation':paid>0?'Part Paid':'Unpaid'});
     });
     manual.filter(t=>approved(t)&&t.client_receivable&&date(t.date)<=end).forEach(t=>{
       const outstanding=Math.max(0,num(t.outstanding_amount));if(outstanding<=.01)return;
