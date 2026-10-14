@@ -308,8 +308,30 @@
     try{renderKpis();renderReceivables();renderRevenueAnalytics();renderCollectionHealth();renderAttention();renderObligations();renderStatus()}finally{rendering=false}
   }
 
+  function installLedgerReceiptAdapter(){
+    if(typeof window.fdInvoiceCashReceipts==='function'&&!window.fdInvoiceCashReceipts.__molmsLedgerOnly){
+      const ledgerOnly=function(inv){
+        return receipts(inv).filter(r=>!r.estimated&&r.date).map(r=>({
+          date:r.date,amount:r.cash,currency:inv.currency||'TZS',invoice:inv,
+          withholding_tax_amount:r.wht
+        }));
+      };
+      ledgerOnly.__molmsLedgerOnly=true;
+      window.fdInvoiceCashReceipts=ledgerOnly;
+    }
+  }
+
   async function loadPayments(){
-    try{if(typeof sb==='undefined'||!sb)return;const {data:rows,error}=await sb.from('invoice_payments').select('id,invoice_id,payment_date,cash_amount,withholding_tax_amount,reference,created_at,entry_origin,payment_date_is_estimated');if(error)throw error;paymentRows=rows||[]}catch(e){console.warn('[MOLMS finance V16 payments]',e)}
+    try{
+      if(typeof sb==='undefined'||!sb)throw new Error('Invoice payment ledger connection unavailable');
+      const {data:rows,error}=await sb.from('invoice_payments').select('id,invoice_id,payment_date,cash_amount,withholding_tax_amount,reference,created_at,entry_origin,payment_date_is_estimated');
+      if(error)throw error;
+      paymentRows=rows||[];
+      installLedgerReceiptAdapter();
+    }catch(e){
+      console.warn('[MOLMS finance V16 payments]',e);
+      paymentRows=[];
+    }
   }
 
   async function refresh(){await loadPayments();render();setTimeout(render,30);setTimeout(render,180)}
