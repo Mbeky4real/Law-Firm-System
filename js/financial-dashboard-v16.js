@@ -79,7 +79,7 @@
     const {start,end}=bounds(),{invoices,manual}=data(),rows=[];
     invoices.filter(i=>validTax(i)&&date(i.invoice_date)>=start&&date(i.invoice_date)<=end).forEach(i=>{
       const revenue=num(i.total_due),paid=invoicePaidAsOf(i,end),outstanding=Math.max(0,revenue-paid);
-      rows.push({kind:'invoice',id:i.id,client:i.client_name||'Unknown client',matter:i.matter_ref||i.matter_title||'General / Unlinked',source:i.invoice_number||'—',currency:i.currency||'TZS',revenue,paid,outstanding,status:outstanding<=.01?'Paid':paid>0?'Part Paid':'Unpaid'});
+      rows.push({kind:'invoice',id:i.id,client:i.client_name||'Unknown client',matter:i.matter_ref||i.matter_title||'General / Unlinked',source:i.invoice_number||'—',currency:i.currency||'TZS',revenue,paid,outstanding,status:paymentIntegrity(i).needsReconciliation?'Needs Reconciliation':outstanding<=.01?'Paid':paid>0?'Part Paid':'Unpaid'});
     });
     manual.filter(t=>approved(t)&&t.tx_type==='revenue'&&date(t.date)>=start&&date(t.date)<=end).forEach(t=>{
       const paid=num(t.amount),revenue=t.client_receivable&&num(t.agreed_amount)>0?num(t.agreed_amount):paid;
@@ -102,7 +102,7 @@
     const end=localToday(),{invoices,manual}=data(),rows=[];
     invoices.filter(i=>validTax(i)&&date(i.invoice_date)<=end).forEach(i=>{
       const total=num(i.total_due),paid=invoicePaidTotal(i),outstanding=Math.max(0,total-paid);
-      if(outstanding>.01)rows.push({kind:'invoice',id:i.id,client:i.client_name||'Unknown client',matter:i.matter_ref||i.matter_title||'General / Unlinked',source:i.invoice_number||'—',currency:i.currency||'TZS',revenue:total,paid,outstanding,status:paid>0?'Part Paid':'Unpaid'});
+      if(outstanding>.01)rows.push({kind:'invoice',id:i.id,client:i.client_name||'Unknown client',matter:i.matter_ref||i.matter_title||'General / Unlinked',source:i.invoice_number||'—',currency:i.currency||'TZS',revenue:total,paid,outstanding,status:paymentIntegrity(i).needsReconciliation?'Needs Reconciliation':paid>0?'Part Paid':'Unpaid'});
     });
     manual.filter(t=>approved(t)&&t.client_receivable&&date(t.date)<=end).forEach(t=>{
       const outstanding=Math.max(0,num(t.outstanding_amount));if(outstanding<=.01)return;
@@ -118,10 +118,14 @@
   // Manual client-fee/receivable entries are not counted here: they have no
   // invoice-payment link and could duplicate an Invoice Module receipt.
   function periodCollections(){
-    const {start,end}=bounds(),{invoices}=data(),out={TZS:0};
+    const {start,end}=bounds(),{invoices,manual}=data(),out={TZS:0};
     invoices.filter(validTax).forEach(i=>{
       receipts(i).filter(r=>!r.estimated&&r.date>=start&&r.date<=end).forEach(r=>add(out,i.currency,r.cash));
     });
+    // Only explicitly standalone manual revenue is eligible; manual client
+    // receivable rows are excluded because they have no invoice-payment link.
+    manual.filter(t=>approved(t)&&String(t.tx_type||'').toLowerCase()==='revenue'&&!t.client_receivable&&date(t.date)>=start&&date(t.date)<=end&&String(t.status||'').toLowerCase()!=='cancelled')
+      .forEach(t=>add(out,t.currency,t.amount));
     return out;
   }
 
@@ -150,7 +154,21 @@
   }
 
   function cashPosition(){
-    try{return fdCashContinuity()}catch(e){return {openingByCur:{TZS:0},closingByCur:{TZS:0}}}
+    const {start,end}=bounds(),{manual}=data();
+    const previous=new Date(start+'T00:00:00');previous.setDate(previous.getDate()-1);
+    const prior=previous.getFullYear()+'-'+String(previous.getMonth()+1).padStart(2,'0')+'-'+String(previous.getDate()).padStart(2,'0');
+    const through=limit=>{
+      const totals={TZS:0};
+      data().invoices.filter(validTax).forEach(i=>receipts(i).filter(r=>!r.estimated&&r.date&&r.date<=limit).forEach(r=>add(totals,i.currency,r.cash)));
+      manual.filter(t=>approved(t)&&date(t.date)&&date(t.date)<=limit&&String(t.status||'').toLowerCase()!=='cancelled').forEach(t=>{
+        const type=String(t.tx_type||'').toLowerCase();
+        if(type==='revenue'&&!t.client_receivable)add(totals,t.currency,t.amount);
+        if(type==='loan')add(totals,t.currency,t.amount);
+        if(type==='expenditure'||type==='drawing')add(totals,t.currency,-num(t.amount));
+      });
+      return totals;
+    };
+    return {openingByCur:through(prior),closingByCur:through(end),start,end,openingBalanceConfigured:false};
   }
 
   function metrics(){
@@ -170,7 +188,7 @@
       card('PERIOD RESULT',Object.fromEntries(Object.keys({...m.revenue,...m.expenses}).map(c=>[c,num(m.revenue[c])-num(m.expenses[c])])),'#16a34a',label),
       card('CASH RECEIVED',m.collected,'#065f46',`Verified cash only · WHT settlement separately tracked: ${moneyLines(periodWithholdingTax()).map(x=>x.text).join(', ')||'0'} · ${label}`),
       card('NEW RECEIVABLES',m.newReceivables,'#d97706',`Unpaid recognised fees · ${label}`),
-      card('CASH AVAILABLE',m.cash.closingByCur||{TZS:0},num(m.cash.closingByCur?.TZS)>=0?'#16a34a':'#dc2626',`Exact ${money('TZS',m.cash.closingByCur?.TZS)} · as at ${bounds().end}`)
+      card('RECORDED CASH POSITION',m.cash.closingByCur||{TZS:0},num(m.cash.closingByCur?.TZS)>=0?'#16a34a':'#dc2626',`Net verified cash activity; opening bank balance not assumed · as at ${bounds().end}`)
     ].join('');
   }
 
