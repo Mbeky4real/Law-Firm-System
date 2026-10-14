@@ -298,7 +298,7 @@
       const anchor=q('fdStatusIndicator')?.parentElement||q('fdKpiRow')?.parentElement;
       if(anchor)anchor.insertBefore(warning,anchor.firstChild);
     }
-    if(warning)warning.innerHTML=issues.length?`<div style="padding:10px 12px;margin:8px 0;border:1px solid #f59e0b;border-radius:8px;background:#fffbeb;color:#92400e;font-size:12px"><b>Payment reconciliation required:</b> ${issues.length} invoice(s) have missing, inconsistent or estimated payment-ledger records. Their payment dates are excluded from period cash totals until verified.</div>`:'';
+    if(warning)warning.innerHTML=issues.length?`<div style="padding:10px 12px;margin:8px 0;border:1px solid #f59e0b;border-radius:8px;background:#fffbeb;color:#92400e;font-size:12px"><b>Payment reconciliation required:</b> ${issues.length} invoice(s) have missing, inconsistent or estimated payment-ledger records. Their payment dates are excluded from period cash totals until verified.<div style="margin-top:5px;font-weight:700">${issues.slice(0,5).map(x=>esc(x.invoice.invoice_number||x.invoice.id)).join(', ')}${issues.length>5?' and '+(issues.length-5)+' more':''}</div></div>`:'';
     const box=q('fdStatusIndicator');if(box){box.style.color=color;box.style.background=level==='Healthy'?'#f0fdf4':level==='Critical'?'#fef2f2':'#fffbeb'}
     const intel=q('fdIntelligence');if(intel)intel.innerHTML=`<b>${level}:</b> ${Math.round(ratio*100)}% of TZS recognised revenue collected. Cash available is <b>${money('TZS',cash)}</b>.${payrollPending?' September payroll obligations are pending calculation.':''}`;
   }
