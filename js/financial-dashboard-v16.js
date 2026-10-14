@@ -194,7 +194,7 @@
       card('PERIOD RESULT',Object.fromEntries(Object.keys({...m.revenue,...m.expenses}).map(c=>[c,num(m.revenue[c])-num(m.expenses[c])])),'#16a34a',label),
       card('CASH RECEIVED',m.collected,'#065f46',`Verified cash only · WHT settlement separately tracked: ${moneyLines(periodWithholdingTax()).map(x=>x.text).join(', ')||'0'} · ${label}`),
       card('NEW RECEIVABLES',m.newReceivables,'#d97706',`Unpaid recognised fees · ${label}`),
-      card('RECORDED CASH POSITION',m.cash.closingByCur||{TZS:0},num(m.cash.closingByCur?.TZS)>=0?'#16a34a':'#dc2626',`Net verified cash activity; opening bank balance not assumed · as at ${bounds().end}`)
+      card('CASH AVAILABLE*',m.cash.closingByCur||{TZS:0},num(m.cash.closingByCur?.TZS)>=0?'#16a34a':'#dc2626',`Net verified cash movements; opening balance not configured · as at ${bounds().end}`)
     ].join('');
   }
 
