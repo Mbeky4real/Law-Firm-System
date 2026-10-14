@@ -69,6 +69,12 @@
     return receipts(i).filter(r=>!r.estimated&&r.date&&r.date<=end).reduce((s,r)=>s+r.cash+r.wht,0);
   }
 
+  // Current open balances use the recorded settlement amount even when its
+  // date is estimated; the date remains flagged and is excluded from period flows.
+  function invoicePaidTotal(i){
+    return receipts(i).reduce((s,r)=>s+r.cash+r.wht,0);
+  }
+
   function periodClientRows(){
     const {start,end}=bounds(),{invoices,manual}=data(),rows=[];
     invoices.filter(i=>validTax(i)&&date(i.invoice_date)>=start&&date(i.invoice_date)<=end).forEach(i=>{
@@ -95,7 +101,7 @@
   function allReceivables(){
     const end=localToday(),{invoices,manual}=data(),rows=[];
     invoices.filter(i=>validTax(i)&&date(i.invoice_date)<=end).forEach(i=>{
-      const total=num(i.total_due),paid=invoicePaidAsOf(i,end),outstanding=Math.max(0,total-paid);
+      const total=num(i.total_due),paid=invoicePaidTotal(i),outstanding=Math.max(0,total-paid);
       if(outstanding>.01)rows.push({kind:'invoice',id:i.id,client:i.client_name||'Unknown client',matter:i.matter_ref||i.matter_title||'General / Unlinked',source:i.invoice_number||'—',currency:i.currency||'TZS',revenue:total,paid,outstanding,status:paid>0?'Part Paid':'Unpaid'});
     });
     manual.filter(t=>approved(t)&&t.client_receivable&&date(t.date)<=end).forEach(t=>{
