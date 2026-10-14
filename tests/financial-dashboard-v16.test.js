@@ -106,4 +106,17 @@ const expensePolicy=global.MOLMSFinanceV16.audit();
 assert.deepEqual(expensePolicy.expenses,{TZS:1300000}); // only the two approved partner-entered October expenses
 assert.deepEqual(expensePolicy.cash,{TZS:-1016400}); // the same two expenses reduce cumulative verified cash movements once
 assert.equal(expensePolicy.cash.TZS,283600-1100000-200000);
-console.log('financial-dashboard-v16 reconciliation + October payment-date + manual-expense-only regression: PASS');
+
+
+// An estimated payment date must not be counted as verified cash, but the
+// recorded settlement still reduces the invoice balance for its issue month.
+global.MOLMSFinanceV16.setPaymentRowsForTest([
+  {id:'pay-earsc-estimated',invoice_id:'earsc',payment_date:'2026-08-27',cash_amount:3500000,withholding_tax_amount:0,payment_date_is_estimated:true,entry_origin:'legacy_reconciliation'}
+]);
+selectedPeriod={start:'2026-08-01',end:'2026-08-31',monthStr:'2026-08'};
+const augustEstimatedSettlement=global.MOLMSFinanceV16.audit();
+assert.deepEqual(augustEstimatedSettlement.newReceivables,{TZS:3500000});
+assert.deepEqual(augustEstimatedSettlement.collected,{TZS:0});
+assert.equal(augustEstimatedSettlement.reconciliationIssues,1);
+
+console.log('financial-dashboard-v16 reconciliation + estimated-date receivables + October payment-date + manual-expense-only regression: PASS');
