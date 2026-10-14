@@ -334,6 +334,7 @@
       console.warn('[MOLMS finance V16 payments]',e);
       paymentRows=[];
       paymentLedgerLoadError=true;
+      installLedgerReceiptAdapter();
     }
   }
 
