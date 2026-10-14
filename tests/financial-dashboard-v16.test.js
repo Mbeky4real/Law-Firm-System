@@ -21,9 +21,10 @@ global._fdAllInvoices = [
   {id:'kaisa',invoice_type:'proforma',status:'issued',client_name:'Kaisa',currency:'USD',invoice_date:'2026-09-01',vat_amount:540,total_due:3540,amount_paid:0},
   {id:'petra',invoice_type:'tax',status:'part_paid',client_name:'Petra',currency:'TZS',invoice_date:'2026-09-02',updated_at:'2026-09-05',total_due:6000000,amount_paid:5000000,notes:'[Payment 2026-09-03] Cash 5,000,000 · Cash'},
   {id:'pacific',invoice_type:'tax',status:'issued',client_name:'Pacific Oil',currency:'USD',invoice_date:'2026-09-07',total_due:250,amount_paid:0},
-  {id:'hesu-oct',invoice_type:'tax',status:'part_paid',client_name:'HESU October receipt',currency:'TZS',invoice_date:'2026-09-02',total_due:1180000,amount_paid:1180000,notes:'[Payment 2026-10-03] Cash 1,180,000'},
-  {id:'mercury-oct',invoice_type:'tax',status:'paid',client_name:'Mercury October receipt',currency:'TZS',invoice_date:'2026-09-08',total_due:1000000,amount_paid:1000000,notes:'[Payment 2026-10-08] Cash 1,000,000'},
-  {id:'zana-bora-oct',invoice_type:'tax',status:'paid',client_name:'Zana Bora October receipt',currency:'TZS',invoice_date:'2026-09-10',total_due:708000,amount_paid:708000,notes:'[Payment 2026-10-12] Cash 708,000'}
+  // Synthetic test-only records: not client data and not sourced from production.
+  {id:'test-prior-invoice-a',invoice_type:'tax',status:'paid',client_name:'Test invoice A',currency:'TZS',invoice_date:'2026-09-02',total_due:100,amount_paid:100,notes:'[Payment 2026-10-03] Cash 100'},
+  {id:'test-prior-invoice-b',invoice_type:'tax',status:'paid',client_name:'Test invoice B',currency:'TZS',invoice_date:'2026-09-08',total_due:200,amount_paid:200,notes:'[Payment 2026-10-08] Cash 200'},
+  {id:'test-prior-invoice-c',invoice_type:'tax',status:'part_paid',client_name:'Test invoice C',currency:'TZS',invoice_date:'2026-09-10',total_due:300,amount_paid:300,notes:'[Payment 2026-10-12] Cash 300'}
 ];
 global._fdAllManual = [
   {id:'expense-test',status:'approved',tx_type:'expenditure',date:'2026-09-06',amount:25000,currency:'TZS'},
@@ -59,7 +60,7 @@ global._fdAllInvoices.push(
 );
 selectedPeriod={start:'2026-10-01',end:'2026-10-14',monthStr:'2026-10'};
 const october=global.MOLMSFinanceV16.audit();
-assert.deepEqual(october.collected,{TZS:2888000}); // HESU 1,180,000 + Mercury 1,000,000 + Zana Bora 708,000
+assert.deepEqual(october.collected,{TZS:600}); // synthetic test records only
 assert.deepEqual(october.revenue,{TZS:0});
 assert.deepEqual(october.newReceivables,{TZS:0});
 console.log('financial-dashboard-v16 reconciliation + October payment-date regression: PASS');
