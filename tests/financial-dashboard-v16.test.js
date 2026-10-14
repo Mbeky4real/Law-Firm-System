@@ -21,11 +21,7 @@ global._fdAllInvoices = [
   {id:'kaisa',invoice_type:'proforma',status:'issued',client_name:'Test proforma client',currency:'USD',invoice_date:'2026-09-01',vat_amount:540,total_due:3540,amount_paid:0},
   {id:'petra',invoice_type:'tax',status:'part_paid',client_name:'Test client F',currency:'TZS',invoice_date:'2026-09-02',updated_at:'2026-09-05',total_due:6000000,amount_paid:5000000,notes:'[Payment 2026-09-03] Cash 5,000,000 · Cash'},
   {id:'pacific',invoice_type:'tax',status:'issued',client_name:'Test client G',currency:'USD',invoice_date:'2026-09-07',total_due:250,amount_paid:0},
-  // Synthetic test-only records: not client data and not sourced from production.
-  {id:'test-prior-invoice-a',invoice_type:'tax',status:'paid',client_name:'Test invoice A',currency:'TZS',invoice_date:'2026-09-02',total_due:100,amount_paid:100,notes:'[Payment 2026-10-03] Cash 100'},
-  {id:'test-prior-invoice-b',invoice_type:'tax',status:'paid',client_name:'Test invoice B',currency:'TZS',invoice_date:'2026-09-08',total_due:200,amount_paid:200,notes:'[Payment 2026-10-08] Cash 200'},
-  {id:'test-prior-invoice-c',invoice_type:'tax',status:'part_paid',client_name:'Test invoice C',currency:'TZS',invoice_date:'2026-09-10',total_due:300,amount_paid:300,notes:'[Payment 2026-10-12] Cash 300'}
-];
+undefined];
 global._fdAllManual = [
   {id:'expense-test',status:'approved',tx_type:'expenditure',date:'2026-09-06',amount:25000,currency:'TZS'},
   {id:'b1',status:'approved',tx_type:'revenue',date:'2026-09-01',amount:1000000,currency:'TZS',client_receivable:true,agreed_amount:1200000,outstanding_amount:200000,receivable_client_name:'Test manual client A'},
