@@ -46,7 +46,7 @@ assert.deepEqual(audit.collected,{TZS:6130000}); // verified cash only: Petra 5,
 assert.deepEqual(audit.newReceivables,{TZS:6200000,USD:250});
 assert.deepEqual(audit.expenses,{TZS:25000});
 assert.deepEqual(audit.totalReceivables,{TZS:11880000,USD:250});
-assert.deepEqual(audit.cash,{TZS:1258000});
+assert.deepEqual(audit.cash,{TZS:283000}); // ledger cash less approved manual cash outflows; no opening balance assumed
 assert.deepEqual(audit.vat.payable,{TZS:180000});
 assert.deepEqual(audit.withholdingTax,{TZS:50000});
 assert.equal(audit.reconciliationIssues,0);
