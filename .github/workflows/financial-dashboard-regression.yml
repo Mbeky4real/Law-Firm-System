@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - financial-dashboard-perfection-from-2026-10-11
+      - finance-dashboard-production-candidate-2026-10-14
     paths:
       - 'js/financial-dashboard-v16.js'
       - 'tests/financial-dashboard-v16.test.js'
