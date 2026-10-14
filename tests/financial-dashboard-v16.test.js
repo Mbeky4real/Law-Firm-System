@@ -81,4 +81,29 @@ assert.deepEqual(october.collected,{TZS:600}); // synthetic ledger receipts only
 assert.deepEqual(october.revenue,{TZS:0});
 assert.deepEqual(october.newReceivables,{TZS:0});
 assert.equal(october.reconciliationIssues,0);
-console.log('financial-dashboard-v16 reconciliation + October payment-date regression: PASS');
+
+// Expense policy regression: payroll, obligations and expenditure-register
+// rows are operational records only. Partner-entered manual expenses alone
+// feed Operating Expenses and reduce cash, exactly once.
+global._fdAllEntries.push(
+  {id:'auto-register-expense',date:'2026-10-05',amount:200000,status:'verified',tx_type:'expenditure'},
+  {id:'auto-obligation',date:'2026-10-06',amount:300000,status:'approved',tx_type:'expenditure'}
+);
+global._fdAllPayroll.push(
+  {id:'auto-payroll-expense',date:'2026-10-07',net_salary:1100000,total_employer_cost:1300000,status:'approved'}
+);
+global._fdAllOfficeExpenses.push(
+  {id:'auto-office-expense',date:'2026-10-08',amount:200000,status:'approved'}
+);
+global._fdAllManual.push(
+  {id:'manual-salary-payment',status:'approved',tx_type:'expenditure',date:'2026-10-07',amount:1100000,currency:'TZS',description:'Partner-recorded salary payment'},
+  {id:'manual-utilities-payment',status:'approved',tx_type:'expenditure',date:'2026-10-08',amount:200000,currency:'TZS',description:'Partner-recorded utilities payment'},
+  {id:'pending-expense-not-approved',status:'pending',tx_type:'expenditure',date:'2026-10-09',amount:900000,currency:'TZS'},
+  {id:'cancelled-expense',status:'approved',tx_type:'expenditure',date:'2026-10-10',amount:800000,currency:'TZS',status_detail:'cancelled'}
+);
+global._fdAllManual[global._fdAllManual.length-1].status='cancelled';
+const expensePolicy=global.MOLMSFinanceV16.audit();
+assert.deepEqual(expensePolicy.expenses,{TZS:1300000}); // only the two approved partner-entered October expenses
+assert.deepEqual(expensePolicy.cash,{TZS:-1016400}); // the same two expenses reduce cumulative verified cash movements once
+assert.equal(expensePolicy.cash.TZS,283600-1100000-200000);
+console.log('financial-dashboard-v16 reconciliation + October payment-date + manual-expense-only regression: PASS');
