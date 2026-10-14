@@ -21,7 +21,7 @@ global._fdAllInvoices = [
   {id:'kaisa',invoice_type:'proforma',status:'issued',client_name:'Test proforma client',currency:'USD',invoice_date:'2026-09-01',vat_amount:540,total_due:3540,amount_paid:0},
   {id:'petra',invoice_type:'tax',status:'part_paid',client_name:'Test client F',currency:'TZS',invoice_date:'2026-09-02',updated_at:'2026-09-05',total_due:6000000,amount_paid:5000000,notes:'[Payment 2026-09-03] Cash 5,000,000 · Cash'},
   {id:'pacific',invoice_type:'tax',status:'issued',client_name:'Test client G',currency:'USD',invoice_date:'2026-09-07',total_due:250,amount_paid:0},
-undefined];
+];
 global._fdAllManual = [
   {id:'expense-test',status:'approved',tx_type:'expenditure',date:'2026-09-06',amount:25000,currency:'TZS'},
   {id:'b1',status:'approved',tx_type:'revenue',date:'2026-09-01',amount:1000000,currency:'TZS',client_receivable:true,agreed_amount:1200000,outstanding_amount:200000,receivable_client_name:'Test manual client A'},
