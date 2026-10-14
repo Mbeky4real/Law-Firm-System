@@ -162,8 +162,7 @@
       card('RECOGNISED REVENUE',m.revenue,'#16a34a',`Full agreed/invoiced fees · ${label}`),
       card('OPERATING EXPENSES',m.expenses,'#dc2626',`Recorded expenses · ${label}`),
       card('PERIOD RESULT',Object.fromEntries(Object.keys({...m.revenue,...m.expenses}).map(c=>[c,num(m.revenue[c])-num(m.expenses[c])])),'#16a34a',label),
-      card('CASH RECEIVED',m.collected,'#065f46',`Verified cash receipts only · ${label}`),
-      card('WITHHOLDING TAX',periodWithholdingTax(),'#475569',`Verified WHT settlements · ${label}`),
+      card('CASH RECEIVED',m.collected,'#065f46',`Verified cash only · WHT settlement separately tracked: ${moneyLines(periodWithholdingTax()).map(x=>x.text).join(', ')||'0'} · ${label}`),
       card('NEW RECEIVABLES',m.newReceivables,'#d97706',`Unpaid recognised fees · ${label}`),
       card('CASH AVAILABLE',m.cash.closingByCur||{TZS:0},num(m.cash.closingByCur?.TZS)>=0?'#16a34a':'#dc2626',`Exact ${money('TZS',m.cash.closingByCur?.TZS)} · as at ${bounds().end}`)
     ].join('');
@@ -269,7 +268,12 @@
     const issues=reconciliationIssues();
     if(issues.length){level='Needs Reconciliation';color='#b45309'}
     const text=q('fdStatusText');if(text)text.textContent=`Financial Status: ${level} · ${typeof fdPeriodLabel==='function'?fdPeriodLabel():'Selected period'}`;
-    const warning=q('fdPaymentReconciliationWarning');
+    let warning=q('fdPaymentReconciliationWarning');
+    if(!warning&&typeof document.createElement==='function'){
+      warning=document.createElement('div');warning.id='fdPaymentReconciliationWarning';
+      const anchor=q('fdStatusIndicator')?.parentElement||q('fdKpiRow')?.parentElement;
+      if(anchor)anchor.insertBefore(warning,anchor.firstChild);
+    }
     if(warning)warning.innerHTML=issues.length?`<div style="padding:10px 12px;margin:8px 0;border:1px solid #f59e0b;border-radius:8px;background:#fffbeb;color:#92400e;font-size:12px"><b>Payment reconciliation required:</b> ${issues.length} invoice(s) have missing, inconsistent or estimated payment-ledger records. Their payment dates are excluded from period cash totals until verified.</div>`:'';
     const box=q('fdStatusIndicator');if(box){box.style.color=color;box.style.background=level==='Healthy'?'#f0fdf4':level==='Critical'?'#fef2f2':'#fffbeb'}
     const intel=q('fdIntelligence');if(intel)intel.innerHTML=`<b>${level}:</b> ${Math.round(ratio*100)}% of TZS recognised revenue collected. Cash available is <b>${money('TZS',cash)}</b>.${payrollPending?' September payroll obligations are pending calculation.':''}`;
