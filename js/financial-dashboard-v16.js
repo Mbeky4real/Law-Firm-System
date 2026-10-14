@@ -70,6 +70,14 @@
     return receipts(i).filter(r=>!r.estimated&&r.date&&r.date<=end).reduce((s,r)=>s+r.cash+r.wht,0);
   }
 
+  // Period receivables are balances, not cash-flow evidence. Include recorded
+  // settlements dated on/before period end even if the date is estimated;
+  // the reconciliation warning remains visible and cash-flow cards still
+  // exclude estimated-date rows until their dates are verified.
+  function invoiceSettledAsOf(i,end){
+    return receipts(i).filter(r=>r.date&&r.date<=end).reduce((s,r)=>s+r.cash+r.wht,0);
+  }
+
   // Current open balances use the recorded settlement amount even when its
   // date is estimated; the date remains flagged and is excluded from period flows.
   function invoicePaidTotal(i){
@@ -79,7 +87,7 @@
   function periodClientRows(){
     const {start,end}=bounds(),{invoices,manual}=data(),rows=[];
     invoices.filter(i=>validTax(i)&&date(i.invoice_date)>=start&&date(i.invoice_date)<=end).forEach(i=>{
-      const revenue=num(i.total_due),paid=invoicePaidAsOf(i,end),outstanding=Math.max(0,revenue-paid);
+      const revenue=num(i.total_due),paid=invoiceSettledAsOf(i,end),outstanding=Math.max(0,revenue-paid);
       rows.push({kind:'invoice',id:i.id,client:i.client_name||'Unknown client',matter:i.matter_ref||i.matter_title||'General / Unlinked',source:i.invoice_number||'—',currency:i.currency||'TZS',revenue,paid,outstanding,status:paymentIntegrity(i).needsReconciliation?'Needs Reconciliation':outstanding<=.01?'Paid':paid>0?'Part Paid':'Unpaid'});
     });
     manual.filter(t=>approved(t)&&t.tx_type==='revenue'&&date(t.date)>=start&&date(t.date)<=end).forEach(t=>{
