@@ -1,4 +1,5 @@
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
 
 global.window = global;
 global.addEventListener = ()=>{};
@@ -141,3 +142,16 @@ const splitRow=global.MOLMSFinanceV16.periodClientRows().find(r=>r.client==='Spl
 assert.equal(splitRow.paid,150); // cash + WHT settles the invoice
 assert.equal(splitRow.outstanding,0);
 console.log('split cash + WHT-only ledger row regression: PASS');
+
+// Presentation regression: the manual financial transaction card must remain visible.
+const simplePresentation = fs.readFileSync(require.resolve('../js/financial-dashboard-simple-v1.js'),'utf8');
+assert.match(simplePresentation,/\['fdRegBody','fdTimeline','fdRevByType','fdExpByCategory'\]/);
+assert.doesNotMatch(simplePresentation,/\['fdRegBody','fdManualBody'/);
+console.log('manual financial transactions visibility regression: PASS');
+
+// Manual ledger regression: show every historical transaction, independent of selected KPI period.
+const appCore = fs.readFileSync(require.resolve('../app-core.html'),'utf8');
+assert.ok(appCore.includes('tbody.innerHTML=rows.map(t=>'));
+assert.ok(!appCore.includes('#fdManualBody tr[data-fdv15-outside="1"]{display:none!important}'));
+assert.ok(appCore.includes('function filterManual(){const body=q(\'fdManualBody\');if(!body)return;body.querySelectorAll(\'tr[data-fdv15-empty="1"]\').forEach(x=>x.remove());[...body.querySelectorAll(\'tr\')].forEach(tr=>{tr.style.removeProperty(\'display\');delete tr.dataset.fdv15Outside;});}'));
+console.log('full historical manual transaction ledger regression: PASS');

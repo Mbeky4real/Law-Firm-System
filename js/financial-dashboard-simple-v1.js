@@ -1,11 +1,11 @@
 /* MOLMS Financial Dashboard Simple Presentation V1
  * Presentation only: underlying financial calculations and workflows remain authoritative.
- * Executive summaries stay visible; detailed registers and charts stay off the landing view.
+ * Executive summaries and the Manual Financial Transactions card stay visible; secondary registers/charts remain collapsed.
  */
 (function () {
   'use strict';
-  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 3) return;
-  window.MOLMSFinancialDashboardSimpleV1 = { version: 3, applied: false };
+  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 4) return;
+  window.MOLMSFinancialDashboardSimpleV1 = { version: 4, applied: false };
   const styleId = 'molms-financial-dashboard-simple-v1-style';
 
   function installStyle() {
@@ -108,8 +108,10 @@
       }
     }
 
-    // Keep only the detailed registers and chart-like analytics out of the landing view.
-    ['fdRegBody','fdManualBody','fdTimeline','fdRevByType','fdExpByCategory'].forEach(id => {
+    // Keep secondary detailed registers and chart-like analytics out of the landing view.
+    // Manual Financial Transactions is a required management card: keep fdManualBody visible
+    // so approved standalone revenue, expenditure and drawings remain inspectable by date.
+    ['fdRegBody','fdTimeline','fdRevByType','fdExpByCategory'].forEach(id => {
       const el = page.querySelector('#' + id);
       if (!el) return;
       const card = dashboardCardFor(el, scroll);
