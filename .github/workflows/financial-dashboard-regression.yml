@@ -11,6 +11,7 @@ on:
       - 'js/financial-dashboard-simple-v1.js'
       - 'tests/financial-dashboard-v16.test.js'
       - 'index.html'
+      - 'app-core.html'
       - '.github/workflows/financial-dashboard-regression.yml'
   workflow_dispatch:
 jobs:
