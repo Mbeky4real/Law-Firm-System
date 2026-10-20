@@ -157,13 +157,25 @@
       .filter(x=>x.integrity.needsReconciliation);
   }
 
-  // Actual expenditure is sourced ONLY from approved manual financial
-  // transactions. Expense Register, Office Expenses, payroll calculations,
-  // historical payroll summaries and budgets are operational/obligation data;
-  // importing them here would count unpaid items as cash already spent.
+  // Period expenses include approved manual outflows, partner drawings, and
+  // finalized payroll net salaries. Cancelled/draft payroll runs are excluded.
+  // Payroll rows already entered as a manual expenditure are not counted twice
+  // when the date and amount match a finalized payroll salary line.
   function periodExpenses(){
-    const {start,end}=bounds(),{manual}=data(),out={TZS:0};
-    manual.filter(t=>approved(t)&&String(t.tx_type||'').toLowerCase()==='expenditure'&&date(t.date)>=start&&date(t.date)<=end&&String(t.status||'').toLowerCase()!=='cancelled').forEach(t=>add(out,t.currency,t.amount));
+    const {start,end}=bounds(),{manual,payroll}=data(),out={TZS:0};
+    const eligibleManual=manual.filter(t=>approved(t)&&date(t.date)>=start&&date(t.date)<=end&&String(t.status||'').toLowerCase()!=='cancelled'&&['expenditure','drawing'].includes(String(t.tx_type||'').toLowerCase()));
+    eligibleManual.forEach(t=>add(out,t.currency,t.amount));
+    const finalizedPayroll=payroll.filter(p=>{
+      const st=String(p.status||p.run_status||'').toLowerCase();
+      const d=date(p.payment_date||p.pay_date||p.date||p.payroll_date||p.period_date);
+      const salary=num(p.net_salary||p.net_salary_paid||p.net_pay);
+      return ['locked','paid','approved','finalized','completed'].includes(st)&&d>=start&&d<=end&&salary>0;
+    });
+    finalizedPayroll.forEach(p=>{
+      const d=date(p.payment_date||p.pay_date||p.date||p.payroll_date||p.period_date),cur=p.currency||'TZS',salary=num(p.net_salary||p.net_salary_paid||p.net_pay);
+      const manuallyRecorded=eligibleManual.some(t=>date(t.date)===d&&(t.currency||'TZS')===cur&&Math.abs(num(t.amount)-salary)<.01&&/salary|payroll/i.test(String(t.description||t.category||'')));
+      if(!manuallyRecorded)add(out,cur,salary);
+    });
     return out;
   }
 
@@ -186,10 +198,10 @@
   }
 
 
-  // Policy: Cash Available is a selected-period result, not a cumulative bank balance.
-  // It equals verified cash received minus approved manual-register expenditure.
-  // Partner allowances/drawings reclassified as expenditure are included in the manual register.
-  // Other sources are excluded to prevent double counting.
+  // Policy: Cash Available is selected-period cash received minus expenses.
+  // Expenses include approved manual expenditure, partner drawings and finalized
+  // payroll net salaries. Payroll is only included for final/paid runs; cancelled
+  // and draft runs are excluded.
   function periodCashAvailable(collected,expenses){
     const out={TZS:0};
     const currencies=new Set([...Object.keys(collected||{}),...Object.keys(expenses||{}),'TZS']);
@@ -391,6 +403,6 @@
   window.MOLMSFinanceV16={metrics,periodClientRows,allReceivables,render,refresh,
     setPaymentRowsForTest(rows){paymentRows=Array.isArray(rows)?rows:[];paymentLedgerLoadError=false},
     paymentIntegrity,
-    audit:()=>{const m=metrics();return {version:18,period:bounds(),revenue:m.revenue,collected:m.collected,withholdingTax:periodWithholdingTax(),reconciliationIssues:reconciliationIssues().length,newReceivables:m.newReceivables,totalReceivables:m.totalReceivables,cash:m.cash.closingByCur,expenses:m.expenses,cashAvailable:m.cashAvailable,cashAvailablePolicy:'period cash received minus approved manual-register expenditure including reclassified partner allowances',vat:vatPosition(),paymentLedgerRows:paymentRows.length}}
+    audit:()=>{const m=metrics();return {version:18,period:bounds(),revenue:m.revenue,collected:m.collected,withholdingTax:periodWithholdingTax(),reconciliationIssues:reconciliationIssues().length,newReceivables:m.newReceivables,totalReceivables:m.totalReceivables,cash:m.cash.closingByCur,expenses:m.expenses,cashAvailable:m.cashAvailable,cashAvailablePolicy:'period cash received minus approved manual expenditure, partner drawings and finalized payroll net salaries',vat:vatPosition(),paymentLedgerRows:paymentRows.length}}
   };
 })();
