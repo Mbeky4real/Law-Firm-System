@@ -4,9 +4,11 @@ on:
     branches:
       - financial-dashboard-perfection-from-2026-10-11
       - finance-dashboard-production-candidate-2026-10-14
+      - fix/wht-payment-reconciliation-runtime
     paths:
       - 'js/financial-dashboard-v16.js'
       - 'tests/financial-dashboard-v16.test.js'
+      - 'index.html'
       - '.github/workflows/financial-dashboard-regression.yml'
   workflow_dispatch:
 jobs:
