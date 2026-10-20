@@ -19,6 +19,8 @@
   };
 
   let paymentRows=[];
+  let expenseRegisterRows=[];
+  let authoritativePayrollRuns=[];
   let paymentLedgerLoadError=false;
   let rendering=false;
 
@@ -171,6 +173,21 @@
     const {start,end}=bounds(),{manual,payroll}=data(),out={TZS:0};
     const eligibleManual=manual.filter(t=>approved(t)&&date(t.date)>=start&&date(t.date)<=end&&String(t.status||'').toLowerCase()!=='cancelled'&&['expenditure','drawing'].includes(String(t.tx_type||'').toLowerCase()));
     eligibleManual.forEach(t=>add(out,t.currency,t.amount));
+    // Closed expense-register lines are authoritative outflows and were not part
+    // of fd_manual_transactions. Include them for the selected period, while
+    // suppressing a manual entry that clearly mirrors the same dated expense.
+    expenseRegisterRows.filter(e=>date(e.date)>=start&&date(e.date)<=end&&String(e.register_status||'').toLowerCase()==='closed'&&String(e.status||'approved').toLowerCase()!=='cancelled').forEach(e=>{
+      const amount=num(e.amount),d=date(e.date),cur='TZS';
+      const mirrored=eligibleManual.some(t=>date(t.date)===d&&(t.currency||'TZS')===cur&&Math.abs(num(t.amount)-amount)<.01&&(/expense|register/i.test(String(t.description||t.category||''))||/expense|register/i.test(String(e.description||e.category||''))));
+      if(!mirrored)add(out,cur,amount);
+    });
+    // The HR module stores a finalized monthly total on hr_payroll_runs; its
+    // payroll_month is YYYY-MM, not a payment date. Include locked runs once.
+    authoritativePayrollRuns.filter(p=>String(p.payroll_month||'')===start.slice(0,7)&&String(p.status||'').toLowerCase()==='locked'&&!p.deleted_at).forEach(p=>{
+      const salary=num(p.total_net);
+      const mirrored=eligibleManual.some(t=>(t.currency||'TZS')==='TZS'&&Math.abs(num(t.amount)-salary)<.01&&/salary|payroll/i.test(String(t.description||t.category||'')));
+      if(salary>0&&!mirrored)add(out,'TZS',salary);
+    });
     const finalizedPayroll=payroll.filter(p=>{
       const st=String(p.status||p.run_status||'').toLowerCase();
       const d=date(p.payment_date||p.pay_date||p.date||p.payroll_date||p.period_date);
@@ -381,7 +398,22 @@
     }
   }
 
-  async function refresh(){await loadPayments();render();setTimeout(render,30);setTimeout(render,180)}
+  async function loadAuthoritativeExpenseAndPayrollSources(){
+    try{
+      if(typeof sb==='undefined'||!sb)throw new Error('Finance database connection unavailable');
+      const {start,end}=bounds();
+      const [expenseResult,payrollResult]=await Promise.all([
+        sb.from('expense_entries').select('id,date,category,description,amount,status,expense_register_id,expense_registers!inner(status)').gte('date',start).lte('date',end),
+        sb.from('hr_payroll_runs').select('id,payroll_month,status,total_net,deleted_at').eq('payroll_month',start.slice(0,7)).is('deleted_at',null)
+      ]);
+      if(expenseResult.error)throw expenseResult.error;
+      if(payrollResult.error)throw payrollResult.error;
+      expenseRegisterRows=(expenseResult.data||[]).map(e=>({...e,register_status:e.expense_registers?.status||e.register_status||''}));
+      authoritativePayrollRuns=payrollResult.data||[];
+    }catch(e){console.warn('[MOLMS finance V16 expense/payroll sources]',e);expenseRegisterRows=[];authoritativePayrollRuns=[];}
+  }
+
+  async function refresh(){await Promise.all([loadPayments(),loadAuthoritativeExpenseAndPayrollSources()]);render();setTimeout(render,30);setTimeout(render,180)}
   const baseRefresh=window.fdRefresh;
   if(typeof baseRefresh==='function')window.fdRefresh=async function(){const result=await baseRefresh.apply(this,arguments);await refresh();return result};
   window.addEventListener('load',()=>{setTimeout(refresh,900);setTimeout(refresh,1800)});
