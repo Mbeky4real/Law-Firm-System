@@ -185,9 +185,21 @@
     return {openingByCur:through(prior),closingByCur:through(end),start,end,openingBalanceConfigured:false};
   }
 
+
+  // Policy: Cash Available is a selected-period result, not a cumulative bank balance.
+  // It equals verified cash received minus approved manual-register expenditure.
+  // Partner allowances/drawings reclassified as expenditure are included in the manual register.
+  // Other sources are excluded to prevent double counting.
+  function periodCashAvailable(collected,expenses){
+    const out={TZS:0};
+    const currencies=new Set([...Object.keys(collected||{}),...Object.keys(expenses||{}),'TZS']);
+    currencies.forEach(c=>out[c]=num(collected?.[c])-num(expenses?.[c]));
+    return out;
+  }
+
   function metrics(){
-    const rows=periodClientRows(),revenue=totals(rows,'revenue'),collected=periodCollections(),newReceivables=totals(rows,'outstanding'),expenses=periodExpenses(),cash=cashPosition();
-    return {rows,revenue,collected,newReceivables,expenses,cash,totalReceivables:totals(allReceivables(),'outstanding')};
+    const rows=periodClientRows(),revenue=totals(rows,'revenue'),collected=periodCollections(),newReceivables=totals(rows,'outstanding'),expenses=periodExpenses(),cash=cashPosition(),cashAvailable=periodCashAvailable(collected,expenses);
+    return {rows,revenue,collected,newReceivables,expenses,cash,cashAvailable,totalReceivables:totals(allReceivables(),'outstanding')};
   }
 
   function card(title,values,color,note){
@@ -202,7 +214,7 @@
       card('PERIOD RESULT',Object.fromEntries(Object.keys({...m.revenue,...m.expenses}).map(c=>[c,num(m.revenue[c])-num(m.expenses[c])])),'#16a34a',label),
       card('CASH RECEIVED',m.collected,'#065f46',`Verified cash only · WHT settlement separately tracked: ${moneyLines(periodWithholdingTax()).map(x=>x.text).join(', ')||'0'} · ${label}`),
       card('NEW RECEIVABLES',m.newReceivables,'#d97706',`Unpaid recognised fees · ${label}`),
-      card('CASH AVAILABLE*',m.cash.closingByCur||{TZS:0},num(m.cash.closingByCur?.TZS)>=0?'#16a34a':'#dc2626',`Net verified cash movements; opening balance not configured · as at ${bounds().end}`)
+      card('CASH AVAILABLE',m.cashAvailable||{TZS:0},num(m.cashAvailable?.TZS)>=0?'#16a34a':'#dc2626',`Cash received minus approved manual-register expenses · ${label}`)
     ].join('');
   }
 
@@ -301,7 +313,7 @@
   }
 
   function renderStatus(){
-    const m=metrics(),ratio=num(m.revenue.TZS)?num(m.collected.TZS)/num(m.revenue.TZS):0,cash=num(m.cash.closingByCur?.TZS),payrollPending=!(()=>{try{return fdMonthlyObligations().payrollGenerated}catch(e){return false}})();
+    const m=metrics(),ratio=num(m.revenue.TZS)?num(m.collected.TZS)/num(m.revenue.TZS):0,cash=num(m.cashAvailable?.TZS),payrollPending=!(()=>{try{return fdMonthlyObligations().payrollGenerated}catch(e){return false}})();
     let level='Healthy',color='#16a34a';if(cash<0){level='Critical';color='#dc2626'}else if(ratio<.8||payrollPending){level='Stable';color='#b45309'}
     const issues=reconciliationIssues();
     if(issues.length||paymentLedgerLoadError){level='Needs Reconciliation';color='#b45309'}
@@ -314,7 +326,7 @@
     }
     if(warning)warning.innerHTML=(issues.length||paymentLedgerLoadError)?`<div style="padding:10px 12px;margin:8px 0;border:1px solid #f59e0b;border-radius:8px;background:#fffbeb;color:#92400e;font-size:12px"><b>Payment reconciliation required:</b> ${paymentLedgerLoadError?'The Invoice Module payment ledger could not be loaded. ':''}${issues.length?`${issues.length} invoice(s) have missing, inconsistent or estimated payment-ledger records. Their payment dates are excluded from period cash totals until verified.`:''}<div style="margin-top:5px;font-weight:700">${issues.slice(0,5).map(x=>esc(x.invoice.invoice_number||x.invoice.id)).join(', ')}${issues.length>5?' and '+(issues.length-5)+' more':''}</div></div>`:'';
     const box=q('fdStatusIndicator');if(box){box.style.color=color;box.style.background=level==='Healthy'?'#f0fdf4':level==='Critical'?'#fef2f2':'#fffbeb'}
-    const intel=q('fdIntelligence');if(intel)intel.innerHTML=`<b>${level}:</b> ${Math.round(ratio*100)}% of TZS recognised revenue collected. Cash available is <b>${money('TZS',cash)}</b>.${payrollPending?' September payroll obligations are pending calculation.':''}`;
+    const intel=q('fdIntelligence');if(intel)intel.innerHTML=`<b>${level}:</b> ${Math.round(ratio*100)}% of TZS recognised revenue collected. Cash available (cash received less approved manual expenses) is <b>${money('TZS',cash)}</b>.${payrollPending?' September payroll obligations are pending calculation.':''}`;
   }
 
   function render(){
@@ -379,6 +391,6 @@
   window.MOLMSFinanceV16={metrics,periodClientRows,allReceivables,render,refresh,
     setPaymentRowsForTest(rows){paymentRows=Array.isArray(rows)?rows:[];paymentLedgerLoadError=false},
     paymentIntegrity,
-    audit:()=>{const m=metrics();return {version:17,period:bounds(),revenue:m.revenue,collected:m.collected,withholdingTax:periodWithholdingTax(),reconciliationIssues:reconciliationIssues().length,newReceivables:m.newReceivables,totalReceivables:m.totalReceivables,cash:m.cash.closingByCur,expenses:m.expenses,vat:vatPosition(),paymentLedgerRows:paymentRows.length}}
+    audit:()=>{const m=metrics();return {version:18,period:bounds(),revenue:m.revenue,collected:m.collected,withholdingTax:periodWithholdingTax(),reconciliationIssues:reconciliationIssues().length,newReceivables:m.newReceivables,totalReceivables:m.totalReceivables,cash:m.cash.closingByCur,expenses:m.expenses,cashAvailable:m.cashAvailable,cashAvailablePolicy:'period cash received minus approved manual-register expenditure including reclassified partner allowances',vat:vatPosition(),paymentLedgerRows:paymentRows.length}}
   };
 })();

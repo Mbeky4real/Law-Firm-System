@@ -106,6 +106,8 @@ const expensePolicy=global.MOLMSFinanceV16.audit();
 assert.deepEqual(expensePolicy.expenses,{TZS:1300000}); // only the two approved partner-entered October expenses
 assert.deepEqual(expensePolicy.cash,{TZS:-1016400}); // the same two expenses reduce cumulative verified cash movements once
 assert.equal(expensePolicy.cash.TZS,283600-1100000-200000);
+assert.deepEqual(expensePolicy.cashAvailable,{TZS:-1299400}); // selected-period cash received (600) minus approved manual expenses (1,300,000)
+assert.equal(expensePolicy.cashAvailablePolicy,'period cash received minus approved manual-register expenditure');
 
 
 // An estimated payment date must not be counted as verified cash, but the
