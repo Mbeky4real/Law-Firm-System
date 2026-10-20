@@ -148,3 +148,10 @@ const simplePresentation = fs.readFileSync(require.resolve('../js/financial-dash
 assert.match(simplePresentation,/\['fdRegBody','fdTimeline','fdRevByType','fdExpByCategory'\]/);
 assert.doesNotMatch(simplePresentation,/\['fdRegBody','fdManualBody'/);
 console.log('manual financial transactions visibility regression: PASS');
+
+// Manual ledger regression: show every historical transaction, independent of selected KPI period.
+const appCore = fs.readFileSync(require.resolve('../app-core.html'),'utf8');
+assert.match(appCore,/tbody\\.innerHTML=rows\\.map\\(t=>/);
+assert.doesNotMatch(appCore,/#fdManualBody tr\\[data-fdv15-outside="1"\\]\\{display:none!important\\}/);
+assert.match(appCore,/function filterManual\\(\\)\\{const body=q\\('fdManualBody'\\);if\\(!body\\)return;body\\.querySelectorAll\\('tr\\[data-fdv15-empty="1"\\]'\\)\\.forEach\\(x=>x\\.remove\\(\\)\\);\\[\\.\\.\\.body\\.querySelectorAll\\('tr'\\)\\]\\.forEach\\(tr=>\\{tr\\.style\\.removeProperty\\('display'\\);delete tr\\.dataset\\.fdv15Outside;\\}\\);\\}/);
+console.log('full historical manual transaction ledger regression: PASS');
