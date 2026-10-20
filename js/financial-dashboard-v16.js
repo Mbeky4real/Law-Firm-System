@@ -127,19 +127,25 @@
 
   function totals(rows,key){const out={TZS:0};rows.forEach(r=>add(out,r.currency,r[key]));return out}
 
-  // Cash collections use verified, non-estimated cash payment events only.
-  // WHT is tracked separately as invoice settlement, never as cash received.
-  // Manual client-fee/receivable entries are not counted here: they have no
-  // invoice-payment link and could duplicate an Invoice Module receipt.
+  // Cash collections use verified, non-estimated invoice cash rows plus
+  // approved manual client receipts. WHT is settlement, not cash. To reduce
+  // duplicate counting, a manual receipt is skipped when an invoice ledger row
+  // already records the same currency, date and amount.
   function periodCollections(){
-    const {start,end}=bounds(),{invoices,manual}=data(),out={TZS:0};
+    const {start,end}=bounds(),{invoices,manual}=data(),out={TZS:0},ledgerEvents=[];
     invoices.filter(validTax).forEach(i=>{
-      receipts(i).filter(r=>!r.estimated&&r.date>=start&&r.date<=end).forEach(r=>add(out,i.currency,r.cash));
+      receipts(i).filter(r=>!r.estimated&&r.date>=start&&r.date<=end).forEach(r=>{
+        add(out,i.currency,r.cash);
+        if(r.cash>0)ledgerEvents.push({date:r.date,currency:i.currency||'TZS',amount:r.cash,client:String(i.client_name||'').trim().toLowerCase()});
+      });
     });
-    // Only explicitly standalone manual revenue is eligible; manual client
-    // receivable rows are excluded because they have no invoice-payment link.
-    manual.filter(t=>approved(t)&&String(t.tx_type||'').toLowerCase()==='revenue'&&!t.client_receivable&&date(t.date)>=start&&date(t.date)<=end&&String(t.status||'').toLowerCase()!=='cancelled')
-      .forEach(t=>add(out,t.currency,t.amount));
+    manual.filter(t=>approved(t)&&String(t.tx_type||'').toLowerCase()==='revenue'&&date(t.date)>=start&&date(t.date)<=end&&String(t.status||'').toLowerCase()!=='cancelled')
+      .forEach(t=>{
+        const cur=t.currency||'TZS',amount=num(t.amount),d=date(t.date);
+        const client=String(t.receivable_client_name||t.counterparty||'').trim().toLowerCase();
+        const duplicate=ledgerEvents.some(e=>e.date===d&&e.currency===cur&&Math.abs(e.amount-amount)<.01&&(!client||!e.client||e.client===client));
+        if(!duplicate)add(out,cur,amount);
+      });
     return out;
   }
 
