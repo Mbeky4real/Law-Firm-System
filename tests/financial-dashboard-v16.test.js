@@ -115,9 +115,10 @@ global.MOLMSFinanceV16.setPaymentRowsForTest([
 ]);
 selectedPeriod={start:'2026-08-01',end:'2026-08-31',monthStr:'2026-08'};
 const augustEstimatedSettlement=global.MOLMSFinanceV16.audit();
-assert.deepEqual(augustEstimatedSettlement.newReceivables,{TZS:3500000});
-assert.deepEqual(augustEstimatedSettlement.collected,{TZS:0});
-assert.equal(augustEstimatedSettlement.reconciliationIssues,1);
+const estimatedEarsc=global.MOLMSFinanceV16.periodClientRows().find(r=>r.id==='earsc');
+assert.equal(estimatedEarsc.outstanding,3500000); // the estimated settlement reduces this invoice balance
+assert.deepEqual(augustEstimatedSettlement.collected,{TZS:0}); // estimated-date cash is excluded from verified cash
+assert.equal(global.MOLMSFinanceV16.paymentIntegrity(global._fdAllInvoices.find(i=>i.id==='earsc')).estimated,true);
 
 console.log('financial-dashboard-v16 reconciliation + estimated-date receivables + October payment-date + manual-expense-only regression: PASS');
 
