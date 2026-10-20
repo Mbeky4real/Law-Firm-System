@@ -1,4 +1,5 @@
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
 
 global.window = global;
 global.addEventListener = ()=>{};
@@ -141,3 +142,9 @@ const splitRow=global.MOLMSFinanceV16.periodClientRows().find(r=>r.client==='Spl
 assert.equal(splitRow.paid,150); // cash + WHT settles the invoice
 assert.equal(splitRow.outstanding,0);
 console.log('split cash + WHT-only ledger row regression: PASS');
+
+// Presentation regression: the manual financial transaction card must remain visible.
+const simplePresentation = fs.readFileSync(require.resolve('../js/financial-dashboard-simple-v1.js'),'utf8');
+assert.match(simplePresentation,/\['fdRegBody','fdTimeline','fdRevByType','fdExpByCategory'\]/);
+assert.doesNotMatch(simplePresentation,/\['fdRegBody','fdManualBody'/);
+console.log('manual financial transactions visibility regression: PASS');
