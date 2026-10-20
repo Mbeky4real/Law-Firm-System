@@ -108,8 +108,10 @@
       }
     }
 
-    // Keep only the detailed registers and chart-like analytics out of the landing view.
-    ['fdRegBody','fdManualBody','fdTimeline','fdRevByType','fdExpByCategory'].forEach(id => {
+    // Keep secondary detailed registers and chart-like analytics out of the landing view.
+    // Manual Financial Transactions is a required management card: keep fdManualBody visible
+    // so approved standalone revenue, expenditure and drawings remain inspectable by date.
+    ['fdRegBody','fdTimeline','fdRevByType','fdExpByCategory'].forEach(id => {
       const el = page.querySelector('#' + id);
       if (!el) return;
       const card = dashboardCardFor(el, scroll);
