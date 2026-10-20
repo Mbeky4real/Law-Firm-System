@@ -4,8 +4,8 @@
  */
 (function () {
   'use strict';
-  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 4) return;
-  window.MOLMSFinancialDashboardSimpleV1 = { version: 4, applied: false };
+  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 5) return;
+  window.MOLMSFinancialDashboardSimpleV1 = { version: 5, applied: false };
   const styleId = 'molms-financial-dashboard-simple-v1-style';
 
   function installStyle() {
@@ -13,9 +13,9 @@
     const style = document.createElement('style');
     style.id = styleId;
     style.textContent = `
-      #page-findash #fdKpiRow { grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px!important;padding:14px 20px!important; }
-      #page-findash #fdKpiRow>* { min-width:0; }
-      #page-findash #fdKpiRow>div:nth-child(3) { display:block!important; }
+      #page-findash #fdKpiRow { grid-template-columns:repeat(5,minmax(0,1fr))!important;align-items:stretch!important;gap:10px!important;padding:12px 20px!important; }
+      #page-findash #fdKpiRow>* { min-width:0!important;width:auto!important;max-width:none!important;margin:0!important;padding:12px 13px!important;box-sizing:border-box!important; }
+      #page-findash #fdKpiRow>div:nth-child(5) { border:1px solid #d8e9df!important;background:#f5fbf7!important; }
       #page-findash>div[style*="overflow-y:auto"] { padding:16px 20px!important; }
       #page-findash .fd-simple-quick-actions { display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:12px; }
       #page-findash .fd-simple-quick-actions strong { font-size:11px;color:var(--navy);margin-right:4px; }
@@ -26,8 +26,8 @@
       #page-findash .fd-simple-summary-label { min-width:0;overflow-wrap:anywhere;color:#344054; }
       #page-findash .fd-simple-summary-value { flex:0 0 auto;text-align:right;font-weight:700;color:#182230; }
       #page-findash .fd-simple-summary-note { display:block;color:#667085;font-size:11px;font-weight:400;margin-top:2px; }
-      @media(max-width:760px){#page-findash #fdKpiRow{grid-template-columns:repeat(2,minmax(0,1fr))!important;padding:12px!important;gap:8px!important}#page-findash>div[style*="overflow-y:auto"]{padding:12px!important}}
-      @media(max-width:380px){#page-findash #fdKpiRow{grid-template-columns:1fr!important}}
+      @media(max-width:1250px){#page-findash #fdKpiRow{grid-template-columns:repeat(3,minmax(0,1fr))!important}}\n      @media(max-width:760px){#page-findash #fdKpiRow{grid-template-columns:repeat(2,minmax(0,1fr))!important;padding:12px!important;gap:8px!important}#page-findash #fdKpiRow>*{padding:11px!important}#page-findash>div[style*="overflow-y:auto"]{padding:12px!important}}
+      @media(max-width:420px){#page-findash #fdKpiRow{grid-template-columns:1fr!important}}
     `;
     document.head.appendChild(style);
   }
