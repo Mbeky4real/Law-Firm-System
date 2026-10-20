@@ -42,9 +42,9 @@ global.MOLMSFinanceV16.setPaymentRowsForTest([
 ]);
 const audit=global.MOLMSFinanceV16.audit();
 assert.deepEqual(audit.revenue,{TZS:17200000,USD:250});
-assert.deepEqual(audit.collected,{TZS:6130000}); // verified cash only: Petra 5,000,000 + prior-period test invoice 1,130,000
+assert.deepEqual(audit.collected,{TZS:12130000}); // verified invoice cash plus four approved manual client receipts
 assert.deepEqual(audit.newReceivables,{TZS:6200000,USD:250});
-assert.deepEqual(audit.expenses,{TZS:25000});
+assert.deepEqual(audit.expenses,{TZS:10025000}); // approved manual expenditure plus partner drawings
 assert.deepEqual(audit.totalReceivables,{TZS:11880000,USD:3790}); // includes the issued, unpaid proforma as a separately identified open commitment
 assert.equal(global.MOLMSFinanceV16.allReceivables().find(r=>r.client==='Test proforma client').outstanding,3540);
 assert.equal(global.MOLMSFinanceV16.allReceivables().find(r=>r.client==='Test proforma client').status,'Proforma Outstanding');
@@ -103,11 +103,11 @@ global._fdAllManual.push(
 );
 global._fdAllManual[global._fdAllManual.length-1].status='cancelled';
 const expensePolicy=global.MOLMSFinanceV16.audit();
-assert.deepEqual(expensePolicy.expenses,{TZS:1300000}); // only the two approved partner-entered October expenses
+assert.deepEqual(expensePolicy.expenses,{TZS:11325000}); // manual expenses + partner drawings; finalized payroll duplicate is not counted twice
 assert.deepEqual(expensePolicy.cash,{TZS:-1016400}); // the same two expenses reduce cumulative verified cash movements once
 assert.equal(expensePolicy.cash.TZS,283600-1100000-200000);
-assert.deepEqual(expensePolicy.cashAvailable,{TZS:-1299400}); // selected-period cash received (600) minus approved manual expenses (1,300,000)
-assert.equal(expensePolicy.cashAvailablePolicy,'period cash received minus approved manual-register expenditure');
+assert.deepEqual(expensePolicy.cashAvailable,{TZS:-11324400}); // selected-period cash received (600) minus approved manual expenses, drawings and salary
+assert.equal(expensePolicy.cashAvailablePolicy,'period cash received minus approved manual expenditure, partner drawings and finalized payroll net salaries');
 
 
 // An estimated payment date must not be counted as verified cash, but the
