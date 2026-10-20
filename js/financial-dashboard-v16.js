@@ -167,10 +167,29 @@
     return out;
   }
 
+  function cashPosition(){
+    const {start,end}=bounds(),{manual}=data();
+    const previous=new Date(start+'T00:00:00');previous.setDate(previous.getDate()-1);
+    const prior=previous.getFullYear()+'-'+String(previous.getMonth()+1).padStart(2,'0')+'-'+String(previous.getDate()).padStart(2,'0');
+    const through=limit=>{
+      const totals={TZS:0};
+      data().invoices.filter(validTax).forEach(i=>receipts(i).filter(r=>!r.estimated&&r.date&&r.date<=limit).forEach(r=>add(totals,i.currency,r.cash)));
+      manual.filter(t=>approved(t)&&date(t.date)&&date(t.date)<=limit&&String(t.status||'').toLowerCase()!=='cancelled').forEach(t=>{
+        const type=String(t.tx_type||'').toLowerCase();
+        if(type==='revenue'&&!t.client_receivable)add(totals,t.currency,t.amount);
+        if(type==='loan')add(totals,t.currency,t.amount);
+        if(type==='expenditure'||type==='drawing')add(totals,t.currency,-num(t.amount));
+      });
+      return totals;
+    };
+    return {openingByCur:through(prior),closingByCur:through(end),start,end,openingBalanceConfigured:false};
+  }
+
+
   // Policy: Cash Available is a selected-period result, not a cumulative bank balance.
   // It equals verified cash received minus approved manual-register expenditure.
-  // Drawings, loans, payroll calculations, office-expense records and opening balances
-  // are intentionally excluded; only paid expenses entered in the manual register count.
+  // Partner allowances/drawings reclassified as expenditure are included in the manual register.
+  // Other sources are excluded to prevent double counting.
   function periodCashAvailable(collected,expenses){
     const out={TZS:0};
     const currencies=new Set([...Object.keys(collected||{}),...Object.keys(expenses||{}),'TZS']);
@@ -372,6 +391,6 @@
   window.MOLMSFinanceV16={metrics,periodClientRows,allReceivables,render,refresh,
     setPaymentRowsForTest(rows){paymentRows=Array.isArray(rows)?rows:[];paymentLedgerLoadError=false},
     paymentIntegrity,
-    audit:()=>{const m=metrics();return {version:18,period:bounds(),revenue:m.revenue,collected:m.collected,withholdingTax:periodWithholdingTax(),reconciliationIssues:reconciliationIssues().length,newReceivables:m.newReceivables,totalReceivables:m.totalReceivables,cash:m.cash.closingByCur,expenses:m.expenses,cashAvailable:m.cashAvailable,cashAvailablePolicy:'period cash received minus approved manual-register expenditure',vat:vatPosition(),paymentLedgerRows:paymentRows.length}}
+    audit:()=>{const m=metrics();return {version:18,period:bounds(),revenue:m.revenue,collected:m.collected,withholdingTax:periodWithholdingTax(),reconciliationIssues:reconciliationIssues().length,newReceivables:m.newReceivables,totalReceivables:m.totalReceivables,cash:m.cash.closingByCur,expenses:m.expenses,cashAvailable:m.cashAvailable,cashAvailablePolicy:'period cash received minus approved manual-register expenditure including reclassified partner allowances',vat:vatPosition(),paymentLedgerRows:paymentRows.length}}
   };
 })();
