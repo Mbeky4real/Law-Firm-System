@@ -121,12 +121,20 @@
     }
 
     // Keep only the detailed registers and chart-like analytics out of the landing view.
-    ['fdRegBody','fdManualBody','fdTimeline','fdRevByType','fdExpByCategory'].forEach(id => {
+    ['fdRegBody','fdTimeline','fdRevByType','fdExpByCategory'].forEach(id => {
       const el = page.querySelector('#' + id);
       if (!el) return;
       const card = dashboardCardFor(el, scroll);
       if (card && card !== scroll && card !== page.querySelector('#fdPriorityRowV7')) card.style.display = 'none';
     });
+
+    // Restore the complete manual financial transactions card and its saved entries.
+    const restoredManualBody = page.querySelector('#fdManualBody');
+    if (restoredManualBody) {
+      const restoredManualCard = dashboardCardFor(restoredManualBody, scroll);
+      if (restoredManualCard && restoredManualCard !== scroll) restoredManualCard.style.display = '';
+      restoredManualBody.style.display = '';
+    }
 
     // Replace dense tabular bodies with short management lists while preserving source data.
     ['fdExpenseBody','fdBudgetBody','fdTopClients','fdMatterLeaderboard'].forEach(id => compactTable(id, page));
