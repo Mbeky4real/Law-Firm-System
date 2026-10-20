@@ -4,8 +4,8 @@
  */
 (function () {
   'use strict';
-  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 5) return;
-  window.MOLMSFinancialDashboardSimpleV1 = { version: 5, applied: false };
+  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 6) return;
+  window.MOLMSFinancialDashboardSimpleV1 = { version: 6, applied: false };
   const styleId = 'molms-financial-dashboard-simple-v1-style';
 
   function installStyle() {
@@ -13,7 +13,7 @@
     const style = document.createElement('style');
     style.id = styleId;
     style.textContent = `
-      #page-findash #fdKpiRow { grid-template-columns:repeat(5,minmax(0,1fr))!important;align-items:stretch!important;gap:10px!important;padding:12px 20px!important; }
+      #page-findash #fdKpiRow { display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;align-items:stretch!important;gap:10px!important;padding:12px 20px!important; }
       #page-findash #fdKpiRow>* { min-width:0!important;width:auto!important;max-width:none!important;margin:0!important;padding:12px 13px!important;box-sizing:border-box!important; }
       #page-findash #fdKpiRow>div:nth-child(5) { border:1px solid #d8e9df!important;background:#f5fbf7!important; }
       #page-findash>div[style*="overflow-y:auto"] { padding:16px 20px!important; }
