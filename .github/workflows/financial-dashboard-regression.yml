@@ -5,8 +5,10 @@ on:
       - financial-dashboard-perfection-from-2026-10-11
       - finance-dashboard-production-candidate-2026-10-14
       - fix/wht-payment-reconciliation-runtime
+      - fix/show-manual-financial-transactions
     paths:
       - 'js/financial-dashboard-v16.js'
+      - 'js/financial-dashboard-simple-v1.js'
       - 'tests/financial-dashboard-v16.test.js'
       - 'index.html'
       - '.github/workflows/financial-dashboard-regression.yml'
