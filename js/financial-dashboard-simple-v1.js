@@ -95,9 +95,10 @@
       if (sourceButtons.length) {
         const actions = document.createElement('div');
         actions.className = 'fd-simple-quick-actions';
-        actions.innerHTML = '<strong>QUICK ACTIONS</strong>';
-        sourceButtons.forEach(button => {
+        actions.innerHTML = '<strong>MANUAL FINANCIAL TRANSACTIONS</strong>';
+        sourceButtons.forEach((button, index) => {
           const copy = button.cloneNode(true);
+          copy.textContent = index === 0 ? '+ Manual Revenue Transaction' : '+ Manual Expenditure Transaction';
           copy.removeAttribute('id');
           actions.appendChild(copy);
         });
