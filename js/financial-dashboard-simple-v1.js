@@ -4,8 +4,8 @@
  */
 (function () {
   'use strict';
-  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 3) return;
-  window.MOLMSFinancialDashboardSimpleV1 = { version: 3, applied: false };
+  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 4) return;
+  window.MOLMSFinancialDashboardSimpleV1 = { version: 4, applied: false };
   const styleId = 'molms-financial-dashboard-simple-v1-style';
 
   function installStyle() {
@@ -107,6 +107,17 @@
         if (anchor && anchor.parentElement === scroll) anchor.insertAdjacentElement('afterend', actions);
         else scroll.insertBefore(actions, scroll.firstChild);
       }
+    }
+
+    // Normalize any older quick-action strip that may have been rendered by a legacy dashboard script.
+    const legacyActions = Array.from(page.querySelectorAll('.fd-simple-quick-actions, [class*="quick-action"]')).find(el => /Other Revenue/i.test(textOf(el)) && /Other Expenditure/i.test(textOf(el)));
+    if (legacyActions) {
+      const oldButtons = Array.from(legacyActions.querySelectorAll('button'));
+      legacyActions.querySelector('strong')?.replaceChildren(document.createTextNode('MANUAL FINANCIAL TRANSACTIONS'));
+      oldButtons.forEach((button, index) => {
+        const label = index === 0 ? '+ Manual Revenue Transaction' : '+ Manual Expenditure Transaction';
+        if (button.textContent.trim() !== label) button.textContent = label;
+      });
     }
 
     // Keep only the detailed registers and chart-like analytics out of the landing view.
