@@ -4,8 +4,8 @@
  */
 (function () {
   'use strict';
-  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 8) return;
-  window.MOLMSFinancialDashboardSimpleV1 = { version: 8, applied: false };
+  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 9) return;
+  window.MOLMSFinancialDashboardSimpleV1 = { version: 9, applied: false };
   const styleId = 'molms-financial-dashboard-simple-v1-style';
 
   function installStyle() {
@@ -87,6 +87,26 @@
     installStyle();
     const scroll = Array.from(page.children).find(el => /overflow-y:\s*auto/i.test(el.getAttribute('style') || ''));
     if (!scroll) return;
+
+    // Safe, one-way layout adjustment: move the KPI card block before the priority panels.
+    // Only move existing DOM nodes when both are direct children of the dashboard scroller.
+    try {
+      const kpiRow = page.querySelector('#fdKpiRow');
+      const priorityAnchor = page.querySelector('#fdPriorityRowV7') || page.querySelector('#fdMonthlyObligations');
+      const kpiBlock = kpiRow ? dashboardCardFor(kpiRow, scroll) : null;
+      const priorityBlock = priorityAnchor ? dashboardCardFor(priorityAnchor, scroll) : null;
+      if (kpiBlock && priorityBlock && kpiBlock !== priorityBlock &&
+          kpiBlock.parentElement === scroll && priorityBlock.parentElement === scroll &&
+          priorityBlock.previousElementSibling !== kpiBlock) {
+        scroll.insertBefore(kpiBlock, priorityBlock);
+      }
+      if (kpiRow) {
+        kpiRow.style.setProperty('display', 'grid', 'important');
+        kpiRow.style.setProperty('grid-template-columns', 'repeat(5,minmax(0,1fr))', 'important');
+      }
+    } catch (layoutError) {
+      console.warn('Financial dashboard KPI layout adjustment skipped safely.', layoutError);
+    }
 
     const manualBody = page.querySelector('#fdManualBody');
     const manualCard = manualBody && dashboardCardFor(manualBody, scroll);
