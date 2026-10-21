@@ -242,14 +242,30 @@
   }
 
   function renderKpis(){
-    const host=q('fdKpiRow');if(!host)return;const m=metrics(),label=typeof fdPeriodLabel==='function'?fdPeriodLabel():'Selected period';
+    const host=q('fdKpiRow');if(!host)return;
+    const m=metrics(),label=typeof fdPeriodLabel==='function'?fdPeriodLabel():'Selected period';
+    // Layout is applied at the actual KPI render source. No DOM nodes are moved.
+    const styleId='molms-financial-kpi-layout-v2';
+    if(!document.getElementById(styleId)){
+      const style=document.createElement('style');
+      style.id=styleId;
+      style.textContent=`
+        #page-findash #fdKpiRow{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px!important;align-items:stretch!important;padding:14px 20px!important;box-sizing:border-box!important}
+        #page-findash #fdKpiRow>*{min-width:0!important;width:auto!important;max-width:none!important;margin:0!important;padding:15px 16px!important;border:1px solid #e4e7ec!important;border-radius:12px!important;box-shadow:0 2px 8px rgba(16,24,40,.05)!important;box-sizing:border-box!important;overflow-wrap:anywhere}
+        #page-findash #fdKpiRow>*:first-child{background:#f1f8f3!important;border-color:#b9d9c5!important}
+        #page-findash #fdKpiRow>*:first-child>div:nth-child(2){font-size:20px!important}
+        @media(max-width:1050px){#page-findash #fdKpiRow{grid-template-columns:repeat(2,minmax(0,1fr))!important;padding:12px!important;gap:10px!important}}
+        @media(max-width:560px){#page-findash #fdKpiRow{grid-template-columns:1fr!important;padding:10px!important;gap:8px!important}#page-findash #fdKpiRow>*{padding:12px!important}}
+      `;
+      document.head.appendChild(style);
+    }
     host.innerHTML=[
-      card('RECOGNISED REVENUE',m.revenue,'#16a34a',`Full agreed/invoiced fees · ${label}`),
-      card('OPERATING EXPENSES',m.expenses,'#dc2626',`Recorded expenses · ${label}`),
-      card('PERIOD RESULT',Object.fromEntries(Object.keys({...m.revenue,...m.expenses}).map(c=>[c,num(m.revenue[c])-num(m.expenses[c])])),'#16a34a',label),
-      card('CASH RECEIVED',m.collected,'#065f46',`Verified cash only · WHT settlement separately tracked: ${moneyLines(periodWithholdingTax()).map(x=>x.text).join(', ')||'0'} · ${label}`),
-      card('NEW RECEIVABLES',m.newReceivables,'#d97706',`Unpaid recognised fees · ${label}`),
-      card('CASH AVAILABLE',m.cashAvailable||{TZS:0},num(m.cashAvailable?.TZS)>=0?'#16a34a':'#dc2626',`Cash received minus approved manual-register expenses · ${label}`)
+      card('CASH AVAILABLE',m.cashAvailable||{TZS:0},num(m.cashAvailable?.TZS)>=0?'#167244':'#b42318',`Cash received minus approved manual-register expenses · ${label}`),
+      card('CASH RECEIVED',m.collected,'#065f46',`Verified cash only · WHT tracked separately: ${moneyLines(periodWithholdingTax()).map(x=>x.text).join(', ')||'0'} · ${label}`),
+      card('NEW RECEIVABLES',m.newReceivables,'#b54708',`Unpaid recognised fees · ${label}`),
+      card('RECOGNISED REVENUE',m.revenue,'#16803d',`Full agreed/invoiced fees · ${label}`),
+      card('OPERATING EXPENSES',m.expenses,'#b42318',`Recorded expenses · ${label}`),
+      card('PERIOD RESULT',Object.fromEntries(Object.keys({...m.revenue,...m.expenses}).map(c=>[c,num(m.revenue[c])-num(m.expenses[c])])),'#344054',label)
     ].join('');
   }
 
