@@ -4,8 +4,8 @@
  */
 (function () {
   'use strict';
-  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 11) return;
-  window.MOLMSFinancialDashboardSimpleV1 = { version: 11, applied: false };
+  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 12) return;
+  window.MOLMSFinancialDashboardSimpleV1 = { version: 12, applied: false };
   const styleId = 'molms-financial-dashboard-simple-v1-style';
 
   function installStyle() {
@@ -81,7 +81,47 @@
     return String(value || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
+  const revenueCategories = [
+    'Legal Fees — Non-Invoiced Legal Tasks',
+    'Consultation Fees',
+    'Retainer Fees — Direct Receipt',
+    'Legal Opinion & Advisory Fees',
+    'Drafting & Documentation Fees',
+    'Court Attendance & Filing Fees Recovered',
+    'Reimbursement of Expenses',
+    'Interest Income',
+    'Rental Income',
+    'Training & Seminar Fees',
+    'Commission & Referral Income',
+    'Recovery of Bad Debts',
+    'Other Operating Income',
+    'Other Non-Operating Income',
+    'Other'
+  ];
+  function upgradeRevenueCategory(page) {
+    const labels = [...page.querySelectorAll('label')];
+    const label = labels.find(el => /revenue category/i.test(el.textContent || ''));
+    if (!label) return;
+    const id = label.htmlFor;
+    let select = id ? page.querySelector('#' + CSS.escape(id)) : null;
+    if (!select) {
+      const container = label.parentElement;
+      select = container && container.querySelector('select');
+    }
+    if (!select || select.dataset.molmsRevenueCategoriesV12 === '1') return;
+    const existing = new Set([...select.options].map(o => (o.textContent || '').trim().toLowerCase()));
+    revenueCategories.forEach(name => {
+      if (existing.has(name.toLowerCase())) return;
+      const option = document.createElement('option');
+      option.value = name;
+      option.textContent = name;
+      select.appendChild(option);
+    });
+    select.dataset.molmsRevenueCategoriesV12 = '1';
+  }
+
   function apply() {
+    upgradeRevenueCategory(document.getElementById('page-findash') || document);
     const page = document.getElementById('page-findash');
     if (!page) return;
     installStyle();
