@@ -247,6 +247,12 @@
 
   function renderKpis(){
     const host=q('fdKpiRow');if(!host)return;
+    if(!document.getElementById('fdKpiCompactLayoutStyle')){
+      const style=document.createElement('style');style.id='fdKpiCompactLayoutStyle';
+      style.textContent=`#fdKpiRow.fd-kpi-compact-layout{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px!important;align-items:stretch}#fdKpiRow.fd-kpi-compact-layout>section{padding:14px 15px!important;min-width:0!important}#fdKpiRow.fd-kpi-compact-layout>section:nth-child(3){grid-column:auto!important}#fdKpiRow.fd-kpi-compact-layout>section>div{overflow-wrap:anywhere}@media(max-width:1050px){#fdKpiRow.fd-kpi-compact-layout{grid-template-columns:repeat(2,minmax(0,1fr))!important}#fdKpiRow.fd-kpi-compact-layout>section:nth-child(3){grid-column:1/-1!important}}@media(max-width:640px){#fdKpiRow.fd-kpi-compact-layout{grid-template-columns:minmax(0,1fr)!important;gap:10px!important}#fdKpiRow.fd-kpi-compact-layout>section:nth-child(3){grid-column:auto!important}}`;
+      document.head.appendChild(style);
+    }
+    host.classList.add('fd-kpi-compact-layout');
     // Preserve expanded disclosure panels across the legacy dashboard's frequent refreshes.
     // Without this, the 500ms reconciliation loop replaces innerHTML and collapses every <details>.
     const openDetails=financialDisclosureState;
@@ -265,7 +271,7 @@
     host.innerHTML=
       panel('TOTAL REVENUE',m.revenue,'#16803d',`Recognised legal fees and other eligible income · ${label}`,revenueBreakdown)+
       panel('TOTAL EXPENSES',m.expenses,'#b42318',`Approved expenses manually recorded in Expenses Transactions · ${label}`,expenseBreakdown)+
-      `<section style="grid-column:1/-1;min-width:0;background:#f3faf5;border:1px solid #b8d8c5;border-radius:14px;padding:16px 18px;box-shadow:0 3px 10px rgba(28,110,65,.07);box-sizing:border-box"><div style="font-size:11px;font-weight:900;letter-spacing:.45px;color:#24633d;margin-bottom:6px">CASH AVAILABLE AFTER EXPENSES</div>${moneyLines(m.cashAvailable.cashAvailableByCurrency||{},false).map((l,i)=>`<div style="font-size:${i?'14px':'22px'};font-weight:900;line-height:1.25;color:${l.value<0?'#b42318':'#187044'}">${esc(l.text)}</div>`).join('')||'<div style="font-size:20px;font-weight:900;color:#187044">TZS 0</div>'}<div style="font-size:11px;color:#667085;margin-top:6px">${esc(label)} · Opening balance: TZS 0 / USD 0</div></section>`;
+      `<section style="grid-column:auto;min-width:0;background:#f3faf5;border:1px solid #b8d8c5;border-radius:14px;padding:14px 15px;box-shadow:0 3px 10px rgba(28,110,65,.07);box-sizing:border-box"><div style="font-size:11px;font-weight:900;letter-spacing:.45px;color:#24633d;margin-bottom:6px">CASH AVAILABLE AFTER EXPENSES</div>${moneyLines(m.cashAvailable.cashAvailableByCurrency||{},false).map((l,i)=>`<div style="font-size:${i?'14px':'22px'};font-weight:900;line-height:1.25;color:${l.value<0?'#b42318':'#187044'}">${esc(l.text)}</div>`).join('')||'<div style="font-size:20px;font-weight:900;color:#187044">TZS 0</div>'}<div style="font-size:11px;color:#667085;margin-top:6px">${esc(label)} · Opening balance: TZS 0 / USD 0</div></section>`;
     host.setAttribute('aria-label','Financial dashboard summary');
     host.querySelectorAll('details').forEach(el=>{const summary=String(el.querySelector('summary')?.textContent||'').trim();el.open=openDetails.has(summary);});
     if(!disclosureHandlerInstalled){
