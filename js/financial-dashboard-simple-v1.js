@@ -4,8 +4,8 @@
  */
 (function () {
   'use strict';
-  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 12) return;
-  window.MOLMSFinancialDashboardSimpleV1 = { version: 12, applied: false };
+  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 13) return;
+  window.MOLMSFinancialDashboardSimpleV1 = { version: 13, applied: false };
   const styleId = 'molms-financial-dashboard-simple-v1-style';
 
   function installStyle() {
