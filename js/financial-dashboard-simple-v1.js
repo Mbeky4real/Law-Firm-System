@@ -137,37 +137,16 @@
       kpiRow.setAttribute('aria-label', 'Financial key performance indicators');
     }
 
-    const manualBody = page.querySelector('#fdManualBody');
-    const manualCard = manualBody && dashboardCardFor(manualBody, scroll);
-    if (manualCard && !page.querySelector('.fd-simple-quick-actions')) {
-      const sourceButtons = Array.from(manualCard.querySelectorAll('button[onclick*="fdOpenManualModal"]'));
-      if (sourceButtons.length) {
-        const actions = document.createElement('div');
-        actions.className = 'fd-simple-quick-actions';
-        actions.innerHTML = '<strong>MANUAL FINANCIAL TRANSACTIONS</strong>';
-        sourceButtons.forEach((button, index) => {
-          const copy = button.cloneNode(true);
-          copy.textContent = index === 0 ? '+ Manual Revenue Transaction' : '+ Manual Expenditure Transaction';
-          copy.removeAttribute('id');
-          actions.appendChild(copy);
-        });
-        const obligations = page.querySelector('#fdPriorityRowV7') || page.querySelector('#fdMonthlyObligations');
-        const anchor = obligations ? (obligations.closest('#fdPriorityRowV7') || obligations) : page.querySelector('#fdKpiRow');
-        if (anchor && anchor.parentElement === scroll) anchor.insertAdjacentElement('afterend', actions);
-        else scroll.insertBefore(actions, scroll.firstChild);
-      }
-    }
+    // The full Manual Financial Transactions card already provides these actions.
+    // Do not create a second quick-action strip with a duplicate heading.
+    page.querySelectorAll('.fd-simple-quick-actions').forEach(el => el.remove());
 
-    // Normalize any older quick-action strip that may have been rendered by a legacy dashboard script.
-    const legacyActions = Array.from(page.querySelectorAll('.fd-simple-quick-actions, [class*="quick-action"]')).find(el => /Other Revenue/i.test(textOf(el)) && /Other Expenditure/i.test(textOf(el)));
-    if (legacyActions) {
-      const oldButtons = Array.from(legacyActions.querySelectorAll('button'));
-      legacyActions.querySelector('strong')?.replaceChildren(document.createTextNode('MANUAL FINANCIAL TRANSACTIONS'));
-      oldButtons.forEach((button, index) => {
-        const label = index === 0 ? '+ Manual Revenue Transaction' : '+ Manual Expenditure Transaction';
-        if (button.textContent.trim() !== label) button.textContent = label;
-      });
-    }
+    // Remove any legacy duplicate quick-action strip; keep the full transactions card.
+    page.querySelectorAll('.fd-simple-quick-actions, [class*="quick-action"]').forEach(el => {
+      if (/MANUAL FINANCIAL TRANSACTIONS/i.test(textOf(el)) &&
+          el !== page.querySelector('#fdManualBody') &&
+          !el.contains(page.querySelector('#fdManualBody'))) el.remove();
+    });
 
     // Keep only the detailed registers and chart-like analytics out of the landing view.
     ['fdRegBody','fdTimeline','fdRevByType','fdExpByCategory'].forEach(id => {
