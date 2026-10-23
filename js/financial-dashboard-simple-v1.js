@@ -45,7 +45,17 @@
       #page-findash .fd-compact-workspace-card #fdManualBody,
       #page-findash .fd-compact-workspace-card #fdPracticePerformance { max-height:330px!important;overflow-x:auto!important;overflow-y:auto!important;overscroll-behavior:contain;scrollbar-width:thin; }
       /* The manual register has many columns: preserve its approval/rejection actions in a scrollable table. */
-      #page-findash .fd-compact-workspace-card #fdManualBody { display:block!important;position:relative!important;width:100%!important;max-width:100%!important;max-height:330px!important;overflow:auto!important;overscroll-behavior:contain!important;scrollbar-width:auto!important;scrollbar-color:#b8c1cc #f1f3f5!important;padding:0 0 14px!important;box-sizing:border-box!important; }
+ 
+      #page-findash .fd-compact-workspace-card #fdManualBody { display:block!important;position:relative!important;width:100%!important;max-width:100%!important;max-height:330px!important;overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior:contain!important;scrollbar-width:auto!important;scrollbar-color:#b8c1cc #f1f3f5!important;padding:0 0 14px!important;box-sizing:border-box!important; }
+      #page-findash .fd-manual-table-scroll { display:block!important;position:relative!important;width:100%!important;max-width:100%!important;max-height:300px!important;overflow:auto!important;overscroll-behavior:contain!important;scrollbar-width:auto!important;scrollbar-color:#aab4c0 #eef1f4!important;border-bottom:1px solid #e4ddd2!important; }
+      #page-findash .fd-manual-table-scroll table { min-width:1120px!important;width:1120px!important;max-width:none!important;table-layout:auto!important;border-collapse:separate!important; }
+      #page-findash .fd-manual-table-scroll::-webkit-scrollbar { width:12px!important;height:12px!important;display:block!important; }
+      #page-findash .fd-manual-table-scroll::-webkit-scrollbar-thumb { background:#aab4c0!important;border:2px solid #eef1f4!important;border-radius:8px!important; }
+      #page-findash .fd-manual-table-scroll::-webkit-scrollbar-track { background:#eef1f4!important; }
+      #page-findash .fd-manual-table-scroll th:last-child,
+      #page-findash .fd-manual-table-scroll td:last-child { position:sticky!important;right:0!important;background:#fff!important;z-index:4!important;box-shadow:-5px 0 7px rgba(16,35,59,.08)!important; }
+      #page-findash .fd-manual-table-scroll td:last-child { white-space:nowrap!important;min-width:100px!important; }
+      #page-findash .fd-manual-table-scroll button { display:inline-flex!important;align-items:center!important;justify-content:center!important;flex:0 0 auto!important;min-width:30px!important;min-height:30px!important;margin:2px!important;opacity:1!important;visibility:visible!important;position:relative!important;z-index:5!important; }
       #page-findash .fd-compact-workspace-card #fdManualBody table { min-width:1120px!important;width:max-content!important;table-layout:auto!important; }
       #page-findash .fd-compact-workspace-card #fdManualBody th:last-child,
       #page-findash .fd-compact-workspace-card #fdManualBody td:last-child { position:sticky!important;right:0!important;background:#fff!important;z-index:4!important;box-shadow:-5px 0 7px rgba(16,35,59,.08)!important; }
@@ -197,6 +207,22 @@
       const restoredManualCard = dashboardCardFor(restoredManualBody, scroll);
       if (restoredManualCard && restoredManualCard !== scroll) restoredManualCard.style.display = '';
       restoredManualBody.style.display = '';
+    }
+
+    // Give the full manual register its own real scroll container; card-level overflow was clipping columns/actions.
+    if (restoredManualBody) {
+      const manualTable = restoredManualBody.querySelector('table');
+      if (manualTable) {
+        let tableScroll = manualTable.closest('.fd-manual-table-scroll');
+        if (!tableScroll) {
+          tableScroll = document.createElement('div');
+          tableScroll.className = 'fd-manual-table-scroll';
+          tableScroll.setAttribute('role','region');
+          tableScroll.setAttribute('aria-label','Manual financial transactions; scroll horizontally and vertically to view all columns and actions');
+          manualTable.parentNode.insertBefore(tableScroll, manualTable);
+          tableScroll.appendChild(manualTable);
+        }
+      }
     }
 
     // Replace dense tabular bodies with short management lists while preserving source data.
