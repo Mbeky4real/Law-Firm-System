@@ -23,6 +23,9 @@
   let authoritativePayrollRuns=[];
   let paymentLedgerLoadError=false;
   let rendering=false;
+  // Disclosure state lives outside the DOM so unrelated legacy refreshes cannot collapse panels.
+  const financialDisclosureState=new Set();
+  let disclosureHandlerInstalled=false;
 
   function data(){
     let invoices=[],manual=[],entries=[],payroll=[],office=[],historical=[];
@@ -221,7 +224,7 @@
     const host=q('fdKpiRow');if(!host)return;
     // Preserve expanded disclosure panels across the legacy dashboard's frequent refreshes.
     // Without this, the 500ms reconciliation loop replaces innerHTML and collapses every <details>.
-    const openDetails=new Set(Array.from(host.querySelectorAll('details[open]')).map(el=>String(el.querySelector('summary')?.textContent||'').trim()).filter(Boolean));
+    const openDetails=financialDisclosureState;
     const m=metrics(),label=typeof fdPeriodLabel==='function'?fdPeriodLabel():'Selected period';
     const fmt=values=>moneyLines(values,false).map((l,i)=>`<div style="font-size:${i?'13px':'22px'};font-weight:900;line-height:1.25;color:#182230">${esc(l.text)}</div>`).join('');
     const detailRows=groups=>Object.entries(groups).filter(([,v])=>Object.values(v).some(x=>num(x)!==0)).sort((a,b)=>Object.values(b[1]).reduce((s,x)=>s+Math.abs(num(x)),0)-Object.values(a[1]).reduce((s,x)=>s+Math.abs(num(x)),0)).map(([name,values])=>`<div style="display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid #edf0f2;font-size:11px"><span style="color:#344054;overflow-wrap:anywhere">${esc(name)}</span><span style="font-weight:800;text-align:right;white-space:nowrap">${moneyLines(values,false).map(x=>esc(x.text)).join('<br>')}</span></div>`).join('')||'<div style="font-size:11px;color:#667085">No entries for this period.</div>';
@@ -239,7 +242,17 @@
       panel('TOTAL EXPENSES',m.expenses,'#b42318',`Approved expenses manually recorded in Expenses Transactions · ${label}`,expenseBreakdown)+
       `<section style="grid-column:1/-1;min-width:0;background:#f3faf5;border:1px solid #b8d8c5;border-radius:14px;padding:18px 20px;box-shadow:0 3px 10px rgba(28,110,65,.07);box-sizing:border-box"><div style="font-size:11px;font-weight:900;letter-spacing:.45px;color:#24633d;margin-bottom:6px">CASH AVAILABLE AFTER EXPENSES</div><div style="font-size:20px;font-weight:900;line-height:1.25;color:#7c5b12">Reconciliation pending</div><div style="font-size:11px;line-height:1.5;color:#52665a;margin-top:7px">A verified cash balance cannot yet be confirmed from the available data. Bank statement closing balances and a confirmed office-cash balance must be reconciled with actual receipts, payments and transfers. This avoids showing an unverified estimate as available money.</div><details style="margin-top:11px;border-top:1px solid #cfe4d5;padding-top:9px"><summary style="cursor:pointer;font-size:11px;font-weight:800;color:#24633d">What is needed to confirm this balance?</summary><ul style="font-size:11px;line-height:1.6;color:#344054;margin:8px 0 0;padding-left:18px"><li>Opening and closing statement balances for each firm bank account</li><li>Counted office cash balance</li><li>Receipts and actual payments reconciled by currency and date</li><li>Transfers between firm accounts matched and excluded from income/expenses</li><li>Withholding tax kept separate from cash received</li></ul></details></section>`;
     host.setAttribute('aria-label','Financial dashboard summary');
-    if(openDetails.size)host.querySelectorAll('details').forEach(el=>{const summary=String(el.querySelector('summary')?.textContent||'').trim();if(openDetails.has(summary))el.open=true;});
+    host.querySelectorAll('details').forEach(el=>{const summary=String(el.querySelector('summary')?.textContent||'').trim();el.open=openDetails.has(summary);});
+    if(!disclosureHandlerInstalled){
+      disclosureHandlerInstalled=true;
+      host.addEventListener('click',e=>{
+        const summary=e.target.closest('details > summary');if(!summary||!host.contains(summary))return;
+        e.preventDefault();
+        const key=String(summary.textContent||'').trim();
+        if(financialDisclosureState.has(key))financialDisclosureState.delete(key);else financialDisclosureState.add(key);
+        renderKpis();
+      },true);
+    }
   }
 
   function renderReceivables(){
