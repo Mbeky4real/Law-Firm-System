@@ -4,8 +4,8 @@
  */
 (function () {
   'use strict';
-  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 20) return;
-  window.MOLMSFinancialDashboardSimpleV1 = { version: 20, applied: false };
+  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 21) return;
+  window.MOLMSFinancialDashboardSimpleV1 = { version: 21, applied: false };
   const styleId = 'molms-financial-dashboard-simple-v1-style';
 
   function installStyle() {
@@ -48,40 +48,22 @@
       #page-findash .fd-compact-workspace-card #fdManualBody table td { padding:4px 6px!important;line-height:1.15!important; }
       #page-findash .fd-compact-workspace-card #fdManualBody,
       #page-findash .fd-compact-workspace-card #fdPracticePerformance { max-height:330px!important;overflow-x:auto!important;overflow-y:auto!important;overscroll-behavior:contain;scrollbar-width:thin; }
-      /* The manual register has many columns: preserve its approval/rejection actions in a scrollable table. */
- 
-      #page-findash .fd-compact-workspace-card #fdManualBody { display:block!important;position:relative!important;width:100%!important;max-width:100%!important;max-height:330px!important;overflow:visible!important;overscroll-behavior:contain!important;padding:0 0 8px!important;box-sizing:border-box!important; }
-      #page-findash .fd-compact-workspace-card { overflow:visible!important; }
-      #page-findash .fd-compact-workspace { overflow:visible!important; }
-      #page-findash .fd-compact-workspace-card .fd-manual-table-scroll { display:block!important;position:relative!important;width:100%!important;max-width:100%!important;height:420px!important;min-height:260px!important;height:260px!important;max-height:260px!important;overflow-x:scroll!important;overflow-y:scroll!important;overscroll-behavior:contain!important;scrollbar-width:auto!important;scrollbar-color:#7c8795 #eef1f4!important;border:1px solid #e4ddd2!important;border-radius:6px!important;box-sizing:border-box!important; }
-      #page-findash .fd-compact-workspace-card .fd-manual-table-scroll table { min-width:1450px!important;width:1450px!important;max-width:none!important;table-layout:auto!important; }
-      #page-findash .fd-compact-workspace-card .fd-manual-table-scroll::-webkit-scrollbar { width:14px!important;height:14px!important;display:block!important; }
-      #page-findash .fd-compact-workspace-card .fd-manual-table-scroll::-webkit-scrollbar-thumb { background:#7c8795!important;border:2px solid #eef1f4!important;border-radius:8px!important; }
-      #page-findash .fd-compact-workspace-card .fd-manual-table-scroll::-webkit-scrollbar-track { background:#eef1f4!important; }
-      #page-findash .fd-manual-table-scroll { display:block!important;position:relative!important;width:100%!important;max-width:100%!important;height:260px!important;max-height:260px!important;overflow-x:scroll!important;overflow-y:scroll!important;overscroll-behavior:contain!important;scrollbar-width:auto!important;scrollbar-color:#aab4c0 #eef1f4!important;border-bottom:1px solid #e4ddd2!important; }
-      #page-findash .fd-manual-table-scroll table { min-width:1120px!important;width:1120px!important;max-width:none!important;table-layout:auto!important;border-collapse:separate!important; }
+      /* Single authoritative manual-register layout; no duplicate overflow/row rules. */
+      #page-findash #fdManualBody { display:block!important;width:100%!important;max-width:100%!important;max-height:none!important;overflow:visible!important;box-sizing:border-box!important; }
+      #page-findash .fd-manual-table-scroll { display:block!important;position:relative!important;width:100%!important;max-width:100%!important;height:230px!important;max-height:230px!important;overflow:auto!important;overscroll-behavior:contain!important;scrollbar-width:auto!important;scrollbar-color:#7b8794 #e8edf1!important;border:1px solid #e4ddd2!important;border-radius:6px!important;box-sizing:border-box!important; }
+      #page-findash .fd-manual-table-scroll table { width:1600px!important;min-width:1600px!important;max-width:none!important;table-layout:auto!important;border-collapse:collapse!important;border-spacing:0!important; }
+      #page-findash .fd-manual-table-scroll thead th { padding:5px 6px!important;line-height:1.15!important;white-space:nowrap!important; }
+      #page-findash .fd-manual-table-scroll tbody tr { height:36px!important; }
+      #page-findash .fd-manual-table-scroll tbody td { padding:2px 5px!important;line-height:1.1!important;height:36px!important;vertical-align:middle!important;white-space:nowrap!important; }
+      #page-findash .fd-manual-table-scroll tbody td button { display:inline-flex!important;align-items:center!important;justify-content:center!important;vertical-align:middle!important;float:none!important;position:static!important;min-width:26px!important;width:auto!important;height:24px!important;min-height:24px!important;margin:0 2px!important;padding:1px 5px!important;line-height:1!important;font-size:11px!important; }
+      #page-findash .fd-manual-table-scroll th:last-child,#page-findash .fd-manual-table-scroll td:last-child { position:sticky!important;right:0!important;background:#fff!important;z-index:4!important;box-shadow:-5px 0 7px rgba(16,35,59,.08)!important; }
+      #page-findash .fd-manual-table-scroll td:last-child { white-space:nowrap!important; }
       #page-findash .fd-manual-table-scroll::-webkit-scrollbar { width:12px!important;height:12px!important;display:block!important; }
-      #page-findash .fd-manual-table-scroll::-webkit-scrollbar-thumb { background:#aab4c0!important;border:2px solid #eef1f4!important;border-radius:8px!important; }
-      #page-findash .fd-manual-table-scroll::-webkit-scrollbar-track { background:#eef1f4!important; }
-      #page-findash .fd-manual-table-scroll th:last-child,
-      #page-findash .fd-manual-table-scroll td:last-child { position:sticky!important;right:0!important;background:#fff!important;z-index:4!important;box-shadow:-5px 0 7px rgba(16,35,59,.08)!important; }
-      #page-findash .fd-manual-table-scroll td:last-child { white-space:nowrap!important;min-width:100px!important; }
-      #page-findash .fd-manual-table-scroll button { display:inline-flex!important;align-items:center!important;justify-content:center!important;flex:0 0 auto!important;min-width:30px!important;min-height:30px!important;margin:2px!important;opacity:1!important;visibility:visible!important;position:relative!important;z-index:5!important; }
-      #page-findash .fd-compact-workspace-card #fdManualBody table { min-width:1120px!important;width:max-content!important;table-layout:auto!important; }
-      #page-findash .fd-compact-workspace-card #fdManualBody th:last-child,
-      #page-findash .fd-compact-workspace-card #fdManualBody td:last-child { position:sticky!important;right:0!important;background:#fff!important;z-index:4!important;box-shadow:-5px 0 7px rgba(16,35,59,.08)!important; }
-      #page-findash .fd-compact-workspace-card #fdManualBody td:last-child { white-space:nowrap!important;min-width:92px!important; }
-      #page-findash .fd-compact-workspace-card #fdManualBody button { display:inline-flex!important;align-items:center!important;justify-content:center!important;flex:0 0 auto!important;min-width:30px!important;min-height:30px!important;margin:2px!important;opacity:1!important;visibility:visible!important;position:relative!important;z-index:5!important; }
-      #page-findash .fd-compact-workspace-card #fdManualBody::-webkit-scrollbar { width:10px!important;height:10px!important; }
-      #page-findash .fd-compact-workspace-card #fdManualBody::-webkit-scrollbar-thumb { background:#b8c1cc!important;border-radius:8px!important; }
-      #page-findash .fd-compact-workspace-card #fdManualBody::-webkit-scrollbar-track { background:#f1f3f5!important; }
-      #page-findash .fd-compact-workspace-card table { min-width:680px!important; }
-      #page-findash .fd-compact-workspace-card h2,
-      #page-findash .fd-compact-workspace-card h3 { margin-top:0!important;font-size:14px!important; }
-      @media(max-width:1050px){#page-findash .fd-compact-workspace{grid-template-columns:minmax(0,1fr)!important}#page-findash .fd-compact-workspace>.fd-compact-workspace-card{height:360px!important;max-height:360px!important}}
-
-      @media(max-width:900px){#page-findash #fdManualBody{overflow-x:auto!important}#page-findash #fdManualBody table{min-width:900px!important}#page-findash #fdPracticePerformance{overflow-x:auto!important}}
-
+      #page-findash .fd-manual-table-scroll::-webkit-scrollbar-thumb { background:#7b8794!important;border:2px solid #e8edf1!important;border-radius:8px!important; }
+      #page-findash .fd-manual-table-scroll::-webkit-scrollbar-track { background:#e8edf1!important; }
+      #page-findash .fd-compact-workspace { display:block!important;width:100%!important;max-width:100%!important;overflow:visible!important;margin:8px 0 14px!important; }
+      #page-findash .fd-compact-workspace-card { display:block!important;min-width:0!important;width:100%!important;max-width:100%!important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;box-sizing:border-box!important;margin:0 0 14px!important;padding:14px!important;border:1px solid #e4ddd2!important;border-radius:14px!important;background:#fff!important;box-shadow:0 3px 12px rgba(16,35,59,.05)!important; }
+      @media(max-width:900px){#page-findash .fd-manual-table-scroll{max-width:100%!important}}
       @media(max-width:1250px){#page-findash #fdKpiRow{grid-template-columns:repeat(2,minmax(0,1fr))!important}}\n      /* Final manual-register scrolling: make both axes obvious and guarantee horizontal overflow. */
       #page-findash .fd-manual-table-scroll { display:block!important;width:100%!important;max-width:100%!important;height:250px!important;max-height:250px!important;overflow-x:scroll!important;overflow-y:scroll!important;scrollbar-width:auto!important;scrollbar-color:#7b8794 #e8edf1!important; }
       #page-findash .fd-manual-table-scroll table { width:1600px!important;min-width:1600px!important;max-width:none!important;table-layout:auto!important; }
