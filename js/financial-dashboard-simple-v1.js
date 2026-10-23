@@ -4,8 +4,8 @@
  */
 (function () {
   'use strict';
-  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 21) return;
-  window.MOLMSFinancialDashboardSimpleV1 = { version: 21, applied: false };
+  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 22) return;
+  window.MOLMSFinancialDashboardSimpleV1 = { version: 22, applied: false };
   const styleId = 'molms-financial-dashboard-simple-v1-style';
 
   function installStyle() {
@@ -26,65 +26,39 @@
       #page-findash .fd-simple-summary-label { min-width:0;overflow-wrap:anywhere;color:#344054; }
       #page-findash .fd-simple-summary-value { flex:0 0 auto;text-align:right;font-weight:700;color:#182230; }
       #page-findash .fd-simple-summary-note { display:block;color:#667085;font-size:11px;font-weight:400;margin-top:2px; }
-      /* Compact, professional presentation for the two lower dashboard sections. */
-      #page-findash #fdManualBody { overflow-x:auto!important; }
-      #page-findash #fdManualBody table { width:100%!important;border-collapse:separate!important;border-spacing:0!important;font-size:11px!important; }
-      #page-findash #fdManualBody th { padding:8px 6px!important;font-size:10px!important;line-height:1.25!important;white-space:nowrap!important;color:#667085!important;background:#faf9f6!important;border-bottom:1px solid #e4ddd2!important; }
-      #page-findash #fdManualBody td { padding:7px 6px!important;font-size:11px!important;line-height:1.3!important;vertical-align:middle!important;border-bottom:1px solid #edf0f2!important; }
-      #page-findash #fdManualBody tr:last-child td { border-bottom:0!important; }
-      #page-findash #fdManualBody button { min-height:30px!important;border-radius:8px!important; }
-      #page-findash #fdPracticePerformance { min-width:0!important; }
-      #page-findash #fdPracticePerformance table { width:100%!important;border-collapse:separate!important;border-spacing:0!important; }
+      /* Authoritative table layout: one shared column grid for headers and transaction rows. */
+      #page-findash #fdManualBody { display:block!important;width:100%!important;max-width:100%!important;overflow:visible!important;box-sizing:border-box!important; }
+      #page-findash #fdManualBody .fd-manual-table-scroll { display:block!important;position:relative!important;width:100%!important;max-width:100%!important;height:250px!important;max-height:250px!important;overflow:auto!important;overscroll-behavior:contain!important;scrollbar-width:auto!important;scrollbar-color:#7b8794 #e8edf1!important;border:1px solid #e4ddd2!important;border-radius:6px!important;box-sizing:border-box!important; }
+      #page-findash #fdManualBody .fd-manual-table-scroll table { width:1370px!important;min-width:1370px!important;max-width:none!important;table-layout:fixed!important;border-collapse:collapse!important;border-spacing:0!important;font-size:11px!important; }
+      #page-findash #fdManualBody .fd-manual-table-scroll th,
+      #page-findash #fdManualBody .fd-manual-table-scroll td { box-sizing:border-box!important;padding:5px 7px!important;line-height:1.2!important;vertical-align:middle!important;border-bottom:1px solid #edf0f2!important; }
+      #page-findash #fdManualBody .fd-manual-table-scroll thead th { height:34px!important;white-space:nowrap!important;background:#faf9f6!important;color:#667085!important;font-size:10px!important;border-bottom:1px solid #e4ddd2!important;text-align:left!important; }
+      #page-findash #fdManualBody .fd-manual-table-scroll tbody tr { height:38px!important; }
+      #page-findash #fdManualBody .fd-manual-table-scroll tbody td { height:38px!important;white-space:normal!important;overflow-wrap:anywhere!important; }
+      #page-findash #fdManualBody .fd-manual-table-scroll th:nth-child(1),#page-findash #fdManualBody .fd-manual-table-scroll td:nth-child(1){width:190px!important}
+      #page-findash #fdManualBody .fd-manual-table-scroll th:nth-child(2),#page-findash #fdManualBody .fd-manual-table-scroll td:nth-child(2){width:90px!important}
+      #page-findash #fdManualBody .fd-manual-table-scroll th:nth-child(3),#page-findash #fdManualBody .fd-manual-table-scroll td:nth-child(3){width:105px!important}
+      #page-findash #fdManualBody .fd-manual-table-scroll th:nth-child(4),#page-findash #fdManualBody .fd-manual-table-scroll td:nth-child(4){width:190px!important}
+      #page-findash #fdManualBody .fd-manual-table-scroll th:nth-child(5),#page-findash #fdManualBody .fd-manual-table-scroll td:nth-child(5){width:180px!important}
+      #page-findash #fdManualBody .fd-manual-table-scroll th:nth-child(6),#page-findash #fdManualBody .fd-manual-table-scroll td:nth-child(6){width:115px!important}
+      #page-findash #fdManualBody .fd-manual-table-scroll th:nth-child(7),#page-findash #fdManualBody .fd-manual-table-scroll td:nth-child(7){width:160px!important}
+      #page-findash #fdManualBody .fd-manual-table-scroll th:nth-child(8),#page-findash #fdManualBody .fd-manual-table-scroll td:nth-child(8){width:150px!important}
+      #page-findash #fdManualBody .fd-manual-table-scroll th:nth-child(9),#page-findash #fdManualBody .fd-manual-table-scroll td:nth-child(9){width:100px!important}
+      #page-findash #fdManualBody .fd-manual-table-scroll th:nth-child(10),#page-findash #fdManualBody .fd-manual-table-scroll td:nth-child(10){width:90px!important}
+      #page-findash #fdManualBody .fd-manual-table-scroll tbody td button { display:inline-flex!important;align-items:center!important;justify-content:center!important;vertical-align:middle!important;float:none!important;position:static!important;width:28px!important;min-width:28px!important;height:24px!important;min-height:24px!important;margin:0 3px 0 0!important;padding:0!important;line-height:1!important;border-radius:5px!important;font-size:11px!important; }
+      #page-findash #fdManualBody .fd-manual-table-scroll td:nth-child(6) { white-space:nowrap!important;text-align:right!important;font-weight:600!important; }
+      #page-findash #fdManualBody .fd-manual-table-scroll td:nth-child(9) { white-space:nowrap!important; }
+      #page-findash #fdManualBody .fd-manual-table-scroll::-webkit-scrollbar { width:12px!important;height:12px!important;display:block!important; }
+      #page-findash #fdManualBody .fd-manual-table-scroll::-webkit-scrollbar-thumb { background:#7b8794!important;border:2px solid #e8edf1!important;border-radius:8px!important; }
+      #page-findash #fdManualBody .fd-manual-table-scroll::-webkit-scrollbar-track { background:#e8edf1!important; }
+      #page-findash #fdPracticePerformance { min-width:0!important;overflow-x:auto!important; }
+      #page-findash #fdPracticePerformance table { width:100%!important;border-collapse:collapse!important;border-spacing:0!important; }
       #page-findash #fdPracticePerformance th { padding:8px 7px!important;background:#faf9f6!important;color:#667085!important;font-size:10px!important;white-space:nowrap!important; }
       #page-findash #fdPracticePerformance td { padding:8px 7px!important;font-size:11px!important;line-height:1.35!important;border-bottom:1px solid #edf0f2!important; }
       #page-findash #fdPracticePerformance button { font-size:11px!important; }
-      #page-findash #fdManualBody, #page-findash #fdPracticePerformance { scrollbar-width:thin; }
-      /* Side-by-side compact workspace cards; tables scroll internally when needed. */
-      #page-findash .fd-compact-workspace { display:block!important;width:100%!important;max-width:100%!important;overflow:visible!important;margin:8px 0 14px!important; }
-      #page-findash .fd-compact-workspace > .fd-compact-workspace-card { display:block!important;min-width:0!important;width:100%!important;max-width:100%!important;height:320px!important;min-height:280px!important;max-height:320px!important;overflow:hidden!important;box-sizing:border-box!important;margin:0 0 14px!important;padding:14px!important;border:1px solid #e4ddd2!important;border-radius:14px!important;background:#fff!important;box-shadow:0 3px 12px rgba(16,35,59,.05)!important; }
-      #page-findash .fd-compact-workspace-card #fdManualBody { max-height:420px!important;overflow-y:auto!important;overflow-x:auto!important;scrollbar-width:thin!important; }
-      #page-findash .fd-compact-workspace-card #fdManualBody table tr { height:auto!important; }
-      #page-findash .fd-compact-workspace-card #fdManualBody table th,
-      #page-findash .fd-compact-workspace-card #fdManualBody table td { padding:4px 6px!important;line-height:1.15!important; }
-      #page-findash .fd-compact-workspace-card #fdManualBody,
-      #page-findash .fd-compact-workspace-card #fdPracticePerformance { max-height:330px!important;overflow-x:auto!important;overflow-y:auto!important;overscroll-behavior:contain;scrollbar-width:thin; }
-      /* Single authoritative manual-register layout; no duplicate overflow/row rules. */
-      #page-findash #fdManualBody { display:block!important;width:100%!important;max-width:100%!important;max-height:none!important;overflow:visible!important;box-sizing:border-box!important; }
-      #page-findash .fd-manual-table-scroll { display:block!important;position:relative!important;width:100%!important;max-width:100%!important;height:230px!important;max-height:230px!important;overflow:auto!important;overscroll-behavior:contain!important;scrollbar-width:auto!important;scrollbar-color:#7b8794 #e8edf1!important;border:1px solid #e4ddd2!important;border-radius:6px!important;box-sizing:border-box!important; }
-      #page-findash .fd-manual-table-scroll table { width:1600px!important;min-width:1600px!important;max-width:none!important;table-layout:auto!important;border-collapse:collapse!important;border-spacing:0!important; }
-      #page-findash .fd-manual-table-scroll thead th { padding:5px 6px!important;line-height:1.15!important;white-space:nowrap!important; }
-      #page-findash .fd-manual-table-scroll tbody tr { height:36px!important; }
-      #page-findash .fd-manual-table-scroll tbody td { padding:2px 5px!important;line-height:1.1!important;height:36px!important;vertical-align:middle!important;white-space:nowrap!important; }
-      #page-findash .fd-manual-table-scroll tbody td button { display:inline-flex!important;align-items:center!important;justify-content:center!important;vertical-align:middle!important;float:none!important;position:static!important;min-width:26px!important;width:auto!important;height:24px!important;min-height:24px!important;margin:0 2px!important;padding:1px 5px!important;line-height:1!important;font-size:11px!important; }
-      #page-findash .fd-manual-table-scroll th:last-child,#page-findash .fd-manual-table-scroll td:last-child { position:sticky!important;right:0!important;background:#fff!important;z-index:4!important;box-shadow:-5px 0 7px rgba(16,35,59,.08)!important; }
-      #page-findash .fd-manual-table-scroll td:last-child { white-space:nowrap!important; }
-      #page-findash .fd-manual-table-scroll::-webkit-scrollbar { width:12px!important;height:12px!important;display:block!important; }
-      #page-findash .fd-manual-table-scroll::-webkit-scrollbar-thumb { background:#7b8794!important;border:2px solid #e8edf1!important;border-radius:8px!important; }
-      #page-findash .fd-manual-table-scroll::-webkit-scrollbar-track { background:#e8edf1!important; }
       #page-findash .fd-compact-workspace { display:block!important;width:100%!important;max-width:100%!important;overflow:visible!important;margin:8px 0 14px!important; }
       #page-findash .fd-compact-workspace-card { display:block!important;min-width:0!important;width:100%!important;max-width:100%!important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;box-sizing:border-box!important;margin:0 0 14px!important;padding:14px!important;border:1px solid #e4ddd2!important;border-radius:14px!important;background:#fff!important;box-shadow:0 3px 12px rgba(16,35,59,.05)!important; }
-      @media(max-width:900px){#page-findash .fd-manual-table-scroll{max-width:100%!important}}
-      @media(max-width:1250px){#page-findash #fdKpiRow{grid-template-columns:repeat(2,minmax(0,1fr))!important}}\n      /* Final manual-register scrolling: make both axes obvious and guarantee horizontal overflow. */
-      #page-findash .fd-manual-table-scroll { display:block!important;width:100%!important;max-width:100%!important;height:250px!important;max-height:250px!important;overflow-x:scroll!important;overflow-y:scroll!important;scrollbar-width:auto!important;scrollbar-color:#7b8794 #e8edf1!important; }
-      #page-findash .fd-manual-table-scroll table { width:1600px!important;min-width:1600px!important;max-width:none!important;table-layout:auto!important; }
-      #page-findash .fd-manual-table-scroll::-webkit-scrollbar { width:14px!important;height:14px!important;display:block!important; }
-      #page-findash .fd-manual-table-scroll::-webkit-scrollbar-thumb { background:#7b8794!important;border:2px solid #e8edf1!important;border-radius:8px!important; }
-      #page-findash .fd-manual-table-scroll::-webkit-scrollbar-track { background:#e8edf1!important; }
-      #page-findash .fd-manual-table-scroll th,#page-findash .fd-manual-table-scroll td { padding:4px 6px!important;line-height:1.15!important; }
-      /* Match the compact row rhythm used by Budget Summary / Attention Required. */
-      #page-findash #fdManualBody .fd-manual-table-scroll table { width:1600px!important;min-width:1600px!important;table-layout:auto!important;border-spacing:0!important; }
-      #page-findash #fdManualBody .fd-manual-table-scroll table tbody tr { height:36px!important;min-height:0!important; }
-      #page-findash #fdManualBody .fd-manual-table-scroll table tbody td { padding:3px 5px!important;line-height:1.1!important;height:auto!important;min-height:0!important;vertical-align:middle!important;white-space:nowrap!important; }
-      #page-findash #fdManualBody .fd-manual-table-scroll table tbody td button { min-height:22px!important;height:22px!important;min-width:24px!important;padding:1px 4px!important;margin:1px!important;line-height:1!important;border-radius:5px!important;font-size:11px!important; }
-      #page-findash #fdManualBody .fd-manual-table-scroll table tbody td:last-child { white-space:nowrap!important; }
-      #page-findash #fdManualBody .fd-manual-table-scroll table { border-collapse:collapse!important;border-spacing:0!important; }
-      #page-findash #fdManualBody .fd-manual-table-scroll table tbody tr { height:38px!important; }
-      #page-findash #fdManualBody .fd-manual-table-scroll table tbody td { padding:2px 5px!important;line-height:1.05!important;height:38px!important; }
-      #page-findash #fdManualBody .fd-manual-table-scroll table tbody td button { display:inline-flex!important;align-items:center!important;justify-content:center!important;vertical-align:middle!important;float:none!important;position:static!important;width:26px!important;min-width:26px!important;height:24px!important;min-height:24px!important;margin:0 2px!important;padding:0!important; }
-      #page-findash #fdManualBody .fd-manual-table-scroll table tbody td:last-child { white-space:nowrap!important;min-width:70px!important;width:70px!important; }
-      #page-findash #fdManualBody .fd-manual-table-scroll table tbody td:last-child button { display:inline-flex!important; }
-
-
+      @media(max-width:1250px){#page-findash #fdKpiRow{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
       @media(max-width:760px){#page-findash #fdKpiRow{grid-template-columns:repeat(2,minmax(0,1fr))!important;padding:12px!important;gap:8px!important}#page-findash #fdKpiRow>*{padding:11px!important}#page-findash>div[style*="overflow-y:auto"]{padding:12px!important}}
       @media(max-width:420px){#page-findash #fdKpiRow{grid-template-columns:1fr!important}}
     `;
@@ -258,10 +232,10 @@
       manualCard.style.setProperty('display','block','important');
       manualCard.style.setProperty('width','100%','important');
       manualCard.style.setProperty('max-width','100%','important');
-      manualCard.style.setProperty('height','320px','important');
-      manualCard.style.setProperty('min-height','280px','important');
-      manualCard.style.setProperty('max-height','320px','important');
-      manualCard.style.setProperty('overflow','hidden','important');
+      manualCard.style.setProperty('height','auto','important');
+      manualCard.style.setProperty('min-height','0','important');
+      manualCard.style.setProperty('max-height','none','important');
+      manualCard.style.setProperty('overflow','visible','important');
       manualCard.style.setProperty('margin-bottom','14px','important');
     }
     if (practiceCard && practiceCard !== scroll) {
