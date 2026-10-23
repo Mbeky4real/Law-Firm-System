@@ -43,7 +43,13 @@
       #page-findash .fd-compact-workspace { display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:12px!important;align-items:stretch!important;margin:8px 0 14px!important; }
       #page-findash .fd-compact-workspace > .fd-compact-workspace-card { min-width:0!important;width:auto!important;max-width:none!important;height:430px!important;max-height:430px!important;overflow:hidden!important;box-sizing:border-box!important;margin:0!important;padding:14px!important;border:1px solid #e4ddd2!important;border-radius:14px!important;background:#fff!important;box-shadow:0 3px 12px rgba(16,35,59,.05)!important; }
       #page-findash .fd-compact-workspace-card #fdManualBody,
-      #page-findash .fd-compact-workspace-card #fdPracticePerformance { max-height:330px!important;overflow:auto!important; }
+      #page-findash .fd-compact-workspace-card #fdPracticePerformance { max-height:330px!important;overflow-x:auto!important;overflow-y:auto!important;overscroll-behavior:contain;scrollbar-width:thin; }
+      /* The manual register has many columns: preserve its approval/rejection actions in a scrollable table. */
+      #page-findash .fd-compact-workspace-card #fdManualBody { padding-bottom:8px!important; }
+      #page-findash .fd-compact-workspace-card #fdManualBody table { min-width:1080px!important;width:max-content!important; }
+      #page-findash .fd-compact-workspace-card #fdManualBody th:last-child,
+      #page-findash .fd-compact-workspace-card #fdManualBody td:last-child { position:sticky!important;right:0!important;background:#fff!important;z-index:2!important;box-shadow:-5px 0 7px rgba(16,35,59,.06)!important; }
+      #page-findash .fd-compact-workspace-card #fdManualBody button { display:inline-flex!important;align-items:center!important;justify-content:center!important;min-width:30px!important;min-height:30px!important;margin:0 2px!important;opacity:1!important;visibility:visible!important; }
       #page-findash .fd-compact-workspace-card table { min-width:680px!important; }
       #page-findash .fd-compact-workspace-card h2,
       #page-findash .fd-compact-workspace-card h3 { margin-top:0!important;font-size:14px!important; }
