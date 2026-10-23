@@ -422,24 +422,27 @@
   // The legacy application renders again after authentication and after its
   // asynchronous financial queries complete. Reconcile after those paints so
   // the canonical figures cannot be replaced by the old dashboard output.
+  // Refresh only when the underlying source collection signature changes.
+  // Do not force-render based on legacy text elsewhere in the page: the previous
+  // heuristic matched hidden/adjacent legacy panels and repeatedly replaced #fdKpiRow,
+  // interrupting native <details> disclosure interactions.
   let lastDataSignature='';
+  let refreshInFlight=false;
+  let lastPeriodSignature='';
   setInterval(()=>{
-    const kpi=q('fdKpiRow'),client=q('fdClientMatterRevenueV2');
-    if(!kpi&&!client)return;
+    const kpi=q('fdKpiRow');
+    if(!kpi)return;
     const d=data();
-    const signature=[d.invoices.length,d.manual.length,d.entries.length,d.payroll.length,d.office.length,bounds().start,bounds().end].join('|');
-    const legacyVisible=(kpi&&/OUTSTANDING PAYMENTS/.test(kpi.textContent||''))||(client&&/CLIENT\s*&\s*MATTER REVENUE/.test(client.textContent||''));
-    if(legacyVisible)render();
-    if(signature!==lastDataSignature){lastDataSignature=signature;refresh()}
-  },500);
-  let reconcileQueued=false;
-  if(typeof MutationObserver!=='undefined')new MutationObserver(()=>{
-      const kpi=q('fdKpiRow'),client=q('fdClientMatterRevenueV2');
-      const legacyVisible=(kpi&&/OUTSTANDING PAYMENTS/.test(kpi.textContent||''))||(client&&/CLIENT\s*&\s*MATTER REVENUE/.test(client.textContent||''));
-      if(!legacyVisible||reconcileQueued)return;
-      reconcileQueued=true;
-      queueMicrotask(()=>{reconcileQueued=false;render()});
-    }).observe(document.documentElement,{childList:true,subtree:true});
+    const b=bounds();
+    const signature=[d.invoices.length,d.manual.length,d.entries.length,d.payroll.length,d.office.length,b.start,b.end].join('|');
+    if(signature!==lastDataSignature){
+      lastDataSignature=signature;
+      if(!refreshInFlight){
+        refreshInFlight=true;
+        refresh().finally(()=>{refreshInFlight=false});
+      }
+    }
+  },1500);
   window.MOLMSFinanceV16={metrics,periodClientRows,allReceivables,render,refresh,
     setPaymentRowsForTest(rows){paymentRows=Array.isArray(rows)?rows:[];paymentLedgerLoadError=false},
     paymentIntegrity,
