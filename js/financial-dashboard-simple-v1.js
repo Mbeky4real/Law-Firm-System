@@ -40,8 +40,8 @@
       #page-findash #fdPracticePerformance button { font-size:11px!important; }
       #page-findash #fdManualBody, #page-findash #fdPracticePerformance { scrollbar-width:thin; }
       /* Side-by-side compact workspace cards; tables scroll internally when needed. */
-      #page-findash .fd-compact-workspace { display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:12px!important;align-items:stretch!important;margin:8px 0 14px!important; }
-      #page-findash .fd-compact-workspace > .fd-compact-workspace-card { min-width:0!important;width:auto!important;max-width:none!important;height:430px!important;max-height:430px!important;overflow:hidden!important;box-sizing:border-box!important;margin:0!important;padding:14px!important;border:1px solid #e4ddd2!important;border-radius:14px!important;background:#fff!important;box-shadow:0 3px 12px rgba(16,35,59,.05)!important; }
+      #page-findash .fd-compact-workspace { display:block!important;width:100%!important;max-width:100%!important;overflow:visible!important;margin:8px 0 14px!important; }
+      #page-findash .fd-compact-workspace > .fd-compact-workspace-card { display:block!important;min-width:0!important;width:100%!important;max-width:100%!important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;box-sizing:border-box!important;margin:0 0 14px!important;padding:16px!important;border:1px solid #e4ddd2!important;border-radius:14px!important;background:#fff!important;box-shadow:0 3px 12px rgba(16,35,59,.05)!important; }
       #page-findash .fd-compact-workspace-card #fdManualBody,
       #page-findash .fd-compact-workspace-card #fdPracticePerformance { max-height:330px!important;overflow-x:auto!important;overflow-y:auto!important;overscroll-behavior:contain;scrollbar-width:thin; }
       /* The manual register has many columns: preserve its approval/rejection actions in a scrollable table. */
@@ -49,8 +49,8 @@
       #page-findash .fd-compact-workspace-card #fdManualBody { display:block!important;position:relative!important;width:100%!important;max-width:100%!important;max-height:330px!important;overflow:visible!important;overscroll-behavior:contain!important;padding:0 0 8px!important;box-sizing:border-box!important; }
       #page-findash .fd-compact-workspace-card { overflow:visible!important; }
       #page-findash .fd-compact-workspace { overflow:visible!important; }
-      #page-findash .fd-compact-workspace-card .fd-manual-table-scroll { display:block!important;position:relative!important;width:100%!important;max-width:100%!important;height:300px!important;max-height:300px!important;overflow-x:scroll!important;overflow-y:scroll!important;overscroll-behavior:contain!important;scrollbar-width:auto!important;scrollbar-color:#7c8795 #eef1f4!important;border:1px solid #e4ddd2!important;border-radius:6px!important;box-sizing:border-box!important; }
-      #page-findash .fd-compact-workspace-card .fd-manual-table-scroll table { min-width:1120px!important;width:1120px!important;max-width:none!important;table-layout:auto!important; }
+      #page-findash .fd-compact-workspace-card .fd-manual-table-scroll { display:block!important;position:relative!important;width:100%!important;max-width:100%!important;height:420px!important;min-height:260px!important;max-height:420px!important;overflow-x:scroll!important;overflow-y:scroll!important;overscroll-behavior:contain!important;scrollbar-width:auto!important;scrollbar-color:#7c8795 #eef1f4!important;border:1px solid #e4ddd2!important;border-radius:6px!important;box-sizing:border-box!important; }
+      #page-findash .fd-compact-workspace-card .fd-manual-table-scroll table { min-width:1450px!important;width:1450px!important;max-width:none!important;table-layout:auto!important; }
       #page-findash .fd-compact-workspace-card .fd-manual-table-scroll::-webkit-scrollbar { width:14px!important;height:14px!important;display:block!important; }
       #page-findash .fd-compact-workspace-card .fd-manual-table-scroll::-webkit-scrollbar-thumb { background:#7c8795!important;border:2px solid #eef1f4!important;border-radius:8px!important; }
       #page-findash .fd-compact-workspace-card .fd-manual-table-scroll::-webkit-scrollbar-track { background:#eef1f4!important; }
@@ -235,27 +235,35 @@
     // Replace dense tabular bodies with short management lists while preserving source data.
     ['fdExpenseBody','fdBudgetBody','fdTopClients','fdMatterLeaderboard'].forEach(id => compactTable(id, page));
 
-    // Place the two detailed management cards side by side in a compact workspace.
+    // Give the manual register the full content width so all columns can be inspected.
     const manual = page.querySelector('#fdManualBody');
     const practice = page.querySelector('#fdPracticePerformance');
-    if (practice) {
-      const practiceCard = dashboardCardFor(practice, scroll);
-      if (practiceCard && practiceCard !== scroll) practiceCard.style.display = '';
+    const manualCard = manual && dashboardCardFor(manual, scroll);
+    const practiceCard = practice && dashboardCardFor(practice, scroll);
+    let workspace = page.querySelector('.fd-compact-workspace');
+    if (workspace && manualCard && practiceCard) {
+      if (manualCard.parentElement === workspace) scroll.insertBefore(manualCard, workspace);
+      if (practiceCard.parentElement === workspace) scroll.insertBefore(practiceCard, workspace.nextSibling);
+      workspace.remove();
     }
-    if (manual && practice) {
-      const manualCard = dashboardCardFor(manual, scroll);
-      const practiceCard = dashboardCardFor(practice, scroll);
-      if (manualCard && practiceCard && manualCard !== practiceCard && manualCard.parentElement === scroll && practiceCard.parentElement === scroll) {
-        let workspace = page.querySelector('.fd-compact-workspace');
-        if (!workspace) {
-          workspace = document.createElement('div');
-          workspace.className = 'fd-compact-workspace';
-          workspace.setAttribute('aria-label','Compact financial management workspace');
-          manualCard.parentElement.insertBefore(workspace, manualCard);
-        }
-        if (manualCard.parentElement !== workspace) { manualCard.classList.add('fd-compact-workspace-card'); workspace.appendChild(manualCard); }
-        if (practiceCard.parentElement !== workspace) { practiceCard.classList.add('fd-compact-workspace-card'); workspace.appendChild(practiceCard); }
-      }
+    if (manualCard && manualCard !== scroll) {
+      manualCard.classList.remove('fd-compact-workspace-card');
+      manualCard.style.setProperty('display','block','important');
+      manualCard.style.setProperty('width','100%','important');
+      manualCard.style.setProperty('max-width','100%','important');
+      manualCard.style.setProperty('height','auto','important');
+      manualCard.style.setProperty('max-height','none','important');
+      manualCard.style.setProperty('overflow','visible','important');
+      manualCard.style.setProperty('margin-bottom','14px','important');
+    }
+    if (practiceCard && practiceCard !== scroll) {
+      practiceCard.classList.remove('fd-compact-workspace-card');
+      practiceCard.style.setProperty('display','block','important');
+      practiceCard.style.setProperty('width','100%','important');
+      practiceCard.style.setProperty('max-width','100%','important');
+      practiceCard.style.setProperty('height','auto','important');
+      practiceCard.style.setProperty('max-height','none','important');
+      practiceCard.style.setProperty('overflow','visible','important');
     }
     window.MOLMSFinancialDashboardSimpleV1.applied = true;
   }
