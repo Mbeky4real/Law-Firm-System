@@ -46,7 +46,14 @@
       #page-findash .fd-compact-workspace-card #fdPracticePerformance { max-height:330px!important;overflow-x:auto!important;overflow-y:auto!important;overscroll-behavior:contain;scrollbar-width:thin; }
       /* The manual register has many columns: preserve its approval/rejection actions in a scrollable table. */
  
-      #page-findash .fd-compact-workspace-card #fdManualBody { display:block!important;position:relative!important;width:100%!important;max-width:100%!important;max-height:330px!important;overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior:contain!important;scrollbar-width:auto!important;scrollbar-color:#b8c1cc #f1f3f5!important;padding:0 0 14px!important;box-sizing:border-box!important; }
+      #page-findash .fd-compact-workspace-card #fdManualBody { display:block!important;position:relative!important;width:100%!important;max-width:100%!important;max-height:330px!important;overflow:visible!important;overscroll-behavior:contain!important;padding:0 0 8px!important;box-sizing:border-box!important; }
+      #page-findash .fd-compact-workspace-card { overflow:visible!important; }
+      #page-findash .fd-compact-workspace { overflow:visible!important; }
+      #page-findash .fd-compact-workspace-card .fd-manual-table-scroll { display:block!important;position:relative!important;width:100%!important;max-width:100%!important;height:300px!important;max-height:300px!important;overflow-x:scroll!important;overflow-y:scroll!important;overscroll-behavior:contain!important;scrollbar-width:auto!important;scrollbar-color:#7c8795 #eef1f4!important;border:1px solid #e4ddd2!important;border-radius:6px!important;box-sizing:border-box!important; }
+      #page-findash .fd-compact-workspace-card .fd-manual-table-scroll table { min-width:1120px!important;width:1120px!important;max-width:none!important;table-layout:auto!important; }
+      #page-findash .fd-compact-workspace-card .fd-manual-table-scroll::-webkit-scrollbar { width:14px!important;height:14px!important;display:block!important; }
+      #page-findash .fd-compact-workspace-card .fd-manual-table-scroll::-webkit-scrollbar-thumb { background:#7c8795!important;border:2px solid #eef1f4!important;border-radius:8px!important; }
+      #page-findash .fd-compact-workspace-card .fd-manual-table-scroll::-webkit-scrollbar-track { background:#eef1f4!important; }
       #page-findash .fd-manual-table-scroll { display:block!important;position:relative!important;width:100%!important;max-width:100%!important;max-height:300px!important;overflow:auto!important;overscroll-behavior:contain!important;scrollbar-width:auto!important;scrollbar-color:#aab4c0 #eef1f4!important;border-bottom:1px solid #e4ddd2!important; }
       #page-findash .fd-manual-table-scroll table { min-width:1120px!important;width:1120px!important;max-width:none!important;table-layout:auto!important;border-collapse:separate!important; }
       #page-findash .fd-manual-table-scroll::-webkit-scrollbar { width:12px!important;height:12px!important;display:block!important; }
