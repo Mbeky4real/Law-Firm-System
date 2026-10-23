@@ -26,8 +26,8 @@
       }
       #page-findash #fdReceivablesCardV1 [data-v16-kind] > span:first-child,
       #page-findash #fdReceivablesCardV2 [data-v16-kind] > span:first-child {
-        grid-column:1/-1; text-align:left!important;
-        padding-bottom:3px; font-size:12px!important; line-height:1.35;
+        grid-column:auto; text-align:left!important;
+        padding-bottom:0; font-size:12px!important; line-height:1.35;
       }
       #page-findash #fdReceivablesCardV1 [data-v16-kind] > span:not(:first-child),
       #page-findash #fdReceivablesCardV2 [data-v16-kind] > span:not(:first-child) {
