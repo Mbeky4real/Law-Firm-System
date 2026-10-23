@@ -4,8 +4,8 @@
  */
 (function () {
   'use strict';
-  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 14) return;
-  window.MOLMSFinancialDashboardSimpleV1 = { version: 14, applied: false };
+  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 15) return;
+  window.MOLMSFinancialDashboardSimpleV1 = { version: 15, applied: false };
   const styleId = 'molms-financial-dashboard-simple-v1-style';
 
   function installStyle() {
@@ -41,7 +41,7 @@
       #page-findash #fdManualBody, #page-findash #fdPracticePerformance { scrollbar-width:thin; }
       /* Side-by-side compact workspace cards; tables scroll internally when needed. */
       #page-findash .fd-compact-workspace { display:block!important;width:100%!important;max-width:100%!important;overflow:visible!important;margin:8px 0 14px!important; }
-      #page-findash .fd-compact-workspace > .fd-compact-workspace-card { display:block!important;min-width:0!important;width:100%!important;max-width:100%!important;height:520px!important;min-height:420px!important;max-height:520px!important;overflow:hidden!important;box-sizing:border-box!important;margin:0 0 14px!important;padding:14px!important;border:1px solid #e4ddd2!important;border-radius:14px!important;background:#fff!important;box-shadow:0 3px 12px rgba(16,35,59,.05)!important; }
+      #page-findash .fd-compact-workspace > .fd-compact-workspace-card { display:block!important;min-width:0!important;width:100%!important;max-width:100%!important;height:360px!important;min-height:320px!important;max-height:360px!important;overflow:hidden!important;box-sizing:border-box!important;margin:0 0 14px!important;padding:14px!important;border:1px solid #e4ddd2!important;border-radius:14px!important;background:#fff!important;box-shadow:0 3px 12px rgba(16,35,59,.05)!important; }
       #page-findash .fd-compact-workspace-card #fdManualBody { max-height:420px!important;overflow-y:auto!important;overflow-x:auto!important;scrollbar-width:thin!important; }
       #page-findash .fd-compact-workspace-card #fdManualBody table tr { height:auto!important; }
       #page-findash .fd-compact-workspace-card #fdManualBody table th,
@@ -53,12 +53,12 @@
       #page-findash .fd-compact-workspace-card #fdManualBody { display:block!important;position:relative!important;width:100%!important;max-width:100%!important;max-height:330px!important;overflow:visible!important;overscroll-behavior:contain!important;padding:0 0 8px!important;box-sizing:border-box!important; }
       #page-findash .fd-compact-workspace-card { overflow:visible!important; }
       #page-findash .fd-compact-workspace { overflow:visible!important; }
-      #page-findash .fd-compact-workspace-card .fd-manual-table-scroll { display:block!important;position:relative!important;width:100%!important;max-width:100%!important;height:420px!important;min-height:260px!important;max-height:420px!important;overflow-x:scroll!important;overflow-y:scroll!important;overscroll-behavior:contain!important;scrollbar-width:auto!important;scrollbar-color:#7c8795 #eef1f4!important;border:1px solid #e4ddd2!important;border-radius:6px!important;box-sizing:border-box!important; }
+      #page-findash .fd-compact-workspace-card .fd-manual-table-scroll { display:block!important;position:relative!important;width:100%!important;max-width:100%!important;height:420px!important;min-height:260px!important;height:260px!important;max-height:260px!important;overflow-x:scroll!important;overflow-y:scroll!important;overscroll-behavior:contain!important;scrollbar-width:auto!important;scrollbar-color:#7c8795 #eef1f4!important;border:1px solid #e4ddd2!important;border-radius:6px!important;box-sizing:border-box!important; }
       #page-findash .fd-compact-workspace-card .fd-manual-table-scroll table { min-width:1450px!important;width:1450px!important;max-width:none!important;table-layout:auto!important; }
       #page-findash .fd-compact-workspace-card .fd-manual-table-scroll::-webkit-scrollbar { width:14px!important;height:14px!important;display:block!important; }
       #page-findash .fd-compact-workspace-card .fd-manual-table-scroll::-webkit-scrollbar-thumb { background:#7c8795!important;border:2px solid #eef1f4!important;border-radius:8px!important; }
       #page-findash .fd-compact-workspace-card .fd-manual-table-scroll::-webkit-scrollbar-track { background:#eef1f4!important; }
-      #page-findash .fd-manual-table-scroll { display:block!important;position:relative!important;width:100%!important;max-width:100%!important;max-height:300px!important;overflow:auto!important;overscroll-behavior:contain!important;scrollbar-width:auto!important;scrollbar-color:#aab4c0 #eef1f4!important;border-bottom:1px solid #e4ddd2!important; }
+      #page-findash .fd-manual-table-scroll { display:block!important;position:relative!important;width:100%!important;max-width:100%!important;height:260px!important;max-height:260px!important;overflow-x:scroll!important;overflow-y:scroll!important;overscroll-behavior:contain!important;scrollbar-width:auto!important;scrollbar-color:#aab4c0 #eef1f4!important;border-bottom:1px solid #e4ddd2!important; }
       #page-findash .fd-manual-table-scroll table { min-width:1120px!important;width:1120px!important;max-width:none!important;table-layout:auto!important;border-collapse:separate!important; }
       #page-findash .fd-manual-table-scroll::-webkit-scrollbar { width:12px!important;height:12px!important;display:block!important; }
       #page-findash .fd-manual-table-scroll::-webkit-scrollbar-thumb { background:#aab4c0!important;border:2px solid #eef1f4!important;border-radius:8px!important; }
@@ -255,9 +255,9 @@
       manualCard.style.setProperty('display','block','important');
       manualCard.style.setProperty('width','100%','important');
       manualCard.style.setProperty('max-width','100%','important');
-      manualCard.style.setProperty('height','520px','important');
-      manualCard.style.setProperty('min-height','420px','important');
-      manualCard.style.setProperty('max-height','520px','important');
+      manualCard.style.setProperty('height','360px','important');
+      manualCard.style.setProperty('min-height','320px','important');
+      manualCard.style.setProperty('max-height','360px','important');
       manualCard.style.setProperty('overflow','hidden','important');
       manualCard.style.setProperty('margin-bottom','14px','important');
     }
