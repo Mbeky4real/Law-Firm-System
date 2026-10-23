@@ -4,8 +4,8 @@
  */
 (function () {
   'use strict';
-  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 22) return;
-  window.MOLMSFinancialDashboardSimpleV1 = { version: 22, applied: false };
+  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 23) return;
+  window.MOLMSFinancialDashboardSimpleV1 = { version: 23, applied: false };
   const styleId = 'molms-financial-dashboard-simple-v1-style';
 
   function installStyle() {
@@ -30,6 +30,13 @@
       #page-findash #fdManualBody { display:block!important;width:100%!important;max-width:100%!important;overflow:visible!important;box-sizing:border-box!important; }
       #page-findash #fdManualBody .fd-manual-table-scroll { display:block!important;position:relative!important;width:100%!important;max-width:100%!important;height:250px!important;max-height:250px!important;overflow:auto!important;overscroll-behavior:contain!important;scrollbar-width:auto!important;scrollbar-color:#7b8794 #e8edf1!important;border:1px solid #e4ddd2!important;border-radius:6px!important;box-sizing:border-box!important; }
       #page-findash #fdManualBody .fd-manual-table-scroll table { width:1370px!important;min-width:1370px!important;max-width:none!important;table-layout:fixed!important;border-collapse:collapse!important;border-spacing:0!important;font-size:11px!important; }
+      /* Restore native table formatting explicitly; other dashboard styles can turn row groups/cells into block or flex layouts. */
+      #page-findash #fdManualBody .fd-manual-table-scroll table thead { display:table-header-group!important;width:auto!important; }
+      #page-findash #fdManualBody .fd-manual-table-scroll table tbody { display:table-row-group!important;width:auto!important; }
+      #page-findash #fdManualBody .fd-manual-table-scroll table tr { display:table-row!important;width:auto!important; }
+      #page-findash #fdManualBody .fd-manual-table-scroll table th,
+      #page-findash #fdManualBody .fd-manual-table-scroll table td { display:table-cell!important;float:none!important;position:static!important;flex:none!important; }
+
       #page-findash #fdManualBody .fd-manual-table-scroll th,
       #page-findash #fdManualBody .fd-manual-table-scroll td { box-sizing:border-box!important;padding:5px 7px!important;line-height:1.2!important;vertical-align:middle!important;border-bottom:1px solid #edf0f2!important; }
       #page-findash #fdManualBody .fd-manual-table-scroll thead th { height:34px!important;white-space:nowrap!important;background:#faf9f6!important;color:#667085!important;font-size:10px!important;border-bottom:1px solid #e4ddd2!important;text-align:left!important; }
