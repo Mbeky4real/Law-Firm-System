@@ -4,8 +4,8 @@
  */
 (function () {
   'use strict';
-  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 23) return;
-  window.MOLMSFinancialDashboardSimpleV1 = { version: 23, applied: false };
+  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 24) return;
+  window.MOLMSFinancialDashboardSimpleV1 = { version: 24, applied: false };
   const styleId = 'molms-financial-dashboard-simple-v1-style';
 
   function installStyle() {
@@ -26,38 +26,33 @@
       #page-findash .fd-simple-summary-label { min-width:0;overflow-wrap:anywhere;color:#344054; }
       #page-findash .fd-simple-summary-value { flex:0 0 auto;text-align:right;font-weight:700;color:#182230; }
       #page-findash .fd-simple-summary-note { display:block;color:#667085;font-size:11px;font-weight:400;margin-top:2px; }
-      /* Authoritative table layout: one shared column grid for headers and transaction rows. */
-      #page-findash #fdManualBody { display:block!important;width:100%!important;max-width:100%!important;overflow:visible!important;box-sizing:border-box!important; }
-      #page-findash #fdManualBody .fd-manual-table-scroll { display:block!important;position:relative!important;width:100%!important;max-width:100%!important;height:250px!important;max-height:250px!important;overflow:auto!important;overscroll-behavior:contain!important;scrollbar-width:auto!important;scrollbar-color:#7b8794 #e8edf1!important;border:1px solid #e4ddd2!important;border-radius:6px!important;box-sizing:border-box!important; }
-      #page-findash #fdManualBody .fd-manual-table-scroll table { width:1370px!important;min-width:1370px!important;max-width:none!important;table-layout:fixed!important;border-collapse:collapse!important;border-spacing:0!important;font-size:11px!important; }
-      /* Restore native table formatting explicitly; other dashboard styles can turn row groups/cells into block or flex layouts. */
-      #page-findash #fdManualBody .fd-manual-table-scroll table thead { display:table-header-group!important;width:auto!important; }
-      #page-findash #fdManualBody .fd-manual-table-scroll table tbody { display:table-row-group!important;width:auto!important; }
-      #page-findash #fdManualBody .fd-manual-table-scroll table tr { display:table-row!important;width:auto!important; }
-      #page-findash #fdManualBody .fd-manual-table-scroll table th,
-      #page-findash #fdManualBody .fd-manual-table-scroll table td { display:table-cell!important;float:none!important;position:static!important;flex:none!important; }
-
-      #page-findash #fdManualBody .fd-manual-table-scroll th,
-      #page-findash #fdManualBody .fd-manual-table-scroll td { box-sizing:border-box!important;padding:5px 7px!important;line-height:1.2!important;vertical-align:middle!important;border-bottom:1px solid #edf0f2!important; }
-      #page-findash #fdManualBody .fd-manual-table-scroll thead th { height:34px!important;white-space:nowrap!important;background:#faf9f6!important;color:#667085!important;font-size:10px!important;border-bottom:1px solid #e4ddd2!important;text-align:left!important; }
-      #page-findash #fdManualBody .fd-manual-table-scroll tbody tr { height:38px!important; }
-      #page-findash #fdManualBody .fd-manual-table-scroll tbody td { height:38px!important;white-space:normal!important;overflow-wrap:anywhere!important; }
-      #page-findash #fdManualBody .fd-manual-table-scroll th:nth-child(1),#page-findash #fdManualBody .fd-manual-table-scroll td:nth-child(1){width:190px!important}
-      #page-findash #fdManualBody .fd-manual-table-scroll th:nth-child(2),#page-findash #fdManualBody .fd-manual-table-scroll td:nth-child(2){width:90px!important}
-      #page-findash #fdManualBody .fd-manual-table-scroll th:nth-child(3),#page-findash #fdManualBody .fd-manual-table-scroll td:nth-child(3){width:105px!important}
-      #page-findash #fdManualBody .fd-manual-table-scroll th:nth-child(4),#page-findash #fdManualBody .fd-manual-table-scroll td:nth-child(4){width:190px!important}
-      #page-findash #fdManualBody .fd-manual-table-scroll th:nth-child(5),#page-findash #fdManualBody .fd-manual-table-scroll td:nth-child(5){width:180px!important}
-      #page-findash #fdManualBody .fd-manual-table-scroll th:nth-child(6),#page-findash #fdManualBody .fd-manual-table-scroll td:nth-child(6){width:115px!important}
-      #page-findash #fdManualBody .fd-manual-table-scroll th:nth-child(7),#page-findash #fdManualBody .fd-manual-table-scroll td:nth-child(7){width:160px!important}
-      #page-findash #fdManualBody .fd-manual-table-scroll th:nth-child(8),#page-findash #fdManualBody .fd-manual-table-scroll td:nth-child(8){width:150px!important}
-      #page-findash #fdManualBody .fd-manual-table-scroll th:nth-child(9),#page-findash #fdManualBody .fd-manual-table-scroll td:nth-child(9){width:100px!important}
-      #page-findash #fdManualBody .fd-manual-table-scroll th:nth-child(10),#page-findash #fdManualBody .fd-manual-table-scroll td:nth-child(10){width:90px!important}
-      #page-findash #fdManualBody .fd-manual-table-scroll tbody td button { display:inline-flex!important;align-items:center!important;justify-content:center!important;vertical-align:middle!important;float:none!important;position:static!important;width:28px!important;min-width:28px!important;height:24px!important;min-height:24px!important;margin:0 3px 0 0!important;padding:0!important;line-height:1!important;border-radius:5px!important;font-size:11px!important; }
-      #page-findash #fdManualBody .fd-manual-table-scroll td:nth-child(6) { white-space:nowrap!important;text-align:right!important;font-weight:600!important; }
-      #page-findash #fdManualBody .fd-manual-table-scroll td:nth-child(9) { white-space:nowrap!important; }
-      #page-findash #fdManualBody .fd-manual-table-scroll::-webkit-scrollbar { width:12px!important;height:12px!important;display:block!important; }
-      #page-findash #fdManualBody .fd-manual-table-scroll::-webkit-scrollbar-thumb { background:#7b8794!important;border:2px solid #e8edf1!important;border-radius:8px!important; }
-      #page-findash #fdManualBody .fd-manual-table-scroll::-webkit-scrollbar-track { background:#e8edf1!important; }
+      /* Manual table styles target the scroll wrapper (an ancestor of the table), not its tbody. */
+      #page-findash #fdManualBody { width:auto!important;max-width:none!important;overflow:visible!important;box-sizing:border-box!important; }
+      #page-findash .fd-manual-table-scroll { display:block!important;position:relative!important;width:100%!important;max-width:100%!important;height:250px!important;max-height:250px!important;overflow:auto!important;overscroll-behavior:contain!important;scrollbar-width:auto!important;scrollbar-color:#7b8794 #e8edf1!important;border:1px solid #e4ddd2!important;border-radius:6px!important;box-sizing:border-box!important; }
+      #page-findash .fd-manual-table-scroll table { display:table!important;width:1370px!important;min-width:1370px!important;max-width:none!important;table-layout:fixed!important;border-collapse:collapse!important;border-spacing:0!important;font-size:11px!important; }
+      #page-findash .fd-manual-table-scroll thead { display:table-header-group!important; }
+      #page-findash .fd-manual-table-scroll tbody { display:table-row-group!important;width:auto!important; }
+      #page-findash .fd-manual-table-scroll tr { display:table-row!important;width:auto!important; }
+      #page-findash .fd-manual-table-scroll th,#page-findash .fd-manual-table-scroll td { display:table-cell!important;float:none!important;position:static!important;flex:none!important;box-sizing:border-box!important;padding:5px 7px!important;line-height:1.2!important;vertical-align:middle!important;border-bottom:1px solid #edf0f2!important; }
+      #page-findash .fd-manual-table-scroll thead th { height:34px!important;white-space:nowrap!important;background:#faf9f6!important;color:#667085!important;font-size:10px!important;border-bottom:1px solid #e4ddd2!important;text-align:left!important; }
+      #page-findash .fd-manual-table-scroll tbody tr { height:38px!important; }
+      #page-findash .fd-manual-table-scroll tbody td { height:38px!important;white-space:normal!important;overflow-wrap:anywhere!important; }
+      #page-findash .fd-manual-table-scroll th:nth-child(1),#page-findash .fd-manual-table-scroll td:nth-child(1){width:190px!important}
+      #page-findash .fd-manual-table-scroll th:nth-child(2),#page-findash .fd-manual-table-scroll td:nth-child(2){width:90px!important}
+      #page-findash .fd-manual-table-scroll th:nth-child(3),#page-findash .fd-manual-table-scroll td:nth-child(3){width:105px!important}
+      #page-findash .fd-manual-table-scroll th:nth-child(4),#page-findash .fd-manual-table-scroll td:nth-child(4){width:190px!important}
+      #page-findash .fd-manual-table-scroll th:nth-child(5),#page-findash .fd-manual-table-scroll td:nth-child(5){width:180px!important}
+      #page-findash .fd-manual-table-scroll th:nth-child(6),#page-findash .fd-manual-table-scroll td:nth-child(6){width:115px!important}
+      #page-findash .fd-manual-table-scroll th:nth-child(7),#page-findash .fd-manual-table-scroll td:nth-child(7){width:160px!important}
+      #page-findash .fd-manual-table-scroll th:nth-child(8),#page-findash .fd-manual-table-scroll td:nth-child(8){width:150px!important}
+      #page-findash .fd-manual-table-scroll th:nth-child(9),#page-findash .fd-manual-table-scroll td:nth-child(9){width:100px!important}
+      #page-findash .fd-manual-table-scroll th:nth-child(10),#page-findash .fd-manual-table-scroll td:nth-child(10){width:90px!important}
+      #page-findash .fd-manual-table-scroll tbody td button { display:inline-flex!important;align-items:center!important;justify-content:center!important;vertical-align:middle!important;float:none!important;position:static!important;width:28px!important;min-width:28px!important;height:24px!important;min-height:24px!important;margin:0 3px 0 0!important;padding:0!important;line-height:1!important;border-radius:5px!important;font-size:11px!important; }
+      #page-findash .fd-manual-table-scroll td:nth-child(6) { white-space:nowrap!important;text-align:right!important;font-weight:600!important; }
+      #page-findash .fd-manual-table-scroll td:nth-child(9) { white-space:nowrap!important; }
+      #page-findash .fd-manual-table-scroll::-webkit-scrollbar { width:12px!important;height:12px!important;display:block!important; }
+      #page-findash .fd-manual-table-scroll::-webkit-scrollbar-thumb { background:#7b8794!important;border:2px solid #e8edf1!important;border-radius:8px!important; }
+      #page-findash .fd-manual-table-scroll::-webkit-scrollbar-track { background:#e8edf1!important; }
       #page-findash #fdPracticePerformance { min-width:0!important;overflow-x:auto!important; }
       #page-findash #fdPracticePerformance table { width:100%!important;border-collapse:collapse!important;border-spacing:0!important; }
       #page-findash #fdPracticePerformance th { padding:8px 7px!important;background:#faf9f6!important;color:#667085!important;font-size:10px!important;white-space:nowrap!important; }
@@ -206,7 +201,8 @@
 
     // Give the full manual register its own real scroll container; card-level overflow was clipping columns/actions.
     if (restoredManualBody) {
-      const manualTable = restoredManualBody.querySelector('table');
+      // fdManualBody is a TBODY, so the table must be found through its parent.
+      const manualTable = restoredManualBody.closest('table');
       if (manualTable) {
         let tableScroll = manualTable.closest('.fd-manual-table-scroll');
         if (!tableScroll) {
