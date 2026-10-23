@@ -235,7 +235,7 @@
     const expenseGroups={};
     const {start:periodStart,end:periodEnd}=bounds();
     data().manual.filter(t=>approved(t)&&date(t.date)>=periodStart&&date(t.date)<=periodEnd&&String(t.status||'').toLowerCase()!=='cancelled'&&String(t.tx_type||'').toLowerCase()==='expenditure').forEach(t=>{const key=String(t.category||'Uncategorised');expenseGroups[key]=expenseGroups[key]||{};add(expenseGroups[key],t.currency,t.amount)});
-    const revenueBreakdown=breakdown('Revenue',detailRows(revenueGroups));
+    const revenueBreakdown=`<div style="margin-top:10px;border-top:1px solid #e4e7ec;padding-top:8px"><button type="button" data-fd-revenue-toggle aria-expanded="false" style="display:block;border:0;background:transparent;padding:0;cursor:pointer;font:inherit;font-size:11px;font-weight:800;color:#344054;text-align:left">＋ View revenue breakdown</button><div data-fd-revenue-content hidden style="margin-top:7px">${detailRows(revenueGroups)}</div></div>`;
     const expenseBreakdown=breakdown('Expenses',detailRows(expenseGroups));
     host.innerHTML=
       panel('TOTAL REVENUE',m.revenue,'#16803d',`Recognised legal fees and other eligible income · ${label}`,revenueBreakdown)+
@@ -246,12 +246,16 @@
     if(!disclosureHandlerInstalled){
       disclosureHandlerInstalled=true;
       host.addEventListener('click',e=>{
-        const summary=e.target.closest('details > summary');if(!summary||!host.contains(summary))return;
+        const toggle=e.target.closest('[data-fd-revenue-toggle]');
+        if(!toggle||!host.contains(toggle))return;
         e.preventDefault();
-        const key=String(summary.textContent||'').trim();
-        if(financialDisclosureState.has(key))financialDisclosureState.delete(key);else financialDisclosureState.add(key);
-        renderKpis();
-      },true);
+        const content=host.querySelector('[data-fd-revenue-content]');
+        if(!content)return;
+        const opening=content.hidden;
+        content.hidden=!opening;
+        toggle.setAttribute('aria-expanded',String(opening));
+        toggle.textContent=opening?'− Hide revenue breakdown':'＋ View revenue breakdown';
+      });
     }
   }
 
