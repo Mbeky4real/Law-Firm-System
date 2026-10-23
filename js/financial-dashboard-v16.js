@@ -221,10 +221,16 @@
     const host=q('fdKpiRow');if(!host)return;
     const m=metrics(),label=typeof fdPeriodLabel==='function'?fdPeriodLabel():'Selected period';
     const fmt=values=>moneyLines(values,false).map((l,i)=>`<div style="font-size:${i?'13px':'22px'};font-weight:900;line-height:1.25;color:#182230">${esc(l.text)}</div>`).join('');
-    const breakdown=(title,values,rows)=>`<details style="margin-top:10px;border-top:1px solid #e4e7ec;padding-top:8px"><summary style="cursor:pointer;font-size:11px;font-weight:800;color:#344054">View ${title.toLowerCase()} breakdown</summary><div style="margin-top:8px">${fmt(values)}<div style="font-size:10px;color:#667085;margin-top:5px">${rows}</div></div></details>`;
+    const detailRows=groups=>Object.entries(groups).filter(([,v])=>Object.values(v).some(x=>num(x)!==0)).sort((a,b)=>Object.values(b[1]).reduce((s,x)=>s+Math.abs(num(x)),0)-Object.values(a[1]).reduce((s,x)=>s+Math.abs(num(x)),0)).map(([name,values])=>`<div style="display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid #edf0f2;font-size:11px"><span style="color:#344054;overflow-wrap:anywhere">${esc(name)}</span><span style="font-weight:800;text-align:right;white-space:nowrap">${moneyLines(values,false).map(x=>esc(x.text)).join('<br>')}</span></div>`).join('')||'<div style="font-size:11px;color:#667085">No entries for this period.</div>';
+    const breakdown=(title,html)=>`<details style="margin-top:10px;border-top:1px solid #e4e7ec;padding-top:8px"><summary style="cursor:pointer;font-size:11px;font-weight:800;color:#344054">View ${title.toLowerCase()} breakdown</summary><div style="margin-top:7px">${html}</div></details>`;
     const panel=(title,values,accent,note,extra='')=>`<section style="min-width:0;background:#fff;border:1px solid #e4e7ec;border-radius:14px;padding:17px 18px;box-shadow:0 2px 8px rgba(16,24,40,.045);box-sizing:border-box"><div style="font-size:11px;font-weight:900;letter-spacing:.45px;color:#667085;margin-bottom:7px">${esc(title)}</div>${fmt(values)}<div style="font-size:11px;color:#667085;margin-top:7px;line-height:1.4">${esc(note)}</div>${extra}</section>`;
-    const revenueBreakdown=breakdown('Revenue',m.revenue,'Recognised tax invoices and eligible manually recorded direct revenue. Draft, void, cancelled and superseded invoices are excluded.');
-    const expenseBreakdown=breakdown('Expenses',m.expenses,'Only approved manual expenditure transactions recorded in Expenses Transactions are included. Payroll runs, office-expense rows, expense registers, drawings and loan repayments are not auto-added.');
+    const revenueGroups={};
+    m.rows.forEach(r=>{const key=r.kind==='invoice'?'Tax invoices':'Manual direct income';revenueGroups[key]=revenueGroups[key]||{};add(revenueGroups[key],r.currency,r.revenue)});
+    const expenseGroups={};
+    const {start:periodStart,end:periodEnd}=bounds();
+    data().manual.filter(t=>approved(t)&&date(t.date)>=periodStart&&date(t.date)<=periodEnd&&String(t.status||'').toLowerCase()!=='cancelled'&&String(t.tx_type||'').toLowerCase()==='expenditure').forEach(t=>{const key=String(t.category||'Uncategorised');expenseGroups[key]=expenseGroups[key]||{};add(expenseGroups[key],t.currency,t.amount)});
+    const revenueBreakdown=breakdown('Revenue',detailRows(revenueGroups));
+    const expenseBreakdown=breakdown('Expenses',detailRows(expenseGroups));
     host.innerHTML=
       panel('TOTAL REVENUE',m.revenue,'#16803d',`Recognised legal fees and other eligible income · ${label}`,revenueBreakdown)+
       panel('TOTAL EXPENSES',m.expenses,'#b42318',`Approved expenses manually recorded in Expenses Transactions · ${label}`,expenseBreakdown)+
