@@ -4,8 +4,8 @@
  */
 (function () {
   'use strict';
-  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 18) return;
-  window.MOLMSFinancialDashboardSimpleV1 = { version: 18, applied: false };
+  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 19) return;
+  window.MOLMSFinancialDashboardSimpleV1 = { version: 19, applied: false };
   const styleId = 'molms-financial-dashboard-simple-v1-style';
 
   function installStyle() {
@@ -89,9 +89,11 @@
       #page-findash .fd-manual-table-scroll::-webkit-scrollbar-thumb { background:#7b8794!important;border:2px solid #e8edf1!important;border-radius:8px!important; }
       #page-findash .fd-manual-table-scroll::-webkit-scrollbar-track { background:#e8edf1!important; }
       #page-findash .fd-manual-table-scroll th,#page-findash .fd-manual-table-scroll td { padding:4px 6px!important;line-height:1.15!important; }
-      #page-findash #fdManualBody .fd-manual-table-scroll table tbody tr { height:42px!important;min-height:42px!important; }
-      #page-findash #fdManualBody .fd-manual-table-scroll table tbody td { padding:3px 6px!important;line-height:1.1!important;height:42px!important;min-height:42px!important;vertical-align:middle!important; }
-      #page-findash #fdManualBody .fd-manual-table-scroll table tbody td button { min-height:22px!important;height:22px!important;padding:1px 5px!important;margin:1px!important;line-height:1!important;border-radius:5px!important;font-size:11px!important; }
+      /* Match the compact row rhythm used by Budget Summary / Attention Required. */
+      #page-findash #fdManualBody .fd-manual-table-scroll table { width:1600px!important;min-width:1600px!important;table-layout:auto!important;border-spacing:0!important; }
+      #page-findash #fdManualBody .fd-manual-table-scroll table tbody tr { height:36px!important;min-height:0!important; }
+      #page-findash #fdManualBody .fd-manual-table-scroll table tbody td { padding:3px 5px!important;line-height:1.1!important;height:auto!important;min-height:0!important;vertical-align:middle!important;white-space:nowrap!important; }
+      #page-findash #fdManualBody .fd-manual-table-scroll table tbody td button { min-height:22px!important;height:22px!important;min-width:24px!important;padding:1px 4px!important;margin:1px!important;line-height:1!important;border-radius:5px!important;font-size:11px!important; }
       #page-findash #fdManualBody .fd-manual-table-scroll table tbody td:last-child { white-space:nowrap!important; }
 
       @media(max-width:760px){#page-findash #fdKpiRow{grid-template-columns:repeat(2,minmax(0,1fr))!important;padding:12px!important;gap:8px!important}#page-findash #fdKpiRow>*{padding:11px!important}#page-findash>div[style*="overflow-y:auto"]{padding:12px!important}}
