@@ -72,13 +72,13 @@
 
   function card(label,value,total,currency,accent){
     const pct=total?Math.round(value/total*100):0;
-    return `<div style="background:#faf8f4;border-radius:10px;padding:10px 12px;margin-bottom:8px"><div style="font-size:10px;font-weight:800;color:${accent}">${esc(label)}</div><div style="font-size:16px;font-weight:900;color:${accent};margin-top:2px">${esc(currency)} ${short(value)}</div><div style="font-size:9px;color:var(--muted);margin-top:2px">Revenue · ${pct}% of ${esc(currency)} total</div></div>`;
+    return `<div style="background:#faf8f4;border-radius:9px;padding:8px 10px;margin:0;min-width:0;box-sizing:border-box"><div style="font-size:10px;font-weight:800;color:${accent}">${esc(label)}</div><div style="font-size:16px;font-weight:900;color:${accent};margin-top:2px">${esc(currency)} ${short(value)}</div><div style="font-size:9px;color:var(--muted);margin-top:2px">Revenue · ${pct}% of ${esc(currency)} total</div></div>`;
   }
 
   function section(currency,heading){
     const cur=sourceRows.filter(r=>r.currency===currency),total=cur.reduce((s,r)=>s+r.revenue,0);
     const value=p=>cur.filter(r=>r.practice===p).reduce((s,r)=>s+r.revenue,0);
-    return `${heading?`<div style="font-size:10px;font-weight:800;color:var(--muted);margin:7px 0 7px">${esc(heading)}</div>`:''}${card('Litigation',value('litigation'),total,currency,'#1d4ed8')}${card('Non-Litigation',value('non_litigation'),total,currency,'#16a34a')}${card('Other / General',value('general'),total,currency,'#64748b')}`;
+    return `${heading?`<div style="grid-column:1/-1;font-size:10px;font-weight:800;color:var(--muted);margin:2px 0">${esc(heading)}</div>`:''}${card('Litigation',value('litigation'),total,currency,'#1d4ed8')}${card('Non-Litigation',value('non_litigation'),total,currency,'#16a34a')}${card('Other / General',value('general'),total,currency,'#64748b')}`;
   }
 
   function render(){
@@ -88,6 +88,10 @@
     try{
       const extras=[...new Set(sourceRows.map(r=>r.currency).filter(c=>c&&c!=='TZS'))].sort();
       host.innerHTML=['TZS',...extras].map((c,i)=>section(c,i?`${c} PRACTICE REVENUE`:'' )).join('');
+      host.style.setProperty('display','grid','important');host.style.setProperty('grid-template-columns','repeat(3,minmax(0,1fr))','important');host.style.setProperty('gap','8px','important');host.style.setProperty('min-width','0','important');
+      let style=q('molms-practice-performance-compact-style');if(!style){style=document.createElement('style');style.id='molms-practice-performance-compact-style';style.textContent='@media(max-width:760px){#page-findash #fdRevByPractice{grid-template-columns:repeat(2,minmax(0,1fr))!important}}@media(max-width:420px){#page-findash #fdRevByPractice{grid-template-columns:1fr!important}}';document.head.appendChild(style)}
+      const page=q('page-findash');const scroll=page&&Array.from(page.children).find(el=>/overflow-y:\\s*auto/i.test(el.getAttribute('style')||''));
+      if(page&&scroll){const cardNode=(()=>{let n=host;while(n&&n.parentElement&&n.parentElement!==scroll){const st=n.getAttribute&&n.getAttribute('style')||'';if(n.matches&&n.matches('div')&&/border-radius:\\s*12px/i.test(st))return n;n=n.parentElement}return n&&n.parentElement===scroll?n:null})();const headings=[...scroll.querySelectorAll('h1,h2,h3,strong,b,div,span')].filter(el=>(el.textContent||'').trim()==='Invoice Register');let invoice=null;for(const el of headings){let n=el;while(n&&n.parentElement&&n.parentElement!==scroll){const st=n.getAttribute&&n.getAttribute('style')||'';if(n.matches&&n.matches('div')&&/border-radius:\\s*12px/i.test(st)){invoice=n;break}n=n.parentElement}if(invoice)break}if(cardNode&&invoice&&cardNode!==invoice&&invoice.nextElementSibling!==cardNode)invoice.insertAdjacentElement('afterend',cardNode);if(cardNode){cardNode.style.setProperty('padding','12px 14px','important');cardNode.style.setProperty('margin','12px 0 14px','important');cardNode.style.setProperty('height','auto','important');cardNode.style.setProperty('min-height','0','important')}}
     }finally{rendering=false}
   }
 
