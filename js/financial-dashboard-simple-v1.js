@@ -4,8 +4,8 @@
  */
 (function () {
   'use strict';
-  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 15) return;
-  window.MOLMSFinancialDashboardSimpleV1 = { version: 15, applied: false };
+  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 16) return;
+  window.MOLMSFinancialDashboardSimpleV1 = { version: 16, applied: false };
   const styleId = 'molms-financial-dashboard-simple-v1-style';
 
   function installStyle() {
@@ -41,11 +41,11 @@
       #page-findash #fdManualBody, #page-findash #fdPracticePerformance { scrollbar-width:thin; }
       /* Side-by-side compact workspace cards; tables scroll internally when needed. */
       #page-findash .fd-compact-workspace { display:block!important;width:100%!important;max-width:100%!important;overflow:visible!important;margin:8px 0 14px!important; }
-      #page-findash .fd-compact-workspace > .fd-compact-workspace-card { display:block!important;min-width:0!important;width:100%!important;max-width:100%!important;height:360px!important;min-height:320px!important;max-height:360px!important;overflow:hidden!important;box-sizing:border-box!important;margin:0 0 14px!important;padding:14px!important;border:1px solid #e4ddd2!important;border-radius:14px!important;background:#fff!important;box-shadow:0 3px 12px rgba(16,35,59,.05)!important; }
+      #page-findash .fd-compact-workspace > .fd-compact-workspace-card { display:block!important;min-width:0!important;width:100%!important;max-width:100%!important;height:320px!important;min-height:280px!important;max-height:320px!important;overflow:hidden!important;box-sizing:border-box!important;margin:0 0 14px!important;padding:14px!important;border:1px solid #e4ddd2!important;border-radius:14px!important;background:#fff!important;box-shadow:0 3px 12px rgba(16,35,59,.05)!important; }
       #page-findash .fd-compact-workspace-card #fdManualBody { max-height:420px!important;overflow-y:auto!important;overflow-x:auto!important;scrollbar-width:thin!important; }
       #page-findash .fd-compact-workspace-card #fdManualBody table tr { height:auto!important; }
       #page-findash .fd-compact-workspace-card #fdManualBody table th,
-      #page-findash .fd-compact-workspace-card #fdManualBody table td { padding:8px 7px!important;line-height:1.25!important; }
+      #page-findash .fd-compact-workspace-card #fdManualBody table td { padding:4px 6px!important;line-height:1.15!important; }
       #page-findash .fd-compact-workspace-card #fdManualBody,
       #page-findash .fd-compact-workspace-card #fdPracticePerformance { max-height:330px!important;overflow-x:auto!important;overflow-y:auto!important;overscroll-behavior:contain;scrollbar-width:thin; }
       /* The manual register has many columns: preserve its approval/rejection actions in a scrollable table. */
@@ -255,9 +255,9 @@
       manualCard.style.setProperty('display','block','important');
       manualCard.style.setProperty('width','100%','important');
       manualCard.style.setProperty('max-width','100%','important');
-      manualCard.style.setProperty('height','360px','important');
-      manualCard.style.setProperty('min-height','320px','important');
-      manualCard.style.setProperty('max-height','360px','important');
+      manualCard.style.setProperty('height','320px','important');
+      manualCard.style.setProperty('min-height','280px','important');
+      manualCard.style.setProperty('max-height','320px','important');
       manualCard.style.setProperty('overflow','hidden','important');
       manualCard.style.setProperty('margin-bottom','14px','important');
     }
