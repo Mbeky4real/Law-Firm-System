@@ -4,8 +4,8 @@
  */
 (function () {
   'use strict';
-  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 19) return;
-  window.MOLMSFinancialDashboardSimpleV1 = { version: 19, applied: false };
+  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 20) return;
+  window.MOLMSFinancialDashboardSimpleV1 = { version: 20, applied: false };
   const styleId = 'molms-financial-dashboard-simple-v1-style';
 
   function installStyle() {
@@ -95,6 +95,13 @@
       #page-findash #fdManualBody .fd-manual-table-scroll table tbody td { padding:3px 5px!important;line-height:1.1!important;height:auto!important;min-height:0!important;vertical-align:middle!important;white-space:nowrap!important; }
       #page-findash #fdManualBody .fd-manual-table-scroll table tbody td button { min-height:22px!important;height:22px!important;min-width:24px!important;padding:1px 4px!important;margin:1px!important;line-height:1!important;border-radius:5px!important;font-size:11px!important; }
       #page-findash #fdManualBody .fd-manual-table-scroll table tbody td:last-child { white-space:nowrap!important; }
+      #page-findash #fdManualBody .fd-manual-table-scroll table { border-collapse:collapse!important;border-spacing:0!important; }
+      #page-findash #fdManualBody .fd-manual-table-scroll table tbody tr { height:38px!important; }
+      #page-findash #fdManualBody .fd-manual-table-scroll table tbody td { padding:2px 5px!important;line-height:1.05!important;height:38px!important; }
+      #page-findash #fdManualBody .fd-manual-table-scroll table tbody td button { display:inline-flex!important;align-items:center!important;justify-content:center!important;vertical-align:middle!important;float:none!important;position:static!important;width:26px!important;min-width:26px!important;height:24px!important;min-height:24px!important;margin:0 2px!important;padding:0!important; }
+      #page-findash #fdManualBody .fd-manual-table-scroll table tbody td:last-child { white-space:nowrap!important;min-width:70px!important;width:70px!important; }
+      #page-findash #fdManualBody .fd-manual-table-scroll table tbody td:last-child button { display:inline-flex!important; }
+
 
       @media(max-width:760px){#page-findash #fdKpiRow{grid-template-columns:repeat(2,minmax(0,1fr))!important;padding:12px!important;gap:8px!important}#page-findash #fdKpiRow>*{padding:11px!important}#page-findash>div[style*="overflow-y:auto"]{padding:12px!important}}
       @media(max-width:420px){#page-findash #fdKpiRow{grid-template-columns:1fr!important}}
