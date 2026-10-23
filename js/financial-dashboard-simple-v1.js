@@ -13,7 +13,7 @@
     const style = document.createElement('style');
     style.id = styleId;
     style.textContent = `
-      #page-findash #fdKpiRow { display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;align-items:stretch!important;gap:10px!important;padding:12px 20px!important;margin:0 0 12px!important; }
+      #page-findash #fdKpiRow { display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;align-items:stretch!important;gap:10px!important;padding:12px 20px!important;margin:0 0 12px!important; }
       #page-findash #fdKpiRow>* { min-width:0!important;width:auto!important;max-width:none!important;margin:0!important;padding:14px 14px!important;box-sizing:border-box!important;border:1px solid #e4ddd2!important;border-radius:12px!important;box-shadow:0 2px 8px rgba(16,35,59,.045)!important;background:#fff!important; }
       #page-findash #fdKpiRow>div:nth-child(3) { border:1px solid #b8d8c5!important;background:#f3faf5!important;box-shadow:0 3px 10px rgba(28,110,65,.08)!important; }
       #page-findash>div[style*="overflow-y:auto"] { padding:16px 20px!important; }
@@ -132,7 +132,7 @@
     const kpiRow = page.querySelector('#fdKpiRow');
     if (kpiRow) {
       kpiRow.style.setProperty('display', 'grid', 'important');
-      kpiRow.style.setProperty('grid-template-columns', 'repeat(2,minmax(0,1fr))', 'important');
+      kpiRow.style.setProperty('grid-template-columns', 'repeat(3,minmax(0,1fr))', 'important');
       kpiRow.style.setProperty('align-items', 'stretch', 'important');
       kpiRow.setAttribute('aria-label', 'Financial key performance indicators');
     }
@@ -199,6 +199,11 @@
 
   function start() {
     apply();
+    // Reconcile the intended three-card executive snapshot after legacy dashboard paints.
+    const renderSnapshot = () => { try { if (window.MOLMSFinanceV16 && typeof window.MOLMSFinanceV16.render === 'function') window.MOLMSFinanceV16.render(); } catch (e) { console.warn('[MOLMS compact finance snapshot]', e); } };
+    renderSnapshot();
+    setTimeout(renderSnapshot, 350);
+    setTimeout(renderSnapshot, 1200);
     const page = document.getElementById('page-findash');
     if (!page || window.MOLMSFinancialDashboardSimpleV1.observer) return;
     const observer = new MutationObserver(() => apply());
