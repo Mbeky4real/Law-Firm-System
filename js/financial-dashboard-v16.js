@@ -203,12 +203,37 @@
   }
 
 
-  // No verified opening/closing bank statements or counted office-cash
-  // balances are available to this dashboard calculation. Do not label a net
-  // movement estimate as "cash available". The KPI below therefore shows a
-  // reconciliation-pending state until verified balances can be reconciled.
+  // Monthly opening balance is zero by the firm's stated policy: cash
+  // available from the preceding month has been fully exhausted. Calculate
+  // the selected month's net cash movement, keeping currencies separate.
+  // Cash receipts exclude withholding tax; inter-account transfers are not
+  // classified as revenue or expenditure in this calculation.
   function periodCashAvailable(){
-    return {reconciliationPending:true};
+    const {start,end}=bounds();
+    const byCur={...periodCollections()};
+    const {manual}=data();
+    manual.filter(t=>
+      approved(t) &&
+      date(t.date)>=start && date(t.date)<=end &&
+      String(t.status||'').toLowerCase()!=='cancelled'
+    ).forEach(t=>{
+      const type=String(t.tx_type||'').toLowerCase();
+      if(type==='loan') add(byCur,t.currency,t.amount);
+      if(type==='drawing') add(byCur,t.currency,-num(t.amount));
+    });
+    const expenses=periodExpenses();
+    Object.entries(expenses).forEach(([currency,amount])=>add(byCur,currency,-num(amount)));
+    return {
+      reconciliationPending:false,
+      openingBalanceByCurrency:{TZS:0},
+      receiptsByCurrency:periodCollections(),
+      expensesByCurrency:expenses,
+      cashAvailableByCurrency:byCur,
+      TZS:num(byCur.TZS),
+      USD:num(byCur.USD),
+      start,end,
+      basis:'zero monthly opening balance; recorded cash receipts plus recorded loan proceeds less approved manual expenses and drawings'
+    };
   }
 
   function metrics(){
