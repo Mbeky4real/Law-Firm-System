@@ -4,8 +4,8 @@
  */
 (function () {
   'use strict';
-  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 16) return;
-  window.MOLMSFinancialDashboardSimpleV1 = { version: 16, applied: false };
+  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 17) return;
+  window.MOLMSFinancialDashboardSimpleV1 = { version: 17, applied: false };
   const styleId = 'molms-financial-dashboard-simple-v1-style';
 
   function installStyle() {
@@ -82,7 +82,14 @@
 
       @media(max-width:900px){#page-findash #fdManualBody{overflow-x:auto!important}#page-findash #fdManualBody table{min-width:900px!important}#page-findash #fdPracticePerformance{overflow-x:auto!important}}
 
-      @media(max-width:1250px){#page-findash #fdKpiRow{grid-template-columns:repeat(2,minmax(0,1fr))!important}}\n      @media(max-width:760px){#page-findash #fdKpiRow{grid-template-columns:repeat(2,minmax(0,1fr))!important;padding:12px!important;gap:8px!important}#page-findash #fdKpiRow>*{padding:11px!important}#page-findash>div[style*="overflow-y:auto"]{padding:12px!important}}
+      @media(max-width:1250px){#page-findash #fdKpiRow{grid-template-columns:repeat(2,minmax(0,1fr))!important}}\n      /* Final manual-register scrolling: make both axes obvious and guarantee horizontal overflow. */
+      #page-findash .fd-manual-table-scroll { display:block!important;width:100%!important;max-width:100%!important;height:250px!important;max-height:250px!important;overflow-x:scroll!important;overflow-y:scroll!important;scrollbar-width:auto!important;scrollbar-color:#7b8794 #e8edf1!important; }
+      #page-findash .fd-manual-table-scroll table { width:1600px!important;min-width:1600px!important;max-width:none!important;table-layout:auto!important; }
+      #page-findash .fd-manual-table-scroll::-webkit-scrollbar { width:14px!important;height:14px!important;display:block!important; }
+      #page-findash .fd-manual-table-scroll::-webkit-scrollbar-thumb { background:#7b8794!important;border:2px solid #e8edf1!important;border-radius:8px!important; }
+      #page-findash .fd-manual-table-scroll::-webkit-scrollbar-track { background:#e8edf1!important; }
+      #page-findash .fd-manual-table-scroll th,#page-findash .fd-manual-table-scroll td { padding:4px 6px!important;line-height:1.15!important; }
+      @media(max-width:760px){#page-findash #fdKpiRow{grid-template-columns:repeat(2,minmax(0,1fr))!important;padding:12px!important;gap:8px!important}#page-findash #fdKpiRow>*{padding:11px!important}#page-findash>div[style*="overflow-y:auto"]{padding:12px!important}}
       @media(max-width:420px){#page-findash #fdKpiRow{grid-template-columns:1fr!important}}
     `;
     document.head.appendChild(style);
