@@ -165,40 +165,19 @@
       .filter(x=>x.integrity.needsReconciliation);
   }
 
-  // Period expenses include approved manual outflows, partner drawings, and
-  // finalized payroll net salaries. Cancelled/draft payroll runs are excluded.
-  // Payroll rows already entered as a manual expenditure are not counted twice
-  // when the date and amount match a finalized payroll salary line.
+  // Total Expenses policy: only approved manual expenditure rows recorded
+  // in Expenses Transactions are included. Payroll, office_expenses, expense
+  // registers, drawings and loan principal are not auto-added to this KPI.
+  // If a payroll/other cost should appear here, it must first be recorded
+  // manually in the authoritative Expenses Transactions workflow.
   function periodExpenses(){
-    const {start,end}=bounds(),{manual,payroll}=data(),out={TZS:0};
-    const eligibleManual=manual.filter(t=>approved(t)&&date(t.date)>=start&&date(t.date)<=end&&String(t.status||'').toLowerCase()!=='cancelled'&&['expenditure','drawing'].includes(String(t.tx_type||'').toLowerCase()));
-    eligibleManual.forEach(t=>add(out,t.currency,t.amount));
-    // Closed expense-register lines are authoritative outflows and were not part
-    // of fd_manual_transactions. Include them for the selected period, while
-    // suppressing a manual entry that clearly mirrors the same dated expense.
-    expenseRegisterRows.filter(e=>date(e.date)>=start&&date(e.date)<=end&&String(e.register_status||'').toLowerCase()==='closed'&&String(e.status||'approved').toLowerCase()!=='cancelled').forEach(e=>{
-      const amount=num(e.amount),d=date(e.date),cur='TZS';
-      const mirrored=eligibleManual.some(t=>date(t.date)===d&&(t.currency||'TZS')===cur&&Math.abs(num(t.amount)-amount)<.01&&(/expense|register/i.test(String(t.description||t.category||''))||/expense|register/i.test(String(e.description||e.category||''))));
-      if(!mirrored)add(out,cur,amount);
-    });
-    // The HR module stores a finalized monthly total on hr_payroll_runs; its
-    // payroll_month is YYYY-MM, not a payment date. Include locked runs once.
-    authoritativePayrollRuns.filter(p=>String(p.payroll_month||'')===start.slice(0,7)&&String(p.status||'').toLowerCase()==='locked'&&!p.deleted_at).forEach(p=>{
-      const salary=num(p.total_net);
-      const mirrored=eligibleManual.some(t=>(t.currency||'TZS')==='TZS'&&Math.abs(num(t.amount)-salary)<.01&&/salary|payroll/i.test(String(t.description||t.category||'')));
-      if(salary>0&&!mirrored)add(out,'TZS',salary);
-    });
-    const finalizedPayroll=payroll.filter(p=>{
-      const st=String(p.status||p.run_status||'').toLowerCase();
-      const d=date(p.payment_date||p.pay_date||p.date||p.payroll_date||p.period_date);
-      const salary=num(p.net_salary||p.net_salary_paid||p.net_pay);
-      return ['locked','paid','approved','finalized','completed'].includes(st)&&d>=start&&d<=end&&salary>0;
-    });
-    finalizedPayroll.forEach(p=>{
-      const d=date(p.payment_date||p.pay_date||p.date||p.payroll_date||p.period_date),cur=p.currency||'TZS',salary=num(p.net_salary||p.net_salary_paid||p.net_pay);
-      const manuallyRecorded=eligibleManual.some(t=>date(t.date)===d&&(t.currency||'TZS')===cur&&Math.abs(num(t.amount)-salary)<.01&&/salary|payroll/i.test(String(t.description||t.category||'')));
-      if(!manuallyRecorded)add(out,cur,salary);
-    });
+    const {start,end}=bounds(),{manual}=data(),out={TZS:0};
+    manual.filter(t=>
+      approved(t) &&
+      date(t.date)>=start && date(t.date)<=end &&
+      String(t.status||'').toLowerCase()!=='cancelled' &&
+      String(t.tx_type||'').toLowerCase()==='expenditure'
+    ).forEach(t=>add(out,t.currency,t.amount));
     return out;
   }
 
@@ -221,19 +200,16 @@
   }
 
 
-  // Policy: Cash Available is selected-period cash received minus expenses.
-  // Expenses include approved manual expenditure, partner drawings and finalized
-  // payroll net salaries. Payroll is only included for final/paid runs; cancelled
-  // and draft runs are excluded.
-  function periodCashAvailable(collected,expenses){
-    const out={TZS:0};
-    const currencies=new Set([...Object.keys(collected||{}),...Object.keys(expenses||{}),'TZS']);
-    currencies.forEach(c=>out[c]=num(collected?.[c])-num(expenses?.[c]));
-    return out;
+  // No verified opening/closing bank statements or counted office-cash
+  // balances are available to this dashboard calculation. Do not label a net
+  // movement estimate as "cash available". The KPI below therefore shows a
+  // reconciliation-pending state until verified balances can be reconciled.
+  function periodCashAvailable(){
+    return {reconciliationPending:true};
   }
 
   function metrics(){
-    const rows=periodClientRows(),revenue=totals(rows,'revenue'),collected=periodCollections(),newReceivables=totals(rows,'outstanding'),expenses=periodExpenses(),cash=cashPosition(),cashAvailable=periodCashAvailable(collected,expenses);
+    const rows=periodClientRows(),revenue=totals(rows,'revenue'),collected=periodCollections(),newReceivables=totals(rows,'outstanding'),expenses=periodExpenses(),cash=cashPosition(),cashAvailable=periodCashAvailable();
     return {rows,revenue,collected,newReceivables,expenses,cash,cashAvailable,totalReceivables:totals(allReceivables(),'outstanding')};
   }
 
@@ -244,29 +220,16 @@
   function renderKpis(){
     const host=q('fdKpiRow');if(!host)return;
     const m=metrics(),label=typeof fdPeriodLabel==='function'?fdPeriodLabel():'Selected period';
-    // Layout is applied at the actual KPI render source. No DOM nodes are moved.
-    const styleId='molms-financial-kpi-layout-v2';
-    if(!document.getElementById(styleId)){
-      const style=document.createElement('style');
-      style.id=styleId;
-      style.textContent=`
-        #page-findash #fdKpiRow{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px!important;align-items:stretch!important;padding:14px 20px!important;box-sizing:border-box!important}
-        #page-findash #fdKpiRow>*{min-width:0!important;width:auto!important;max-width:none!important;margin:0!important;padding:15px 16px!important;border:1px solid #e4e7ec!important;border-radius:12px!important;box-shadow:0 2px 8px rgba(16,24,40,.05)!important;box-sizing:border-box!important;overflow-wrap:anywhere}
-        #page-findash #fdKpiRow>*:first-child{background:#f1f8f3!important;border-color:#b9d9c5!important}
-        #page-findash #fdKpiRow>*:first-child>div:nth-child(2){font-size:20px!important}
-        @media(max-width:1050px){#page-findash #fdKpiRow{grid-template-columns:repeat(2,minmax(0,1fr))!important;padding:12px!important;gap:10px!important}}
-        @media(max-width:560px){#page-findash #fdKpiRow{grid-template-columns:1fr!important;padding:10px!important;gap:8px!important}#page-findash #fdKpiRow>*{padding:12px!important}}
-      `;
-      document.head.appendChild(style);
-    }
-    host.innerHTML=[
-      card('CASH AVAILABLE',m.cashAvailable||{TZS:0},num(m.cashAvailable?.TZS)>=0?'#167244':'#b42318',`Cash received minus approved manual-register expenses · ${label}`),
-      card('CASH RECEIVED',m.collected,'#065f46',`Verified cash only · WHT tracked separately: ${moneyLines(periodWithholdingTax()).map(x=>x.text).join(', ')||'0'} · ${label}`),
-      card('NEW RECEIVABLES',m.newReceivables,'#b54708',`Unpaid recognised fees · ${label}`),
-      card('RECOGNISED REVENUE',m.revenue,'#16803d',`Full agreed/invoiced fees · ${label}`),
-      card('OPERATING EXPENSES',m.expenses,'#b42318',`Recorded expenses · ${label}`),
-      card('PERIOD RESULT',Object.fromEntries(Object.keys({...m.revenue,...m.expenses}).map(c=>[c,num(m.revenue[c])-num(m.expenses[c])])),'#344054',label)
-    ].join('');
+    const fmt=values=>moneyLines(values,false).map((l,i)=>`<div style="font-size:${i?'13px':'22px'};font-weight:900;line-height:1.25;color:#182230">${esc(l.text)}</div>`).join('');
+    const breakdown=(title,values,rows)=>`<details style="margin-top:10px;border-top:1px solid #e4e7ec;padding-top:8px"><summary style="cursor:pointer;font-size:11px;font-weight:800;color:#344054">View ${title.toLowerCase()} breakdown</summary><div style="margin-top:8px">${fmt(values)}<div style="font-size:10px;color:#667085;margin-top:5px">${rows}</div></div></details>`;
+    const panel=(title,values,accent,note,extra='')=>`<section style="min-width:0;background:#fff;border:1px solid #e4e7ec;border-radius:14px;padding:17px 18px;box-shadow:0 2px 8px rgba(16,24,40,.045);box-sizing:border-box"><div style="font-size:11px;font-weight:900;letter-spacing:.45px;color:#667085;margin-bottom:7px">${esc(title)}</div>${fmt(values)}<div style="font-size:11px;color:#667085;margin-top:7px;line-height:1.4">${esc(note)}</div>${extra}</section>`;
+    const revenueBreakdown=breakdown('Revenue',m.revenue,'Recognised tax invoices and eligible manually recorded direct revenue. Draft, void, cancelled and superseded invoices are excluded.');
+    const expenseBreakdown=breakdown('Expenses',m.expenses,'Only approved manual expenditure transactions recorded in Expenses Transactions are included. Payroll runs, office-expense rows, expense registers, drawings and loan repayments are not auto-added.');
+    host.innerHTML=
+      panel('TOTAL REVENUE',m.revenue,'#16803d',`Recognised legal fees and other eligible income · ${label}`,revenueBreakdown)+
+      panel('TOTAL EXPENSES',m.expenses,'#b42318',`Approved expenses manually recorded in Expenses Transactions · ${label}`,expenseBreakdown)+
+      `<section style="grid-column:1/-1;min-width:0;background:#f3faf5;border:1px solid #b8d8c5;border-radius:14px;padding:18px 20px;box-shadow:0 3px 10px rgba(28,110,65,.07);box-sizing:border-box"><div style="font-size:11px;font-weight:900;letter-spacing:.45px;color:#24633d;margin-bottom:6px">CASH AVAILABLE AFTER EXPENSES</div><div style="font-size:20px;font-weight:900;line-height:1.25;color:#7c5b12">Reconciliation pending</div><div style="font-size:11px;line-height:1.5;color:#52665a;margin-top:7px">A verified cash balance cannot yet be confirmed from the available data. Bank statement closing balances and a confirmed office-cash balance must be reconciled with actual receipts, payments and transfers. This avoids showing an unverified estimate as available money.</div><details style="margin-top:11px;border-top:1px solid #cfe4d5;padding-top:9px"><summary style="cursor:pointer;font-size:11px;font-weight:800;color:#24633d">What is needed to confirm this balance?</summary><ul style="font-size:11px;line-height:1.6;color:#344054;margin:8px 0 0;padding-left:18px"><li>Opening and closing statement balances for each firm bank account</li><li>Counted office cash balance</li><li>Receipts and actual payments reconciled by currency and date</li><li>Transfers between firm accounts matched and excluded from income/expenses</li><li>Withholding tax kept separate from cash received</li></ul></details></section>`;
+    host.setAttribute('aria-label','Financial dashboard summary');
   }
 
   function renderReceivables(){
@@ -457,6 +420,6 @@
   window.MOLMSFinanceV16={metrics,periodClientRows,allReceivables,render,refresh,
     setPaymentRowsForTest(rows){paymentRows=Array.isArray(rows)?rows:[];paymentLedgerLoadError=false},
     paymentIntegrity,
-    audit:()=>{const m=metrics();return {version:18,period:bounds(),revenue:m.revenue,collected:m.collected,withholdingTax:periodWithholdingTax(),reconciliationIssues:reconciliationIssues().length,newReceivables:m.newReceivables,totalReceivables:m.totalReceivables,cash:m.cash.closingByCur,expenses:m.expenses,cashAvailable:m.cashAvailable,cashAvailablePolicy:'period cash received minus approved manual expenditure, partner drawings and finalized payroll net salaries',vat:vatPosition(),paymentLedgerRows:paymentRows.length}}
+    audit:()=>{const m=metrics();return {version:18,period:bounds(),revenue:m.revenue,collected:m.collected,withholdingTax:periodWithholdingTax(),reconciliationIssues:reconciliationIssues().length,newReceivables:m.newReceivables,totalReceivables:m.totalReceivables,cash:m.cash.closingByCur,expenses:m.expenses,cashAvailable:m.cashAvailable,cashAvailablePolicy:'reconciliation pending until verified bank and office-cash balances are available',vat:vatPosition(),paymentLedgerRows:paymentRows.length}}
   };
 })();
