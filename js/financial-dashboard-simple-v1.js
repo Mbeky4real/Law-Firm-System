@@ -26,6 +26,21 @@
       #page-findash .fd-simple-summary-label { min-width:0;overflow-wrap:anywhere;color:#344054; }
       #page-findash .fd-simple-summary-value { flex:0 0 auto;text-align:right;font-weight:700;color:#182230; }
       #page-findash .fd-simple-summary-note { display:block;color:#667085;font-size:11px;font-weight:400;margin-top:2px; }
+      /* Compact, professional presentation for the two lower dashboard sections. */
+      #page-findash #fdManualBody { overflow-x:auto!important; }
+      #page-findash #fdManualBody table { width:100%!important;border-collapse:separate!important;border-spacing:0!important;font-size:11px!important; }
+      #page-findash #fdManualBody th { padding:8px 6px!important;font-size:10px!important;line-height:1.25!important;white-space:nowrap!important;color:#667085!important;background:#faf9f6!important;border-bottom:1px solid #e4ddd2!important; }
+      #page-findash #fdManualBody td { padding:7px 6px!important;font-size:11px!important;line-height:1.3!important;vertical-align:middle!important;border-bottom:1px solid #edf0f2!important; }
+      #page-findash #fdManualBody tr:last-child td { border-bottom:0!important; }
+      #page-findash #fdManualBody button { min-height:30px!important;border-radius:8px!important; }
+      #page-findash #fdPracticePerformance { min-width:0!important; }
+      #page-findash #fdPracticePerformance table { width:100%!important;border-collapse:separate!important;border-spacing:0!important; }
+      #page-findash #fdPracticePerformance th { padding:8px 7px!important;background:#faf9f6!important;color:#667085!important;font-size:10px!important;white-space:nowrap!important; }
+      #page-findash #fdPracticePerformance td { padding:8px 7px!important;font-size:11px!important;line-height:1.35!important;border-bottom:1px solid #edf0f2!important; }
+      #page-findash #fdPracticePerformance button { font-size:11px!important; }
+      #page-findash #fdManualBody, #page-findash #fdPracticePerformance { scrollbar-width:thin; }
+      @media(max-width:900px){#page-findash #fdManualBody{overflow-x:auto!important}#page-findash #fdManualBody table{min-width:900px!important}#page-findash #fdPracticePerformance{overflow-x:auto!important}}
+
       @media(max-width:1250px){#page-findash #fdKpiRow{grid-template-columns:repeat(2,minmax(0,1fr))!important}}\n      @media(max-width:760px){#page-findash #fdKpiRow{grid-template-columns:repeat(2,minmax(0,1fr))!important;padding:12px!important;gap:8px!important}#page-findash #fdKpiRow>*{padding:11px!important}#page-findash>div[style*="overflow-y:auto"]{padding:12px!important}}
       @media(max-width:420px){#page-findash #fdKpiRow{grid-template-columns:1fr!important}}
     `;
