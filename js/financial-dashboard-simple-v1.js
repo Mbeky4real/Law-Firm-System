@@ -4,8 +4,8 @@
  */
 (function () {
   'use strict';
-  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 13) return;
-  window.MOLMSFinancialDashboardSimpleV1 = { version: 13, applied: false };
+  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 14) return;
+  window.MOLMSFinancialDashboardSimpleV1 = { version: 14, applied: false };
   const styleId = 'molms-financial-dashboard-simple-v1-style';
 
   function installStyle() {
@@ -39,6 +39,16 @@
       #page-findash #fdPracticePerformance td { padding:8px 7px!important;font-size:11px!important;line-height:1.35!important;border-bottom:1px solid #edf0f2!important; }
       #page-findash #fdPracticePerformance button { font-size:11px!important; }
       #page-findash #fdManualBody, #page-findash #fdPracticePerformance { scrollbar-width:thin; }
+      /* Side-by-side compact workspace cards; tables scroll internally when needed. */
+      #page-findash .fd-compact-workspace { display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:12px!important;align-items:stretch!important;margin:8px 0 14px!important; }
+      #page-findash .fd-compact-workspace > .fd-compact-workspace-card { min-width:0!important;width:auto!important;max-width:none!important;height:430px!important;max-height:430px!important;overflow:hidden!important;box-sizing:border-box!important;margin:0!important;padding:14px!important;border:1px solid #e4ddd2!important;border-radius:14px!important;background:#fff!important;box-shadow:0 3px 12px rgba(16,35,59,.05)!important; }
+      #page-findash .fd-compact-workspace-card #fdManualBody,
+      #page-findash .fd-compact-workspace-card #fdPracticePerformance { max-height:330px!important;overflow:auto!important; }
+      #page-findash .fd-compact-workspace-card table { min-width:680px!important; }
+      #page-findash .fd-compact-workspace-card h2,
+      #page-findash .fd-compact-workspace-card h3 { margin-top:0!important;font-size:14px!important; }
+      @media(max-width:1050px){#page-findash .fd-compact-workspace{grid-template-columns:minmax(0,1fr)!important}#page-findash .fd-compact-workspace>.fd-compact-workspace-card{height:360px!important;max-height:360px!important}}
+
       @media(max-width:900px){#page-findash #fdManualBody{overflow-x:auto!important}#page-findash #fdManualBody table{min-width:900px!important}#page-findash #fdPracticePerformance{overflow-x:auto!important}}
 
       @media(max-width:1250px){#page-findash #fdKpiRow{grid-template-columns:repeat(2,minmax(0,1fr))!important}}\n      @media(max-width:760px){#page-findash #fdKpiRow{grid-template-columns:repeat(2,minmax(0,1fr))!important;padding:12px!important;gap:8px!important}#page-findash #fdKpiRow>*{padding:11px!important}#page-findash>div[style*="overflow-y:auto"]{padding:12px!important}}
@@ -182,11 +192,27 @@
     // Replace dense tabular bodies with short management lists while preserving source data.
     ['fdExpenseBody','fdBudgetBody','fdTopClients','fdMatterLeaderboard'].forEach(id => compactTable(id, page));
 
-    // Keep practice performance visible; it contains decision-useful management context.
+    // Place the two detailed management cards side by side in a compact workspace.
+    const manual = page.querySelector('#fdManualBody');
     const practice = page.querySelector('#fdPracticePerformance');
     if (practice) {
-      const card = dashboardCardFor(practice, scroll);
-      if (card && card !== scroll) card.style.display = '';
+      const practiceCard = dashboardCardFor(practice, scroll);
+      if (practiceCard && practiceCard !== scroll) practiceCard.style.display = '';
+    }
+    if (manual && practice) {
+      const manualCard = dashboardCardFor(manual, scroll);
+      const practiceCard = dashboardCardFor(practice, scroll);
+      if (manualCard && practiceCard && manualCard !== practiceCard && manualCard.parentElement === scroll && practiceCard.parentElement === scroll) {
+        let workspace = page.querySelector('.fd-compact-workspace');
+        if (!workspace) {
+          workspace = document.createElement('div');
+          workspace.className = 'fd-compact-workspace';
+          workspace.setAttribute('aria-label','Compact financial management workspace');
+          manualCard.parentElement.insertBefore(workspace, manualCard);
+        }
+        if (manualCard.parentElement !== workspace) { manualCard.classList.add('fd-compact-workspace-card'); workspace.appendChild(manualCard); }
+        if (practiceCard.parentElement !== workspace) { practiceCard.classList.add('fd-compact-workspace-card'); workspace.appendChild(practiceCard); }
+      }
     }
     window.MOLMSFinancialDashboardSimpleV1.applied = true;
   }
