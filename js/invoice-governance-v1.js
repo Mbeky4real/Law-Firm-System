@@ -7,6 +7,7 @@ const $=id=>document.getElementById(id);
 const client=()=>typeof sb!=='undefined'?sb:(window.supabaseClient||null);
 const invoicePage=()=>{const p=$('page-invoice');return p&&p.style.display!=='none'&&!p.hidden?p:null};
 let identity={userId:null,name:'',role:''};
+let invoiceStatusCache={number:'',status:''};
 
 async function loadIdentity(){
   const c=client(); if(!c?.auth?.getUser)return;
@@ -67,9 +68,10 @@ function neutraliseManagerIssueControls(){
 
 function correctManagerIdentityLabels(){
   const p=invoicePage(); if(!p||!manager())return;
-  // Issued invoices must retain the actual Partner signatory.
-  const statusText=text(p).toLowerCase();
-  if(statusText.includes('issued') && !statusText.includes('draft')) return;
+  // Do not infer invoice status from visible text: the template itself says
+  // "Issued by", which made the old guard skip correction every time.
+  // Preserve the actual Partner signatory only when the saved invoice is issued.
+  if(invoiceStatusCache.status==='issued') return;
   const walker=document.createTreeWalker(p,NodeFilter.SHOW_TEXT);
   const nodes=[];
   while(walker.nextNode())nodes.push(walker.currentNode);
@@ -122,6 +124,16 @@ async function partnerIssueButton(){
 async function refresh(){
   const p=invoicePage();if(!p)return;
   await loadIdentity();
+  const numberInput=[...p.querySelectorAll('input')].find(x=>/invoice.?number/i.test((x.name||'')+' '+(x.id||'')));
+  const number=numberInput?.value?.trim()||'';
+  if(number && number!==invoiceStatusCache.number){
+    invoiceStatusCache={number,status:''};
+    const c=client();
+    if(c){
+      const {data,error}=await c.from('invoices').select('status').eq('invoice_number',number).maybeSingle();
+      if(!error&&data)invoiceStatusCache={number,status:String(data.status||'').toLowerCase()};
+    }
+  }
   neutraliseManagerIssueControls();
   correctManagerIdentityLabels();
   addSendButton();
