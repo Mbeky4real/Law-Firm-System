@@ -48,6 +48,8 @@
       <div class="hr-id-grid">
         <div><label>TIN Number</label><input id="hrf_tin" placeholder="Tanzania Revenue Authority TIN" autocomplete="off"></div>
         <div><label>NIDA / NIN Number</label><input id="hrf_nida" placeholder="National Identification Number" autocomplete="off"></div>
+        <div><label>NSSF Number</label><input id="hrf_nssf" placeholder="NSSF membership number" autocomplete="off"></div>
+        <div><label>NHIF Number</label><input id="hrf_nhif" placeholder="Health insurance membership number" autocomplete="off"></div>
         <div><label>Emergency Contact Person</label><input id="hrf_emergency_name" placeholder="Full name"></div>
         <div><label>Relationship</label><input id="hrf_emergency_relation" placeholder="e.g. Spouse, Parent, Sibling"></div>
         <div><label>Emergency Contact Phone</label><input id="hrf_emergency_phone" type="tel" placeholder="+255..."></div>
@@ -72,6 +74,8 @@
         if(!payload) return payload;
         payload.tin_number=( $('hrf_tin')?.value||'').trim()||null;
         payload.nida_number=( $('hrf_nida')?.value||'').trim()||null;
+        payload.nssf_number=( $('hrf_nssf')?.value||'').trim()||null;
+        payload.nhif_number=( $('hrf_nhif')?.value||'').trim()||null;
         payload.emergency_contact_name=( $('hrf_emergency_name')?.value||'').trim()||null;
         payload.emergency_contact_relation=( $('hrf_emergency_relation')?.value||'').trim()||null;
         payload.emergency_contact_phone=( $('hrf_emergency_phone')?.value||'').trim()||null;
@@ -86,13 +90,15 @@
         addFormFields();
         const c=client(); if(!c||!id) return;
         const {data,error}=await c.from('hr_employees')
-          .select('tin_number,nida_number,emergency_contact_name,emergency_contact_relation,emergency_contact_phone')
+          .select('tin_number,nida_number,nssf_number,nhif_number,emergency_contact_name,emergency_contact_relation,emergency_contact_phone')
           .eq('id',id).maybeSingle();
         if(error){console.error('HR identity details:',error.message);return;}
         if(data){
           const set=(fid,v)=>{const el=$(fid);if(el)el.value=v??'';};
           set('hrf_tin',data.tin_number);
           set('hrf_nida',data.nida_number);
+          set('hrf_nssf',data.nssf_number);
+          set('hrf_nhif',data.nhif_number);
           set('hrf_emergency_name',data.emergency_contact_name);
           set('hrf_emergency_relation',data.emergency_contact_relation);
           set('hrf_emergency_phone',data.emergency_contact_phone);
@@ -132,6 +138,8 @@
           <div class="hr-detail-section-title">IDENTIFICATION</div>
           ${detailBox('TIN Number',e.tin_number)}
           ${detailBox('NIDA / NIN Number',e.nida_number)}
+          ${detailBox('NSSF Number',e.nssf_number)}
+          ${detailBox('NHIF Number',e.nhif_number)}
           <div class="hr-detail-section-title">EMERGENCY CONTACT</div>
           ${detailBox('Contact Person',e.emergency_contact_name)}
           ${detailBox('Relationship',e.emergency_contact_relation)}
