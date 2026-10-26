@@ -14,9 +14,35 @@ async function loadIdentity(){
     const u=(await c.auth.getUser()).data?.user;
     if(!u?.id)return;
     identity.userId=u.id;
-    const {data}=await c.from('roles').select('user_id,full_name,email,role,position').eq('user_id',u.id).maybeSingle();
-    identity.name=data?.full_name||u.user_metadata?.full_name||u.email||'';
-    identity.role=String(data?.role||'').toLowerCase();
+
+    // A user may have more than one role row. maybeSingle() fails in that
+    // case and silently leaves the invoice UI without the correct role.
+    const {data:roleRows,error:roleError}=await c.from('roles')
+      .select('user_id,full_name,email,role,position,active')
+      .eq('user_id',u.id);
+    let rows=Array.isArray(roleRows)?roleRows:[];
+    if(roleError) console.warn('[MOLMS invoice governance] role lookup:',roleError.message);
+    rows=rows.filter(r=>r.active!==false);
+    const normalise=r=>String(r?.role||'').trim().toLowerCase().replace(/[ -]+/g,'_');
+    // For invoice preparation labels, an explicit Office Manager role must
+    // take precedence over a stale/secondary partner row.
+    const selected=rows.find(r=>['office_manager','office_admin'].includes(normalise(r)))
+      || rows.find(r=>normalise(r)==='partner')
+      || rows[0]
+      || null;
+    identity.name=selected?.full_name||selected?.position||u.user_metadata?.full_name||u.email||'';
+    identity.role=normalise(selected);
+
+    // Compatibility fallback for installations where roles are stored on users.
+    if(!identity.role){
+      const {data:userRow}=await c.from('users').select('name,email,role,position').eq('id',u.id).maybeSingle();
+      identity.name=userRow?.name||userRow?.position||identity.name;
+      identity.role=String(userRow?.role||'').toLowerCase().replace(/[ -]+/g,'_');
+      if(identity.role==='administrator') identity.role='admin';
+    }
+    // Older role naming used office-admin / office-manager variants.
+    if(identity.role==='officeadmin') identity.role='office_admin';
+    if(identity.role==='officemanager') identity.role='office_manager';
   }catch(e){console.warn('[MOLMS invoice governance]',e);}
 }
 
