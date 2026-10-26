@@ -80,8 +80,13 @@ function correctManagerIdentityLabels(){
     if(/signatory/i.test(raw)){
       n.nodeValue=raw.replace(/signatory/gi,'Prepared by');
     }
-    if(/\bpartner\b/i.test(n.nodeValue||'') && /prepared by|signatory|issuer|issued by/i.test(n.parentElement?.parentElement?.textContent||'')){
-      n.nodeValue=n.nodeValue.replace(/\bpartner\b/gi,'Office Manager');
+    if(/\bpartner\b/i.test(n.nodeValue||'')){
+      const near=(n.parentElement?.parentElement?.textContent||'').toLowerCase();
+      const parentText=(n.parentElement?.parentElement?.parentElement?.textContent||'').toLowerCase();
+      const ownName=String(identity.name||'').trim().toLowerCase();
+      if(/prepared by|signatory|issuer|issued by/.test(near) || (ownName && parentText.includes(ownName) && invoiceStatusCache.status!=='issued')){
+        n.nodeValue=n.nodeValue.replace(/\bpartner\b/gi,'Office Manager');
+      }
     }
   });
 }
