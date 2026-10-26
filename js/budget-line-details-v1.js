@@ -48,13 +48,29 @@
 
   function closeModal(){ document.getElementById('molmsBudgetItemsModal')?.remove(); }
 
-  function findBudgetRef(){
-    const root=document.getElementById('page-budget')||document.body;
-    const text=root.innerText||'';
-    const refs=[...text.matchAll(/MOL\/BUD\/\d+\/\d{2}\/\d{2}\/\d{2}\/[A-Z]{2}/g)].map(m=>m[0]);
-    return refs[0]||null;
+  function activeBudgetId(){
+    const panel=document.getElementById('bdPanelActions');
+    return (panel&&panel.dataset.bdBudgetId)||window._bdActiveId||
+      (typeof _bdActiveId!=='undefined'?_bdActiveId:null);
   }
 
+  function findBudgetRef(){
+    // Read the reference from the currently opened document header, never
+    // from the first reference in the left-hand document list.
+    const root=document.getElementById('page-budget')||document.body;
+    const heading=root.querySelector('h1,h2,h3,[data-budget-reference]');
+    const candidates=[];
+    if(heading)candidates.push(heading.textContent||'');
+    const selected=root.querySelector('[data-budget-reference]');
+    if(selected)candidates.push(selected.getAttribute('data-budget-reference')||'');
+    const main=root.querySelector('#bdDocumentHeader,#bdDocumentDetails,#bdPanelActions');
+    if(main)candidates.push(main.textContent||'');
+    for(const value of candidates){
+      const match=String(value).match(/MOL\/BUD\/\d+\/\d{2}\/\d{2}\/\d{2}\/[A-Z]{2}/);
+      if(match)return match[0];
+    }
+    return null;
+  }
   function rowCategory(row){
     const cells=row.querySelectorAll('td');
     if(cells.length>=3) return (cells[2].innerText||cells[2].textContent||'').replace(/\s+/g,' ').trim();
@@ -94,14 +110,23 @@
     const client=getSb();
     if(!client) throw new Error('Budget data service is not available.');
 
+    const selectedId=activeBudgetId();
     const ref=findBudgetRef();
-    if(!ref) throw new Error('The selected budget reference could not be identified.');
+    if(!selectedId&&!ref) throw new Error('The currently opened budget could not be identified.');
 
-    const {data:doc,error:docError}=await client
-      .from('budget_documents')
-      .select('id,reference_number,title,budget_month,status')
-      .eq('reference_number',ref)
-      .maybeSingle();
+    let doc=null,docError=null;
+    if(selectedId){
+      const result=await client.from('budget_documents')
+        .select('id,reference_number,title,budget_month,status')
+        .eq('id',selectedId).maybeSingle();
+      doc=result.data;docError=result.error;
+    }
+    if(!doc&&!docError&&ref){
+      const result=await client.from('budget_documents')
+        .select('id,reference_number,title,budget_month,status')
+        .eq('reference_number',ref).maybeSingle();
+      doc=result.data;docError=result.error;
+    }
     if(docError) throw docError;
     if(!doc) throw new Error('The selected budget could not be loaded.');
 
