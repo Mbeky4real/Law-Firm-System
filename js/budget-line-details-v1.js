@@ -271,6 +271,67 @@
     });
   }
 
+  let countRefreshTimer=null;
+  let countRefreshBusy=false;
+  let lastCountBudgetId=null;
+  async function refreshVisibleItemCounts(){
+    if(countRefreshBusy)return;
+    const docId=activeBudgetId();
+    const tbody=document.getElementById('bdLinesBody');
+    if(!docId||!tbody)return;
+    countRefreshBusy=true;
+    try{
+      const client=getSb();
+      if(!client) return;
+      const {data:lines,error:lineError}=await client.from('budget_lines')
+        .select('id,budget_document_id,created_at')
+        .eq('budget_document_id',docId)
+        .order('created_at',{ascending:true});
+      if(lineError)throw lineError;
+      const ids=(lines||[]).map(x=>x.id).filter(Boolean);
+      const counts=new Map(ids.map(id=>[String(id),0]));
+      if(ids.length){
+        const {data:items,error:itemError}=await client.from('budget_line_items')
+          .select('id,budget_line_id')
+          .in('budget_line_id',ids);
+        if(itemError)throw itemError;
+        (items||[]).forEach(item=>{
+          const key=String(item.budget_line_id);
+          counts.set(key,(counts.get(key)||0)+1);
+        });
+      }
+      if(activeBudgetId()!==docId)return;
+      const rows=visibleBudgetRows();
+      rows.forEach((row,index)=>{
+        const line=lines&&lines[index];
+        if(!line)return;
+        const cells=row.querySelectorAll('td');
+        const countCell=cells[3];
+        if(!countCell)return;
+        const n=counts.get(String(line.id))||0;
+        const existing=countCell.querySelector('.bd-item-view');
+        if(existing){
+          existing.textContent=n+' '+(n===1?'item':'items')+' ▸';
+          existing.dataset.itemCount=String(n);
+        }else{
+          const btn=document.createElement('button');
+          btn.type='button';btn.className='bd-item-view';btn.title='View the individual items';
+          btn.textContent=n+' '+(n===1?'item':'items')+' ▸';btn.dataset.itemCount=String(n);
+          countCell.replaceChildren(btn);
+          btn.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();showItems(row,btn);});
+          btn.dataset.bdBound='1';
+        }
+      });
+      lastCountBudgetId=String(docId);
+    }catch(err){
+      console.error('[MOLMS budget item counts]',err);
+    }finally{countRefreshBusy=false;}
+  }
+  function scheduleCountRefresh(){
+    if(countRefreshTimer)clearTimeout(countRefreshTimer);
+    countRefreshTimer=setTimeout(()=>refreshVisibleItemCounts(),350);
+  }
+
   function install(){
     ensureStyles();
     decorate();
@@ -278,7 +339,7 @@
     if(window.__molmsBudgetLineDetailsV2Installed) return;
     window.__molmsBudgetLineDetailsV2Installed=true;
 
-    const observer=new MutationObserver(()=>decorate());
+    const observer=new MutationObserver(()=>{decorate();scheduleCountRefresh();});
     const tbody=document.getElementById('bdLinesBody');
     if(tbody) observer.observe(tbody,{childList:true,subtree:true});
     else{
@@ -293,7 +354,9 @@
       bodyObserver.observe(document.body,{childList:true,subtree:true});
     }
 
-    [250,750,1500,3000].forEach(ms=>setTimeout(decorate,ms));
+    [250,750,1500,3000].forEach(ms=>setTimeout(()=>{decorate();scheduleCountRefresh();},ms));
+    scheduleCountRefresh();
+    window.addEventListener('focus',scheduleCountRefresh);
   }
 
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',install);
