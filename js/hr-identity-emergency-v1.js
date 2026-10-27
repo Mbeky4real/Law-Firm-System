@@ -9,7 +9,7 @@
   const $=id=>document.getElementById(id);
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const client=()=>typeof sb!=='undefined'?sb:(window.supabaseClient||null);
-  const canView=()=>typeof authRole!=='undefined' && ['partner','hr_officer','admin'].includes(authRole);
+  const canView=()=>{const r=String(typeof authRole!=='undefined'?authRole:(window.authRole||'')).trim().toLowerCase().replace(/[ -]+/g,'_');return ['partner','hr_officer','admin','office_admin'].includes(r);};
 
   function styles(){
     if($('molmsHrIdentityStyles')) return;
@@ -172,7 +172,7 @@
     if(!canView()){ if(typeof notice==='function') notice('Only HR and Partners can view confidential employee details.','err'); return; }
     const c=client(); if(!c){notice('Supabase connection required.','err');return;}
     const {data:e,error}=await c.from('hr_employees')
-      .select('id,employee_number,full_name,position,department,employment_type,start_date,contract_end_date,phone,email,tin_number,nida_number,emergency_contact_name,emergency_contact_relation,emergency_contact_phone,status')
+      .select('id,employee_number,full_name,position,department,employment_type,start_date,contract_end_date,phone,email,tin_number,nida_number,nssf_number,nhif_number,emergency_contact_name,emergency_contact_relation,emergency_contact_phone,status')
       .eq('id',id).maybeSingle();
     if(error||!e){notice('Could not load employee details: '+(error?.message||'record not found'),'err');return;}
     const b=document.createElement('div'); b.className='hr-detail-backdrop';
