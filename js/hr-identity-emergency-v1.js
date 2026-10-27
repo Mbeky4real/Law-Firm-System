@@ -9,7 +9,7 @@
   const $=id=>document.getElementById(id);
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const client=()=>typeof sb!=='undefined'?sb:(window.supabaseClient||null);
-  const canView=()=>{const r=String(typeof authRole!=='undefined'?authRole:(window.authRole||'')).trim().toLowerCase().replace(/[ -]+/g,'_');return ['partner','hr_officer','admin','office_admin'].includes(r);};
+  const canView=()=>{const r=String(typeof authRole!=='undefined'?authRole:(window.authRole||'')).trim().toLowerCase().replace(/[^a-z_]/g,'_').replace(/_+/g,'_');return ['partner','hr_officer','admin','office_admin','partner_admin'].includes(r)||/(^|_)(partner|admin|hr_officer|office_admin)(_|$)/.test(r);};
 
   function styles(){
     if($('molmsHrIdentityStyles')) return;
@@ -243,7 +243,15 @@
 
   function boot(){
     styles(); wrapForm(); wrapRender();
-    setTimeout(()=>{styles();wrapForm();wrapRender();enhanceList();},400);
+    [150,400,900,1600,2800].forEach(ms=>setTimeout(()=>{styles();wrapForm();wrapRender();enhanceList();},ms));
+    // The HR list may render after auth and employee data resolve on slower
+    // browsers. Retry briefly; enhancement is idempotent per rendered row.
+    let attempts=0;
+    const retry=setInterval(()=>{
+      attempts++;
+      wrapRender();enhanceList();
+      if(attempts>=12){clearInterval(retry);}
+    },1000);
   }
   boot();
   window.molmsHrIdentityEmergencyV1={viewDetails,enhanceList};
