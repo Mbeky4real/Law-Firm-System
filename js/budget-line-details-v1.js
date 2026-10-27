@@ -311,8 +311,9 @@
         const n=counts.get(String(line.id))||0;
         const existing=countCell.querySelector('.bd-item-view');
         if(existing){
-          existing.textContent=n+' '+(n===1?'item':'items')+' ▸';
-          existing.dataset.itemCount=String(n);
+          const label=n+' '+(n===1?'item':'items')+' ▸';
+          if(existing.textContent!==label)existing.textContent=label;
+          if(existing.dataset.itemCount!==String(n))existing.dataset.itemCount=String(n);
         }else{
           const btn=document.createElement('button');
           btn.type='button';btn.className='bd-item-view';btn.title='View the individual items';
