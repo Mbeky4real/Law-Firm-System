@@ -67,6 +67,10 @@
       addFormFields();
     };
 
+    // Keep the additional identity fields in the payload produced by the
+    // main HR form validator. Save persistence is also verified independently
+    // after the main save handler completes, because older save paths may
+    // construct their own column allow-list and silently omit extra fields.
     const originalValidate=window.hrValidate;
     if(typeof originalValidate==='function'){
       window.hrValidate=function(){
@@ -105,8 +109,61 @@
         }
       };
     }
-  }
 
+    // Record the employee being edited and persist the supplemental fields
+    // after the existing HR save completes. This covers legacy save handlers
+    // that do not spread all hrValidate() properties into their update object.
+    let editingId=null;
+    if(typeof originalOpenEdit==='function'){
+      const wrapped=window.hrOpenEdit;
+      window.hrOpenEdit=async function(id){
+        editingId=id||null;
+        return wrapped.apply(this,arguments);
+      };
+    }
+    const form=$('hrFormWrap');
+    if(form&&!form.dataset.hrSupplementalSaveBound){
+      form.dataset.hrSupplementalSaveBound='1';
+      form.addEventListener('click',async ev=>{
+        const button=ev.target.closest('button');
+        if(!button)return;
+        const label=(button.textContent||'').trim().toLowerCase();
+        if(!/save|update|add employee|save employee/.test(label))return;
+        const c=client(); if(!c)return;
+        const id=editingId;
+        const values={
+          tin_number:($('hrf_tin')?.value||'').trim()||null,
+          nida_number:($('hrf_nida')?.value||'').trim()||null,
+          nssf_number:($('hrf_nssf')?.value||'').trim()||null,
+          nhif_number:($('hrf_nhif')?.value||'').trim()||null,
+          emergency_contact_name:($('hrf_emergency_name')?.value||'').trim()||null,
+          emergency_contact_relation:($('hrf_emergency_relation')?.value||'').trim()||null,
+          emergency_contact_phone:($('hrf_emergency_phone')?.value||'').trim()||null
+        };
+        // Wait for the main save handler, then persist supplemental columns.
+        setTimeout(async()=>{
+          try{
+            if(id){
+              const {error}=await c.from('hr_employees').update(values).eq('id',id);
+              if(error)throw error;
+            }else{
+              // New employee ID may be created by the main save handler. Match
+              // by the form's employee number where available, never by name alone.
+              const empNo=(form.querySelector('[name="employee_number"]')?.value||form.querySelector('#hrf_employee_number')?.value||'').trim();
+              if(!empNo)return;
+              const {data,error}=await c.from('hr_employees').select('id')
+                .eq('employee_number',empNo).is('deleted_at',null).maybeSingle();
+              if(error)throw error;
+              if(!data?.id)return;
+              const {error:updateError}=await c.from('hr_employees').update(values).eq('id',data.id);
+              if(updateError)throw updateError;
+            }
+            window.__molmsHrSupplementalSavedAt=Date.now();
+          }catch(error){console.error('Could not save supplemental HR employee details:',error);if(typeof notice==='function')notice('Employee saved, but identification details could not be saved. Please retry.','err');}
+        },900);
+      },true);
+    }
+  }
   function detailBox(k,v,full){
     return '<div class="hr-detail-box'+(full?' full':'')+'"><div class="hr-detail-k">'+esc(k)+'</div><div class="hr-detail-v">'+esc(v||'—')+'</div></div>';
   }
