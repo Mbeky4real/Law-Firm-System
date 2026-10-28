@@ -61,7 +61,7 @@
     let node=host;
     while(node&&node.parentElement&&node.id!=='page-findash'){
       const style=node.getAttribute&&node.getAttribute('style')||'';
-      if(node.matches&&node.matches('div')&&/border-radius:\\s*12px/i.test(style)&&/background:\\s*#fff/i.test(style))return node;
+      if(node.matches&&node.matches('div')&&/border-radius:.*12px/i.test(style)&&/background:.*#fff/i.test(style))return node;
       node=node.parentElement;
     }
     return null;
