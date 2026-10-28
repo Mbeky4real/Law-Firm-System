@@ -90,7 +90,7 @@
     for (const leaf of leaves) {
       let node = leaf;
       for (let depth = 0; depth < 14 && node && node !== document.body; depth++, node = node.parentElement) {
-        const text = (node.textContent || '').replace(/\\s+/g, ' ').trim().toLowerCase();
+        const text = (node.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
         if (labels.every(label => text.includes(label)) && text.includes('reference total only') && text.includes('approved only')) {
           if (node.id === PANEL_ID || node.getAttribute('aria-label') === 'Budget totals across all budget documents') break;
           node.remove();
