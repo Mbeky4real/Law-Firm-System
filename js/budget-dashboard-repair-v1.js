@@ -82,18 +82,35 @@
   // Remove only the local four-card strip (Approved Budget Total / Rejected / On Hold / All Items);
   // preserve the global dashboard cards and the actual budget line table.
   function removeDuplicateDocumentSummary(root) {
-    if (!root) return;
-    const leaves = [...root.querySelectorAll('*')].filter(el => el.children.length === 0 && /^(all items|approved budget total)$/i.test((el.textContent || '').trim()));
+    // The selected-document footer contains a second, redundant four-card summary.
+    // Find the smallest common ancestor containing all four labels and remove it.
+    const doc = root || document;
+    const labels = ['approved budget total','rejected','on hold','all items'];
+    const leaves = [...doc.querySelectorAll('*')].filter(el => el.children.length === 0 && (el.textContent || '').trim().toLowerCase() === 'approved budget total');
     for (const leaf of leaves) {
-      let candidate = leaf;
-      for (let depth = 0; depth < 5 && candidate && candidate !== root; depth++, candidate = candidate.parentElement) {
-        const text = (candidate.textContent || '').replace(/\\s+/g, ' ').trim().toLowerCase();
-        if (text.includes('approved budget total') && text.includes('all items') && text.includes('rejected') && text.includes('on hold')) {
-          // Do not touch the top-level document cards; this local strip also contains “All Items”.
-          if (candidate.querySelector('#' + PANEL_ID) || candidate.getAttribute('aria-label') === 'Budget totals across all budget documents') break;
-          candidate.remove();
+      let node = leaf;
+      for (let depth = 0; depth < 14 && node && node !== document.body; depth++, node = node.parentElement) {
+        const text = (node.textContent || '').replace(/\\s+/g, ' ').trim().toLowerCase();
+        if (labels.every(label => text.includes(label)) && text.includes('reference total only') && text.includes('approved only')) {
+          if (node.id === PANEL_ID || node.getAttribute('aria-label') === 'Budget totals across all budget documents') break;
+          node.remove();
           break;
         }
+      }
+    }
+    // Repair the selected-document footer total where older UI code duplicated “TZS”.
+    const count = [...doc.querySelectorAll('*')].find(el => el.children.length === 0 && /\\b\\d+\\s+lines?\\s*[·|,]\\s*\\d+\\s+items?\\b/i.test((el.textContent || '').trim()));
+    if (count && count.parentElement) {
+      const parent = count.parentElement;
+      const amount = [...parent.querySelectorAll('*')].filter(el => el.children.length === 0 && /TZS/i.test(el.textContent || '')).pop();
+      if (amount) {
+        const raw = (amount.textContent || '').replace(/TZS/gi, '').replace(/,/g, '').trim();
+        if (!raw || Number(raw) === 0) {
+          const header = [...doc.querySelectorAll('*')].find(el => el.children.length === 0 && /^document total$/i.test((el.textContent || '').trim()));
+          const headerAmount = header?.parentElement && [...header.parentElement.querySelectorAll('*')].filter(el => el.children.length === 0 && /TZS/i.test(el.textContent || '')).pop();
+          if (headerAmount) amount.textContent = headerAmount.textContent.trim();
+        }
+        amount.textContent = (amount.textContent || '').replace(/(?:TZS\\s*){2,}/gi, 'TZS ').trim();
       }
     }
   }
