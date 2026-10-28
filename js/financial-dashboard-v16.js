@@ -86,7 +86,13 @@
   // Current open balances use the recorded settlement amount even when its
   // date is estimated; the date remains flagged and is excluded from period flows.
   function invoicePaidTotal(i){
-    return receipts(i).reduce((s,r)=>s+r.cash+r.wht,0);
+    const rows=receipts(i);
+    // The payment ledger is preferred whenever it has rows. If it has no rows,
+    // retain the invoice's recorded settlement fields for the live balance so
+    // a missing detail row does not falsely resurrect a paid receivable.
+    // paymentIntegrity() still flags the missing ledger detail for review.
+    if(rows.length)return rows.reduce((s,r)=>s+r.cash+r.wht,0);
+    return Math.max(0,num(i.amount_paid))+Math.max(0,num(i.withholding_tax_amount));
   }
 
   // Manual client receivables can carry a stale outstanding_amount after a
