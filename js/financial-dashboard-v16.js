@@ -89,6 +89,16 @@
     return receipts(i).reduce((s,r)=>s+r.cash+r.wht,0);
   }
 
+  // Manual client receivables can carry a stale outstanding_amount after a
+  // receipt is edited. When the agreed amount is known, derive the balance
+  // from the authoritative agreed amount less recorded receipts; otherwise
+  // preserve the explicitly recorded outstanding amount.
+  function manualOutstanding(t){
+    const agreed=num(t.agreed_amount);
+    if(agreed>0)return Math.max(0,agreed-num(t.amount));
+    return Math.max(0,num(t.outstanding_amount));
+  }
+
   function periodClientRows(){
     const {start,end}=bounds(),{invoices,manual}=data(),rows=[];
     invoices.filter(i=>validTax(i)&&date(i.invoice_date)>=start&&date(i.invoice_date)<=end).forEach(i=>{
@@ -97,7 +107,7 @@
     });
     manual.filter(t=>approved(t)&&t.tx_type==='revenue'&&date(t.date)>=start&&date(t.date)<=end).forEach(t=>{
       const paid=num(t.amount),revenue=t.client_receivable&&num(t.agreed_amount)>0?num(t.agreed_amount):paid;
-      const outstanding=t.client_receivable?Math.max(0,num(t.outstanding_amount)||revenue-paid):0;
+      const outstanding=t.client_receivable?manualOutstanding(t):0;
       rows.push({kind:'manual',id:t.id,client:t.receivable_client_name||t.counterparty||'Other revenue',matter:t.receivable_matter_ref||t.description||'General / Unlinked',source:t.reference||'Manual revenue',currency:t.currency||'TZS',revenue,paid,outstanding,status:outstanding<=.01?'Paid':paid>0?'Part Paid':'Unpaid'});
     });
     return rows.sort((a,b)=>b.revenue-a.revenue);
@@ -124,7 +134,7 @@
       if(outstanding>.01)rows.push({kind:'invoice',id:i.id,client:i.client_name||'Unknown client',matter:i.matter_ref||i.matter_title||'General / Unlinked',source:i.invoice_number||'—',currency:i.currency||'TZS',revenue:total,paid,outstanding,status:String(i.invoice_type||'').toLowerCase()==='proforma'?'Proforma Outstanding':paymentIntegrity(i).needsReconciliation?'Needs Reconciliation':paid>0?'Part Paid':'Unpaid'});
     });
     manual.filter(t=>approved(t)&&t.client_receivable&&date(t.date)<=end).forEach(t=>{
-      const outstanding=Math.max(0,num(t.outstanding_amount));if(outstanding<=.01)return;
+      const outstanding=manualOutstanding(t);if(outstanding<=.01)return;
       rows.push({kind:'manual',id:t.id,client:t.receivable_client_name||t.counterparty||'Unknown client',matter:t.receivable_matter_ref||t.description||'General / Unlinked',source:t.reference||'—',currency:t.currency||'TZS',revenue:num(t.agreed_amount||t.amount),paid:num(t.amount),outstanding,status:'Part Paid'});
     });
     return rows.sort((a,b)=>b.outstanding-a.outstanding);
