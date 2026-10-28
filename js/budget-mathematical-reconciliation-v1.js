@@ -11,11 +11,12 @@
  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  function client(){return (typeof sb!=='undefined'&&sb)||window.sb||window.supabaseClient||null}
  function activeId(){const p=document.getElementById('bdPanelActions');return p?.dataset.bdBudgetId||window._bdActiveId||(typeof _bdActiveId!=='undefined'?_bdActiveId:null)}
+ function activeReference(){const r=root();const main=r.querySelector('#bdDocumentHeader,#bdDocumentDetails,#bdPanelActions');const values=[r.querySelector('[data-budget-reference]')?.getAttribute('data-budget-reference')||'',main?.textContent||''];for(const value of values){const m=String(value).match(/MOL\/BUD\/\d+\/\d{2}\/\d{2}\/\d{2}\/[A-Z]{2}/);if(m)return m[0]}return null}
  function root(){return document.getElementById('page-budget')||document.querySelector('[data-page="budget"]')||document.getElementById('budgetPage')||document.querySelector('#bdPanelActions')?.parentElement?.parentElement||document.body}
  function ensureStyle(){if(document.getElementById('molms-budget-math-audit-style'))return;const s=document.createElement('style');s.id='molms-budget-math-audit-style';s.textContent='#molmsBudgetMathAudit{margin:12px 0;padding:12px 14px;border:1px solid #d7dfe8;border-radius:10px;background:#fff;font-size:12px;color:#0f2440}#molmsBudgetMathAudit .bma-title{font-weight:900;font-size:13px;margin-bottom:7px}#molmsBudgetMathAudit .bma-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}#molmsBudgetMathAudit .bma-card{padding:9px;border-radius:8px;background:#f7f9fc;border:1px solid #e4e9f0;min-width:0}#molmsBudgetMathAudit .bma-label{font-size:10px;color:#65738a;font-weight:800}#molmsBudgetMathAudit .bma-value{font-weight:900;font-size:14px;margin-top:4px;overflow-wrap:anywhere}#molmsBudgetMathAudit .bma-warn{margin-top:8px;padding:8px;border-radius:7px;background:#fff1f0;color:#b42318;font-weight:800}#molmsBudgetMathAudit .bma-ok{margin-top:8px;padding:8px;border-radius:7px;background:#ecfdf3;color:#167443;font-weight:800}@media(max-width:700px){#molmsBudgetMathAudit .bma-grid{grid-template-columns:1fr}}';document.head.appendChild(s)}
  async function refresh(){
-  const id=activeId(),sbx=client(),r=root();if(!r)return;
-  if(!id||!sbx){let waiting=document.getElementById('molmsBudgetMathAudit');if(!waiting){waiting=document.createElement('section');waiting.id='molmsBudgetMathAudit';(r.querySelector('#bdPanelActions')?.parentElement||r).appendChild(waiting)}waiting.innerHTML='<div class="bma-title">Budget Mathematical Reconciliation</div><div class="bma-warn">The selected budget or database client is not available yet. Reopen the budget document or refresh to retry the audit.</div>';return;}
+  let id=activeId();const ref=activeReference(),sbx=client(),r=root();if(!r)return;
+  if(!sbx){let waiting=document.getElementById('molmsBudgetMathAudit');if(!waiting){waiting=document.createElement('section');waiting.id='molmsBudgetMathAudit';(r.querySelector('#bdLinesBody')?.closest('table')?.parentElement||r).prepend(waiting)}waiting.innerHTML='<div class="bma-title">Budget Mathematical Reconciliation</div><div class="bma-warn">Database client unavailable. Audit will retry when the page updates.</div>';return;}
   let panel=document.getElementById('molmsBudgetMathAudit');
   if(!panel){
    panel=document.createElement('section');panel.id='molmsBudgetMathAudit';
@@ -32,7 +33,10 @@
   }
   panel.innerHTML='<div class="bma-title">Budget Mathematical Reconciliation</div><div>Checking saved amounts against item calculations…</div>';
   try{
-   const dr=await sbx.from('budget_documents').select('id,reference_number,status').eq('id',id).maybeSingle();if(dr.error)throw dr.error;
+   let dr;
+   if(id){dr=await sbx.from('budget_documents').select('id,reference_number,status').eq('id',id).maybeSingle();if(dr.error)throw dr.error}
+   if((!dr||!dr.data)&&ref){dr=await sbx.from('budget_documents').select('id,reference_number,status').eq('reference_number',ref).maybeSingle();if(dr.error)throw dr.error;id=dr.data?.id}
+   if(!dr||!dr.data||!id)throw new Error('Could not resolve the currently selected budget document. Reference: '+(ref||'not detected'));
    const lr=await sbx.from('budget_lines').select('id,category,requested_amount,status,created_at').eq('budget_document_id',id).order('created_at',{ascending:true});if(lr.error)throw lr.error;
    const lines=lr.data||[],ids=lines.map(x=>x.id).filter(Boolean);let items=[];
    if(ids.length){const ir=await sbx.from('budget_line_items').select('id,budget_line_id,quantity,unit_price,item_total').in('budget_line_id',ids);if(ir.error)throw ir.error;items=ir.data||[]}
