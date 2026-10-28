@@ -143,3 +143,18 @@ const splitRow=global.MOLMSFinanceV16.periodClientRows().find(r=>r.client==='Spl
 assert.equal(splitRow.paid,150); // cash + WHT settles the invoice
 assert.equal(splitRow.outstanding,0);
 console.log('split cash + WHT-only ledger row regression: PASS');
+
+
+// Phase 6 regression: stale manual outstanding_amount must not keep a fully
+// settled manual client receivable on the live receivables card.
+selectedPeriod={start:'2026-10-01',end:'2026-10-28',monthStr:'2026-10'};
+global._fdAllManual.push(
+  {id:'phase6-manual-settled',status:'approved',tx_type:'revenue',date:'2026-10-20',amount:500000,currency:'TZS',client_receivable:true,agreed_amount:500000,outstanding_amount:250000,receivable_client_name:'Phase 6 Fully Settled'},
+  {id:'phase6-manual-part-paid',status:'approved',tx_type:'revenue',date:'2026-10-21',amount:300000,currency:'TZS',client_receivable:true,agreed_amount:800000,outstanding_amount:500000,receivable_client_name:'Phase 6 Part Paid'},
+  {id:'phase6-manual-fallback',status:'approved',tx_type:'revenue',date:'2026-10-22',amount:100000,currency:'TZS',client_receivable:true,outstanding_amount:450000,receivable_client_name:'Phase 6 Explicit Balance'}
+);
+const phase6Rows=global.MOLMSFinanceV16.allReceivables();
+assert.equal(phase6Rows.some(r=>r.id==='phase6-manual-settled'),false,'fully settled manual receivable is excluded despite stale stored balance');
+assert.equal(phase6Rows.find(r=>r.id==='phase6-manual-part-paid').outstanding,500000,'partial manual receivable derives balance from agreed amount less receipts');
+assert.equal(phase6Rows.find(r=>r.id==='phase6-manual-fallback').outstanding,450000,'uses explicit balance when agreed amount is unavailable');
+console.log('Phase 6 manual receivables accuracy regression: PASS');
