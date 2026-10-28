@@ -136,7 +136,7 @@
         sum.hold += num(row.total_held);
         return sum;
       }, {requested:0, approved:0, rejected:0, hold:0});
-      renderPanel(root, totals, rows.length);
+      renderPanel(root, totals, rows.length);\n      // Invoke cleanup after render; previously this function was never called.\n      removeDuplicateDocumentSummary(document);
     } catch (error) {
       console.error('[MOLMS budget dashboard repair]', error);
       if (!document.getElementById(PANEL_ID)) {
