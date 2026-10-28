@@ -1,7 +1,7 @@
-/* MOLMS Budget Item View V3 — resilient live UI binding and item details */
+/* MOLMS Budget Item View V4 — resilient live UI binding and item details */
 (function(){
  'use strict';
- if(window.__molmsBudgetLineDetailsV3)return;
+ if(window.__molmsBudgetLineDetailsV4)return;
  window.__molmsBudgetLineDetailsV3=true;
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const money=v=>Number(v||0).toLocaleString('en-TZ',{maximumFractionDigits:2});
@@ -19,5 +19,5 @@
  let timer;function schedule(){clearTimeout(timer);timer=setTimeout(()=>{styles();decorate()},250)}
  function install(){styles();schedule();const ob=new MutationObserver(schedule);if(document.body)ob.observe(document.body,{childList:true,subtree:true});window.addEventListener('focus',schedule);[300,800,1600,3000].forEach(ms=>setTimeout(schedule,ms))}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
- window.MOLMSBudgetLineDetailsV3={refresh:decorate};
+ window.MOLMSBudgetLineDetailsV4={refresh:decorate};
 })();
