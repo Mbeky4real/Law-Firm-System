@@ -78,6 +78,26 @@
     panel.setAttribute('data-source', 'budget_documents_summary');
   }
 
+  // The document detail footer duplicated the global budget status cards.
+  // Remove only the local four-card strip (Approved Budget Total / Rejected / On Hold / All Items);
+  // preserve the global dashboard cards and the actual budget line table.
+  function removeDuplicateDocumentSummary(root) {
+    if (!root) return;
+    const leaves = [...root.querySelectorAll('*')].filter(el => el.children.length === 0 && /^(all items|approved budget total)$/i.test((el.textContent || '').trim()));
+    for (const leaf of leaves) {
+      let candidate = leaf;
+      for (let depth = 0; depth < 5 && candidate && candidate !== root; depth++, candidate = candidate.parentElement) {
+        const text = (candidate.textContent || '').replace(/\\s+/g, ' ').trim().toLowerCase();
+        if (text.includes('approved budget total') && text.includes('all items') && text.includes('rejected') && text.includes('on hold')) {
+          // Do not touch the top-level document cards; this local strip also contains “All Items”.
+          if (candidate.querySelector('#' + PANEL_ID) || candidate.getAttribute('aria-label') === 'Budget totals across all budget documents') break;
+          candidate.remove();
+          break;
+        }
+      }
+    }
+  }
+
   async function refresh() {
     const root = budgetRoot();
     if (!root) return;
