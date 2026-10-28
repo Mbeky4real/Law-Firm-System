@@ -158,3 +158,18 @@ assert.equal(phase6Rows.some(r=>r.id==='phase6-manual-settled'),false,'fully set
 assert.equal(phase6Rows.find(r=>r.id==='phase6-manual-part-paid').outstanding,500000,'partial manual receivable derives balance from agreed amount less receipts');
 assert.equal(phase6Rows.find(r=>r.id==='phase6-manual-fallback').outstanding,450000,'uses explicit balance when agreed amount is unavailable');
 console.log('Phase 6 manual receivables accuracy regression: PASS');
+
+
+// Phase 6: missing payment-detail rows must not resurrect an invoice balance
+// when the invoice itself already records settlement. The audit still flags
+// the missing ledger evidence separately.
+global._fdAllInvoices.push(
+  {id:'phase6-no-ledger-paid',invoice_type:'tax',status:'paid',client_name:'Phase 6 Paid No Ledger',currency:'TZS',invoice_date:'2026-10-10',total_due:900000,amount_paid:850000,withholding_tax_amount:50000},
+  {id:'phase6-no-ledger-partial',invoice_type:'tax',status:'part_paid',client_name:'Phase 6 Partial No Ledger',currency:'TZS',invoice_date:'2026-10-11',total_due:900000,amount_paid:400000,withholding_tax_amount:0}
+);
+global.MOLMSFinanceV16.setPaymentRowsForTest([]);
+const noLedgerRows=global.MOLMSFinanceV16.allReceivables();
+assert.equal(noLedgerRows.some(r=>r.id==='phase6-no-ledger-paid'),false,'invoice recorded as fully settled is not shown as outstanding solely because receipt detail is missing');
+assert.equal(noLedgerRows.find(r=>r.id==='phase6-no-ledger-partial').outstanding,500000,'live balance uses recorded invoice settlement when no ledger detail exists');
+assert.equal(global.MOLMSFinanceV16.paymentIntegrity(global._fdAllInvoices.find(i=>i.id==='phase6-no-ledger-paid')).needsReconciliation,true,'missing ledger detail remains flagged for reconciliation');
+console.log('Phase 6 missing-ledger receivables fallback regression: PASS');
