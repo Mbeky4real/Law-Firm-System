@@ -203,22 +203,35 @@
     try{
       const {doc,line,items}=await resolveLine(row);
       const count=items.length;
+      // Mathematical policy: quantity × unit price is authoritative for each item.
+      // The line amount is the sum of calculated item totals. Discrepancies are
+      // shown for review; existing financial records are not silently rewritten.
+      const itemMath=items.map(it=>{
+        const qty=Number(it.quantity)||0,price=Number(it.unit_price)||0;
+        return {qty,price,total:qty*price,storedTotal:it.item_total==null?null:Number(it.item_total)};
+      });
+      const calculatedTotal=itemMath.reduce((sum,x)=>sum+x.total,0);
+      const requestedTotal=Number(line.requested_amount)||0;
+      const lineMismatch=Math.abs(calculatedTotal-requestedTotal)>0.009;
+      const itemMismatch=itemMath.some(x=>x.storedTotal!=null&&Math.abs(x.total-x.storedTotal)>0.009);
       const content=items.length ? `
         <table class="bd-items-table">
-          <thead><tr><th>#</th><th>Item / Description</th><th>Quantity</th><th>Unit</th><th style="text-align:right">Unit Price</th><th style="text-align:right">Total</th></tr></thead>
+          <thead><tr><th>#</th><th>Item / Description</th><th>Quantity</th><th>Unit</th><th style="text-align:right">Unit Price</th><th style="text-align:right">Calculated Total</th></tr></thead>
           <tbody>
             ${items.map((it,i)=>{
-              const qty=Number(it.quantity)||0, price=Number(it.unit_price)||0;
-              const total=it.item_total!=null?Number(it.item_total):qty*price;
+              const {qty,price,total,storedTotal}=itemMath[i];
+              const storedMismatch=storedTotal!=null&&Math.abs(total-storedTotal)>0.009;
               return '<tr><td>'+(i+1)+'</td><td><b>'+esc(it.item_name||'—')+'</b>'+
                 (it.notes?'<div class="bd-items-note">'+esc(it.notes)+'</div>':'')+
                 (it.estimated_supplier?'<div class="bd-items-note">Supplier: '+esc(it.estimated_supplier)+'</div>':'')+
+                (storedMismatch?'<div class="bd-items-note" style="color:#b42318;font-weight:800">Stored total differs from quantity × unit price.</div>':'')+
                 '</td><td>'+qty.toLocaleString()+'</td><td>'+esc(it.unit||'—')+
                 '</td><td class="num">TZS '+money(price)+'</td><td class="num"><b>TZS '+money(total)+'</b></td></tr>';
             }).join('')}
           </tbody>
         </table>
-        <div class="bd-items-total"><span>Line Total:</span><span>TZS ${money(line.requested_amount)}</span></div>
+        <div class="bd-items-total"><span>Calculated Line Total:</span><span>TZS ${money(calculatedTotal)}</span></div>
+        <div class="bd-items-note">Recorded line amount: TZS ${money(requestedTotal)}.${lineMismatch?' <b style="color:#b42318">DISCREPANCY: recorded line amount differs from calculated item sum.</b>':''}${itemMismatch?' <b style="color:#b42318">One or more stored item totals differ from quantity × unit price.</b>':''}</div>
       ` : '<div class="bd-items-loading">No item-level details have been recorded for this budget line.</div>';
       const modal=document.getElementById('molmsBudgetItemsModal');
       if(modal){
