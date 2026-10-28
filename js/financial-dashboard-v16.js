@@ -417,11 +417,17 @@
 
   function renderStatus(){
     const m=metrics(),ratio=num(m.revenue.TZS)?num(m.collected.TZS)/num(m.revenue.TZS):0,cashVerified=!!m.cashAvailable&&!m.cashAvailable.reconciliationPending&&Number.isFinite(Number(m.cashAvailable.TZS)),cash=cashVerified?num(m.cashAvailable.TZS):null;
-    // A low collection ratio or pending payroll preparation is not, by itself,
-    // proof of a financial reconciliation failure.
-    let level='Healthy',color='#16a34a';if(cashVerified&&cash<0){level='Critical';color='#dc2626'}else if(!cashVerified){level='Needs Reconciliation';color='#b45309'}
+    // Separate reconciliation integrity from collection performance.
+    // Status priority: missing/inconsistent ledger evidence, negative calculated
+    // cash, poor collection ratio, then healthy. Low collections never imply a
+    // ledger mismatch; the label makes the actual reason explicit.
+    let level='Healthy',color='#16a34a',statusKey='healthy';
     const issues=reconciliationIssues();
-    if(issues.length||paymentLedgerLoadError){level='Needs Reconciliation';color='#b45309'}
+    if(issues.length||paymentLedgerLoadError){level='Needs Reconciliation';color='#b45309';statusKey='reconciliation'}
+    else if(!cashVerified){level='Needs Reconciliation';color='#b45309';statusKey='reconciliation'}
+    else if(cash<0){level='Critical';color='#dc2626';statusKey='critical'}
+    else if(num(m.revenue.TZS)>0&&ratio<0.6){level='Poor Collections';color='#ea580c';statusKey='poor'}
+    else if(num(m.revenue.TZS)>0&&ratio<0.8){level='Watch';color='#ca8a04';statusKey='watch'}
     const text=q('fdStatusText');if(text)text.textContent=`Financial Status: ${level} · ${typeof fdPeriodLabel==='function'?fdPeriodLabel():'Selected period'}`;
     let warning=q('fdPaymentReconciliationWarning');
     if(!warning&&typeof document.createElement==='function'){
@@ -430,7 +436,18 @@
       if(anchor)anchor.insertBefore(warning,anchor.firstChild);
     }
     if(warning)warning.innerHTML=(issues.length||paymentLedgerLoadError)?`<div style="padding:10px 12px;margin:8px 0;border:1px solid #f59e0b;border-radius:8px;background:#fffbeb;color:#92400e;font-size:12px"><b>Payment reconciliation required:</b> ${paymentLedgerLoadError?'The Invoice Module payment ledger could not be loaded. ':''}${issues.length?`${issues.length} invoice(s) have missing, inconsistent or estimated payment-ledger records. Their payment dates are excluded from period cash totals until verified.`:''}<div style="margin-top:5px;font-weight:700">${issues.slice(0,5).map(x=>esc(x.invoice.invoice_number||x.invoice.id)).join(', ')}${issues.length>5?' and '+(issues.length-5)+' more':''}</div></div>`:'';
-    const box=q('fdStatusIndicator');if(box){box.style.color=color;box.style.background=level==='Healthy'?'#f0fdf4':level==='Critical'?'#fef2f2':'#fffbeb'}
+    const box=q('fdStatusIndicator');if(box){
+      box.style.color=color;
+      box.style.background=statusKey==='healthy'?'#f0fdf4':statusKey==='critical'?'#fef2f2':statusKey==='poor'?'#fff7ed':statusKey==='watch'?'#fefce8':'#fffbeb';
+      box.style.borderColor=statusKey==='healthy'?'#86efac':statusKey==='critical'?'#fca5a5':statusKey==='poor'?'#fdba74':statusKey==='watch'?'#fde047':'#fcd34d';
+      box.setAttribute('data-financial-status',statusKey);
+      box.style.setProperty('--fd-status-dot-color',color);
+      if(!document.getElementById('molms-financial-status-dot-style')){
+        const style=document.createElement('style');style.id='molms-financial-status-dot-style';
+        style.textContent='#fdStatusIndicator::before{content:"";display:inline-block;width:10px;height:10px;min-width:10px;border-radius:50%;background:var(--fd-status-dot-color,#16a34a);border:1px solid currentColor;margin-right:8px;vertical-align:middle;box-shadow:0 0 0 2px rgba(255,255,255,.65)}#fdStatusIndicator[data-financial-status="healthy"]::before{background:#16a34a}#fdStatusIndicator[data-financial-status="critical"]::before{background:#dc2626}#fdStatusIndicator[data-financial-status="reconciliation"]::before{background:#d97706}#fdStatusIndicator[data-financial-status="poor"]::before{background:#ea580c}#fdStatusIndicator[data-financial-status="watch"]::before{background:#ca8a04}';
+        document.head.appendChild(style);
+      }
+    }
     const intel=q('fdIntelligence');if(intel)intel.innerHTML=`<b>${level}:</b> ${Math.round(ratio*100)}% of TZS recognised revenue collected. ${cashVerified?`Calculated cash after expenses (zero monthly opening balance) is <b>${money('TZS',cash)}</b>. This is transaction-based and is not a bank-statement-verified balance.`:'Cash available after expenses is <b>pending calculation</b>.'}`;
   }
 
