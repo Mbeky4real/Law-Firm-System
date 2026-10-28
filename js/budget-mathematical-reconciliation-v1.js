@@ -17,7 +17,19 @@
   const id=activeId(),sbx=client(),r=root();if(!r)return;
   if(!id||!sbx){let waiting=document.getElementById('molmsBudgetMathAudit');if(!waiting){waiting=document.createElement('section');waiting.id='molmsBudgetMathAudit';(r.querySelector('#bdPanelActions')?.parentElement||r).appendChild(waiting)}waiting.innerHTML='<div class="bma-title">Budget Mathematical Reconciliation</div><div class="bma-warn">The selected budget or database client is not available yet. Reopen the budget document or refresh to retry the audit.</div>';return;}
   let panel=document.getElementById('molmsBudgetMathAudit');
-  if(!panel){panel=document.createElement('section');panel.id='molmsBudgetMathAudit';const target=r.querySelector('#bdDocumentSummary,[id*="DocumentSummary"],[class*="document-summary"],[class*="DocumentSummary"]')||document.getElementById('bdLinesBody')?.parentElement||r;target.appendChild(panel)}
+  if(!panel){
+   panel=document.createElement('section');panel.id='molmsBudgetMathAudit';
+   // Put the audit in the visible main budget-lines column, not in the narrow
+   // document-summary sidebar or inside a table/tbody.
+   const tbody=document.getElementById('bdLinesBody');
+   const table=tbody?.closest('table');
+   const tableWrap=table?.parentElement;
+   const actions=document.getElementById('bdPanelActions');
+   const target=tableWrap||actions?.parentElement||r;
+   if(tableWrap&&table&&tableWrap.contains(table))tableWrap.insertBefore(panel,table);
+   else if(actions?.parentElement)actions.parentElement.insertBefore(panel,actions);
+   else target.appendChild(panel);
+  }
   panel.innerHTML='<div class="bma-title">Budget Mathematical Reconciliation</div><div>Checking saved amounts against item calculations…</div>';
   try{
    const dr=await sbx.from('budget_documents').select('id,reference_number,status').eq('id',id).maybeSingle();if(dr.error)throw dr.error;
