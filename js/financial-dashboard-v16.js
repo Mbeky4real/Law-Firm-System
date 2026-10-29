@@ -177,38 +177,17 @@
   // finalized payroll net salaries. Cancelled/draft payroll runs are excluded.
   // Payroll rows already entered as a manual expenditure are not counted twice
   // when the date and amount match a finalized payroll salary line.
-  function periodExpenses(){
-    const {start,end}=bounds(),{manual,payroll}=data(),out={TZS:0};
+  function periodExpenseBreakdown(){
+    const {start,end}=bounds(),{manual,payroll}=data();
+    const out={manual:{TZS:0},register:{TZS:0},payroll:{TZS:0}};
     const eligibleManual=manual.filter(t=>approved(t)&&date(t.date)>=start&&date(t.date)<=end&&String(t.status||'').toLowerCase()!=='cancelled'&&['expenditure','drawing'].includes(String(t.tx_type||'').toLowerCase()));
-    eligibleManual.forEach(t=>add(out,t.currency,t.amount));
-    // Closed expense-register lines are authoritative outflows and were not part
-    // of fd_manual_transactions. Include them for the selected period, while
-    // suppressing a manual entry that clearly mirrors the same dated expense.
-    expenseRegisterRows.filter(e=>date(e.date)>=start&&date(e.date)<=end&&String(e.register_status||'').toLowerCase()==='closed'&&String(e.status||'approved').toLowerCase()!=='cancelled').forEach(e=>{
-      const amount=num(e.amount),d=date(e.date),cur='TZS';
-      const mirrored=eligibleManual.some(t=>date(t.date)===d&&(t.currency||'TZS')===cur&&Math.abs(num(t.amount)-amount)<.01&&(/expense|register/i.test(String(t.description||t.category||''))||/expense|register/i.test(String(e.description||e.category||''))));
-      if(!mirrored)add(out,cur,amount);
-    });
-    // The HR module stores a finalized monthly total on hr_payroll_runs; its
-    // payroll_month is YYYY-MM, not a payment date. Include locked runs once.
-    authoritativePayrollRuns.filter(p=>String(p.payroll_month||'')===start.slice(0,7)&&String(p.status||'').toLowerCase()==='locked'&&!p.deleted_at).forEach(p=>{
-      const salary=num(p.total_net);
-      const mirrored=eligibleManual.some(t=>(t.currency||'TZS')==='TZS'&&Math.abs(num(t.amount)-salary)<.01&&/salary|payroll/i.test(String(t.description||t.category||'')));
-      if(salary>0&&!mirrored)add(out,'TZS',salary);
-    });
-    const finalizedPayroll=payroll.filter(p=>{
-      const st=String(p.status||p.run_status||'').toLowerCase();
-      const d=date(p.payment_date||p.pay_date||p.date||p.payroll_date||p.period_date);
-      const salary=num(p.net_salary||p.net_salary_paid||p.net_pay);
-      return ['locked','paid','approved','finalized','completed'].includes(st)&&d>=start&&d<=end&&salary>0;
-    });
-    finalizedPayroll.forEach(p=>{
-      const d=date(p.payment_date||p.pay_date||p.date||p.payroll_date||p.period_date),cur=p.currency||'TZS',salary=num(p.net_salary||p.net_salary_paid||p.net_pay);
-      const manuallyRecorded=eligibleManual.some(t=>date(t.date)===d&&(t.currency||'TZS')===cur&&Math.abs(num(t.amount)-salary)<.01&&/salary|payroll/i.test(String(t.description||t.category||'')));
-      if(!manuallyRecorded)add(out,cur,salary);
-    });
+    eligibleManual.forEach(t=>add(out.manual,t.currency,t.amount));
+    expenseRegisterRows.filter(e=>date(e.date)>=start&&date(e.date)<=end&&String(e.register_status||'').toLowerCase()==='closed'&&String(e.status||'approved').toLowerCase()!=='cancelled').forEach(e=>{const amount=num(e.amount),d=date(e.date);const mirrored=eligibleManual.some(t=>date(t.date)===d&&(t.currency||'TZS')==='TZS'&&Math.abs(num(t.amount)-amount)<.01&&(/expense|register/i.test(String(t.description||t.category||''))||/expense|register/i.test(String(e.description||e.category||''))));if(!mirrored)add(out.register,'TZS',amount)});
+    authoritativePayrollRuns.filter(p=>String(p.payroll_month||'')===start.slice(0,7)&&String(p.status||'').toLowerCase()==='locked'&&!p.deleted_at).forEach(p=>{const salary=num(p.total_net);const mirrored=eligibleManual.some(t=>(t.currency||'TZS')==='TZS'&&Math.abs(num(t.amount)-salary)<.01&&/salary|payroll/i.test(String(t.description||t.category||'')));if(salary>0&&!mirrored)add(out.payroll,'TZS',salary)});
+    payroll.filter(p=>{const st=String(p.status||p.run_status||'').toLowerCase(),d=date(p.payment_date||p.pay_date||p.date||p.payroll_date||p.period_date),salary=num(p.net_salary||p.net_salary_paid||p.net_pay);return ['locked','paid','approved','finalized','completed'].includes(st)&&d>=start&&d<=end&&salary>0}).forEach(p=>{const d=date(p.payment_date||p.pay_date||p.date||p.payroll_date||p.period_date),cur=p.currency||'TZS',salary=num(p.net_salary||p.net_salary_paid||p.net_pay);const duplicate=eligibleManual.some(t=>date(t.date)===d&&(t.currency||'TZS')===cur&&Math.abs(num(t.amount)-salary)<.01&&/salary|payroll/i.test(String(t.description||t.category||'')));if(!duplicate)add(out.payroll,cur,salary)});
     return out;
   }
+  function periodExpenses(){const parts=periodExpenseBreakdown(),out={TZS:0};Object.keys(parts).forEach(k=>Object.keys(parts[k]).forEach(cur=>add(out,cur,parts[k][cur])));return out;}
 
   function cashPosition(){
     const {start,end}=bounds(),{manual}=data();
@@ -246,35 +225,47 @@
   }
 
   function card(title,values,color,note,detailTarget){
-    const clickable=!!detailTarget;
-    return `<div ${clickable?`role="button" tabindex="0" data-finance-detail="${esc(detailTarget)}" aria-label="View ${esc(title.toLowerCase())} details" onclick="window.MOLMSFinancialDashboardSimpleV1&&window.MOLMSFinancialDashboardSimpleV1.showDetails('${esc(detailTarget)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}"`:''} style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:9px 10px;${clickable?'cursor:pointer;':''}"><div style="font-size:9px;font-weight:800;color:var(--muted);margin-bottom:3px">${esc(title)}</div>${moneyLines(values).map((l,i)=>`<div style="font-size:${i?'12px':'16px'};font-weight:900;line-height:1.2;color:${color}">${esc(l.text)}</div>`).join('')}<div style="font-size:9px;color:var(--muted);margin-top:3px">${esc(note)}</div>${clickable?`<div style="font-size:10px;font-weight:700;color:#1d4ed8;margin-top:6px">View details <span aria-hidden="true">↗</span></div>`:''}</div>`;
+    return `<div role="button" tabindex="0" data-finance-detail="${esc(detailTarget)}" aria-expanded="false" aria-label="View ${esc(title.toLowerCase())} breakdown" onclick="window.MOLMSFinanceV16&&window.MOLMSFinanceV16.showDetails('${esc(detailTarget)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}" style="display:block!important;visibility:visible!important;min-width:0;background:#fff;border:1px solid #e4e7ec;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(16,24,40,.05);box-sizing:border-box;cursor:pointer"><div style="font-size:11px;font-weight:800;color:#667085;margin-bottom:5px;letter-spacing:.25px">${esc(title)}</div>${moneyLines(values).map((l,i)=>`<div style="font-size:${i?'13px':'25px'};font-weight:900;line-height:1.25;color:${color}">${esc(l.text)}</div>`).join('')}<div style="font-size:11px;color:#667085;margin-top:6px;line-height:1.4">${esc(note)}</div><div style="font-size:11px;font-weight:750;color:#1d4ed8;margin-top:9px">View breakdown ↗</div></div>`;
   }
-
+  function detailRows(title,items){
+    return `<section style="min-width:0"><h4 style="margin:0 0 8px;font-size:12px;color:#475467;text-transform:uppercase;letter-spacing:.45px">${esc(title)}</h4><div style="border:1px solid #eaecf0;border-radius:10px;overflow:hidden">${items.map((item,i)=>`<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:10px 12px;background:${i%2?'#fff':'#f9fafb'};border-bottom:${i===items.length-1?'0':'1px solid #eaecf0'}"><span style="font-size:12px;color:#475467;line-height:1.45">${esc(item.label)}</span><span style="font-size:12px;font-weight:750;color:#101828;text-align:right">${moneyLines(item.value||{TZS:0}).map(x=>esc(x.text)).join('<br>')}</span></div>`).join('')}</div></section>`;
+  }
+  function negateTotals(values){const out={};Object.keys(values||{}).forEach(k=>out[k]=-num(values[k]));return out}
+  function showDetails(which){
+    const host=q('fdKpiRow');if(!host)return;
+    let panel=q('fdKpiDetailsPanel');
+    if(panel&&panel.dataset.kind===which){panel.remove();host.querySelectorAll('[data-finance-detail]').forEach(el=>el.setAttribute('aria-expanded','false'));return}
+    if(!panel){panel=document.createElement('div');panel.id='fdKpiDetailsPanel';host.appendChild(panel)}
+    const m=metrics(),rows=periodClientRows(),invoiceRevenue=totals(rows.filter(r=>r.kind==='invoice'),'revenue'),manualRevenue=totals(rows.filter(r=>r.kind==='manual'),'revenue'),collected=periodCollections(),parts=periodExpenseBreakdown();
+    const periodReceivables=totals(rows,'outstanding'),currentReceivables=totals(allReceivables(),'outstanding');
+    let content='';
+    if(which==='revenue')content=detailRows('Revenue breakdown',[
+      {label:'Tax invoices issued in selected period',value:invoiceRevenue},{label:'Approved manual / other revenue',value:manualRevenue},{label:'TOTAL REVENUE',value:m.revenue}
+    ])+detailRows('Cash and outstanding balances',[
+      {label:'Cash recorded in selected period',value:collected},{label:'Outstanding on selected-period revenue',value:periodReceivables},{label:'Current total client receivables',value:currentReceivables}
+    ]);
+    else if(which==='expenses')content=detailRows('Expense calculation',[
+      {label:'Approved manual expenses and partner drawings',value:parts.manual},{label:'Closed office expense-register entries (non-duplicates)',value:parts.register},{label:'Finalised / locked payroll (non-duplicates)',value:parts.payroll},{label:'TOTAL EXPENSES',value:m.expenses}
+    ]);
+    else content=detailRows('Cash available calculation',[
+      {label:'Cash recorded in selected period',value:collected},{label:'Less: approved manual expenses and drawings',value:negateTotals(parts.manual)},{label:'Less: closed expense-register entries',value:negateTotals(parts.register)},{label:'Less: finalised / locked payroll',value:negateTotals(parts.payroll)},{label:'CASH AVAILABLE',value:m.cashAvailable}
+    ]);
+    panel.dataset.kind=which;
+    panel.style.cssText='grid-column:1/-1;min-width:0;width:100%;box-sizing:border-box;padding:14px;background:#fff;border:1px solid #d0d5dd;border-radius:12px;box-shadow:0 4px 14px rgba(16,24,40,.06);margin-top:2px';
+    panel.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px"><div><div style="font-size:14px;font-weight:800;color:#101828">${which==='revenue'?'Revenue details':which==='expenses'?'Expense details':'Cash available details'}</div><div style="font-size:11px;color:#667085;margin-top:3px">${esc(typeof fdPeriodLabel==='function'?fdPeriodLabel():'Selected period')} · figures grouped by currency</div></div><button type="button" data-close-finance-details style="border:1px solid #d0d5dd;background:#fff;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;color:#344054;cursor:pointer">Close ×</button></div><div class="fd-detail-grid" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">${content}</div><div style="font-size:10px;color:#667085;margin-top:10px">Figures use the selected-period financial rules. Currency totals remain separate; expense components follow the dashboard duplicate-suppression rules.</div><style>@media(max-width:650px){#fdKpiDetailsPanel .fd-detail-grid{grid-template-columns:1fr!important}}</style>`;
+    host.querySelectorAll('[data-finance-detail]').forEach(el=>el.setAttribute('aria-expanded',String(el.dataset.financeDetail===which)));
+    panel.querySelector('[data-close-finance-details]').onclick=()=>{panel.remove();host.querySelectorAll('[data-finance-detail]').forEach(el=>el.setAttribute('aria-expanded','false'))};
+    panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+  }
   function renderKpis(){
     const host=q('fdKpiRow');if(!host)return;
     const m=metrics(),label=typeof fdPeriodLabel==='function'?fdPeriodLabel():'Selected period';
-    // Layout is applied at the actual KPI render source. No DOM nodes are moved.
-    const styleId='molms-financial-kpi-layout-v2';
-    if(!document.getElementById(styleId)){
-      const style=document.createElement('style');
-      style.id=styleId;
-      style.textContent=`
-        #page-findash #fdKpiRow{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px!important;align-items:stretch!important;padding:14px 20px!important;box-sizing:border-box!important}
-        #page-findash #fdKpiRow>*{min-width:0!important;width:auto!important;max-width:none!important;margin:0!important;padding:15px 16px!important;border:1px solid #e4e7ec!important;border-radius:12px!important;box-shadow:0 2px 8px rgba(16,24,40,.05)!important;box-sizing:border-box!important;overflow-wrap:anywhere}
-        #page-findash #fdKpiRow>*:first-child{background:#f1f8f3!important;border-color:#b9d9c5!important}
-        #page-findash #fdKpiRow>*:first-child>div:nth-child(2){font-size:20px!important}
-        @media(max-width:1050px){#page-findash #fdKpiRow{grid-template-columns:repeat(2,minmax(0,1fr))!important;padding:12px!important;gap:10px!important}}
-        @media(max-width:560px){#page-findash #fdKpiRow{grid-template-columns:1fr!important;padding:10px!important;gap:8px!important}#page-findash #fdKpiRow>*{padding:12px!important}}
-      `;
-      document.head.appendChild(style);
-    }
-    // Keep the landing dashboard to three decision-useful KPIs only.
-    // Detailed cash receipts, receivables and period result remain available in their
-    // dedicated sections/registers; they are not repeated as top-level cards.
+    const styleId='molms-financial-kpi-layout-v3';
+    if(!document.getElementById(styleId)){const style=document.createElement('style');style.id=styleId;style.textContent='#page-findash #fdKpiRow{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px!important;align-items:stretch!important;padding:14px 20px!important;box-sizing:border-box!important}#page-findash #fdKpiRow>*{display:block!important;visibility:visible!important;min-width:0!important;width:auto!important;max-width:none!important;margin:0!important;box-sizing:border-box!important}@media(max-width:1050px){#page-findash #fdKpiRow{grid-template-columns:repeat(2,minmax(0,1fr))!important}}@media(max-width:560px){#page-findash #fdKpiRow{grid-template-columns:1fr!important}}';document.head.appendChild(style)}
     host.innerHTML=[
-      card('TOTAL REVENUE',m.revenue,'#16803d',`Full agreed/invoiced fees · ${label}`,'fdRevByType'),
-      card('TOTAL EXPENSES',m.expenses,'#b42318',`Recorded expenses · ${label}`,'fdExpByCategory'),
-      card('CASH AVAILABLE',m.cashAvailable||{TZS:0},num(m.cashAvailable?.TZS)>=0?'#167244':'#b42318',`Cash received minus approved manual-register expenses · ${label}`)
+      card('TOTAL REVENUE',m.revenue,'#16803d',`Agreed and invoiced fees · ${label}`,'revenue'),
+      card('TOTAL EXPENSES',m.expenses,'#b42318',`Recorded expenses · ${label}`,'expenses'),
+      card('CASH AVAILABLE',m.cashAvailable||{TZS:0},num(m.cashAvailable?.TZS)>=0?'#167244':'#b42318',`Cash recorded less expenses · ${label}`,'cash')
     ].join('');
   }
 
@@ -489,7 +480,7 @@
       reconcileQueued=true;
       queueMicrotask(()=>{reconcileQueued=false;render()});
     }).observe(document.documentElement,{childList:true,subtree:true});
-  window.MOLMSFinanceV16={metrics,periodClientRows,allReceivables,render,refresh,
+  window.MOLMSFinanceV16={metrics,periodClientRows,allReceivables,render,refresh,showDetails,
     setPaymentRowsForTest(rows){paymentRows=Array.isArray(rows)?rows:[];paymentLedgerLoadError=false},
     paymentIntegrity,
     audit:()=>{const m=metrics();return {version:18,period:bounds(),revenue:m.revenue,collected:m.collected,withholdingTax:periodWithholdingTax(),reconciliationIssues:reconciliationIssues().length,newReceivables:m.newReceivables,totalReceivables:m.totalReceivables,cash:m.cash.closingByCur,expenses:m.expenses,cashAvailable:m.cashAvailable,cashAvailablePolicy:'period cash received minus approved manual expenditure, partner drawings and finalized payroll net salaries',vat:vatPosition(),paymentLedgerRows:paymentRows.length}}
