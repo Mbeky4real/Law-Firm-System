@@ -257,6 +257,18 @@
       manualCard.style.setProperty('overflow','visible','important');
       manualCard.style.setProperty('margin-bottom','14px','important');
     }
+    if (!document.getElementById('molms-phase2-practice-compact-css')) {
+      const style=document.createElement('style');
+      style.id='molms-phase2-practice-compact-css';
+      style.textContent=`
+        #page-findash #fdPracticePerformance{width:min(100%,760px)!important;max-width:760px!important;min-width:0!important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;box-sizing:border-box!important}
+        #page-findash #fdPracticePerformance *{box-sizing:border-box}
+        #page-findash #fdRevByPractice{width:100%!important;max-width:100%!important;min-width:0!important;overflow-x:auto!important}
+        #page-findash #fdRevByPractice .fd-practice-compact{width:100%;min-width:0}
+        @media(max-width:600px){#page-findash #fdPracticePerformance{max-width:100%!important}#page-findash #fdRevByPractice .fd-practice-compact{grid-template-columns:minmax(105px,1.1fr) repeat(auto-fit,minmax(88px,1fr))!important}}
+      `;
+      document.head.appendChild(style);
+    }
     if (practiceCard && practiceCard !== scroll) {
       practiceCard.classList.remove('fd-compact-workspace-card');
       practiceCard.style.setProperty('display','block','important');
