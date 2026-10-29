@@ -382,7 +382,9 @@
     else if(cash<0){level='Critical';color='#dc2626';statusKey='critical'}
     else if(num(m.revenue.TZS)>0&&ratio<0.6){level='Poor Collections';color='#ea580c';statusKey='poor'}
     else if(num(m.revenue.TZS)>0&&ratio<0.8){level='Watch';color='#ca8a04';statusKey='watch'}
-    const text=q('fdStatusText');if(text)text.textContent=`Financial Status: ${level} · ${typeof fdPeriodLabel==='function'?fdPeriodLabel():'Selected period'}`;
+    const statusLabel=`Financial Status: ${level} · ${typeof fdPeriodLabel==='function'?fdPeriodLabel():'Selected period'}`;
+    const text=q('fdStatusText');
+    if(text)text.textContent=statusLabel;
     let warning=q('fdPaymentReconciliationWarning');
     if(!warning&&typeof document.createElement==='function'){
       warning=document.createElement('div');warning.id='fdPaymentReconciliationWarning';
@@ -395,23 +397,24 @@
       box.style.background=statusKey==='healthy'?'#f0fdf4':statusKey==='critical'?'#fef2f2':statusKey==='poor'?'#fff7ed':statusKey==='watch'?'#fefce8':'#fffbeb';
       box.style.borderColor=statusKey==='healthy'?'#86efac':statusKey==='critical'?'#fca5a5':statusKey==='poor'?'#fdba74':statusKey==='watch'?'#fde047':'#fcd34d';
       box.setAttribute('data-financial-status',statusKey);
-      box.style.setProperty('--fd-status-dot-color',color);
-      // Render exactly one severity-coloured dot. Hide any legacy dot child
-      // and use a single pseudo-element whose colour follows the status key.
-      box.querySelectorAll('*').forEach(node=>{
-        const cs=window.getComputedStyle?window.getComputedStyle(node):null;
-        const w=node.offsetWidth||parseFloat(cs?.width)||0,h=node.offsetHeight||parseFloat(cs?.height)||0;
-        const round=cs&&(cs.borderRadius==='50%'||cs.borderRadius==='9999px'||cs.borderRadius==='999px');
-        if(round&&w>0&&h>0&&w<=24&&h<=24)node.style.setProperty('display','none','important');
-      });
+      // Rebuild this status pill with exactly one explicit dot and one text node.
+      // This removes both legacy child dots and pseudo-element dots.
+      box.innerHTML='';
+      box.style.setProperty('display','inline-flex','important');
+      box.style.setProperty('align-items','center','important');
+      box.style.setProperty('gap','8px','important');
+      const dot=document.createElement('span');
+      dot.setAttribute('aria-hidden','true');
+      dot.style.cssText=`display:inline-block!important;flex:0 0 10px!important;width:10px!important;height:10px!important;min-width:10px!important;border-radius:50%!important;background:${color}!important;border:0!important;margin:0!important;box-shadow:none!important`;
+      const label=document.createElement('span');
+      label.id='fdStatusText';
+      label.textContent=statusLabel;
+      label.style.cssText='display:inline!important;color:inherit!important';
+      box.append(dot,label);
       const oldDotStyle=document.getElementById('molms-financial-status-dot-style');
       if(oldDotStyle)oldDotStyle.remove();
-      if(!document.getElementById('molms-financial-status-dot-style')){
-        const style=document.createElement('style');style.id='molms-financial-status-dot-style';
-        style.textContent='#fdStatusIndicator::before{content:""!important;display:inline-block!important;width:10px!important;height:10px!important;min-width:10px!important;border-radius:50%!important;background:var(--fd-status-dot-color,#16a34a)!important;border:0!important;margin-right:8px!important;vertical-align:middle!important;box-shadow:none!important}#fdStatusIndicator::after{content:none!important;display:none!important}';
-        document.head.appendChild(style);
-      }
-      box.style.setProperty('--fd-status-dot-color',color);
+      const cleanup=document.getElementById('molms-financial-status-dot-cleanup');
+      if(cleanup)cleanup.remove();
     }
     const intel=q('fdIntelligence');if(intel)intel.innerHTML=`<b>${level}:</b> ${Math.round(ratio*100)}% of TZS recognised revenue collected. ${cashVerified?`Calculated cash after expenses (zero monthly opening balance) is <b>${money('TZS',cash)}</b>. This is transaction-based and is not a bank-statement-verified balance.`:'Cash available after expenses is <b>pending calculation</b>.'}`;
   }
