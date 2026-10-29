@@ -261,10 +261,12 @@
       practiceCard.classList.remove('fd-compact-workspace-card');
       practiceCard.style.setProperty('display','block','important');
       practiceCard.style.setProperty('width','100%','important');
-      practiceCard.style.setProperty('max-width','100%','important');
+      practiceCard.style.setProperty('max-width','760px','important');
       practiceCard.style.setProperty('height','auto','important');
+      practiceCard.style.setProperty('min-height','0','important');
       practiceCard.style.setProperty('max-height','none','important');
       practiceCard.style.setProperty('overflow','visible','important');
+      practiceCard.style.setProperty('margin-bottom','12px','important');
     }
     window.MOLMSFinancialDashboardSimpleV1.applied = true;
   }
