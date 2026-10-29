@@ -5,7 +5,21 @@
 (function () {
   'use strict';
   if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 25) return;
-  window.MOLMSFinancialDashboardSimpleV1 = { version: 25, applied: false };
+  window.MOLMSFinancialDashboardSimpleV1 = {
+    version: 26, applied: false,
+    showDetails(targetId) {
+      const page=document.getElementById('page-findash');
+      if(!page)return;
+      const target=page.querySelector('#'+targetId);
+      if(!target)return;
+      const scroll=Array.from(page.children).find(el=>/overflow-y:\\s*auto/i.test(el.getAttribute('style')||''));
+      const card=scroll?dashboardCardFor(target,scroll):null;
+      if(card&&card!==scroll)card.style.setProperty('display','block','important');
+      target.style.setProperty('display','block','important');
+      if(card)card.scrollIntoView({behavior:'smooth',block:'start'});
+      else target.scrollIntoView({behavior:'smooth',block:'start'});
+    }
+  };
   const styleId = 'molms-financial-dashboard-simple-v1-style';
 
   function installStyle() {
