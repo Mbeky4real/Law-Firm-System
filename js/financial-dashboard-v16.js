@@ -397,20 +397,25 @@
       box.style.background=statusKey==='healthy'?'#f0fdf4':statusKey==='critical'?'#fef2f2':statusKey==='poor'?'#fff7ed':statusKey==='watch'?'#fefce8':'#fffbeb';
       box.style.borderColor=statusKey==='healthy'?'#86efac':statusKey==='critical'?'#fca5a5':statusKey==='poor'?'#fdba74':statusKey==='watch'?'#fde047':'#fcd34d';
       box.setAttribute('data-financial-status',statusKey);
-      // Rebuild this status pill with exactly one explicit dot and one text node.
-      // This removes both legacy child dots and pseudo-element dots.
-      box.innerHTML='';
-      box.style.setProperty('display','inline-flex','important');
-      box.style.setProperty('align-items','center','important');
-      box.style.setProperty('gap','8px','important');
+      // Preserve the existing status text node: other dashboard refresh code
+      // may retain or query it. Replace only the marker, not the pill contents.
+      let label=box.querySelector('#fdStatusText');
+      if(!label){
+        label=document.createElement('span');
+        label.id='fdStatusText';
+        label.textContent=statusLabel;
+      }else{
+        label.textContent=statusLabel;
+      }
+      Array.from(box.children).forEach(node=>{if(node!==label)node.remove()});
       const dot=document.createElement('span');
       dot.setAttribute('aria-hidden','true');
       dot.style.cssText=`display:inline-block!important;flex:0 0 10px!important;width:10px!important;height:10px!important;min-width:10px!important;border-radius:50%!important;background:${color}!important;border:0!important;margin:0!important;box-shadow:none!important`;
-      const label=document.createElement('span');
-      label.id='fdStatusText';
-      label.textContent=statusLabel;
-      label.style.cssText='display:inline!important;color:inherit!important';
-      box.append(dot,label);
+      box.style.setProperty('display','inline-flex','important');
+      box.style.setProperty('align-items','center','important');
+      box.style.setProperty('gap','8px','important');
+      box.insertBefore(dot,label);
+      if(!label.isConnected)box.appendChild(label);
       const oldDotStyle=document.getElementById('molms-financial-status-dot-style');
       if(oldDotStyle)oldDotStyle.remove();
       const cleanup=document.getElementById('molms-financial-status-dot-cleanup');
