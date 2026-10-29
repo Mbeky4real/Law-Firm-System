@@ -288,7 +288,34 @@
     const bar=(name,value)=>`<div><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px"><span>${esc(name)}</span><b>TZS ${short(value)} <small style="color:var(--muted);font-weight:400">(${tzsTotal?Math.round(value/tzsTotal*100):0}%)</small></b></div><div style="height:4px;background:#e5e7eb;border-radius:8px"><div style="height:100%;width:${tzsTotal?Math.round(value/tzsTotal*100):0}%;background:#1e40af;border-radius:8px"></div></div></div>`;
     const type=q('fdRevByType');if(type){const taxV=tax.filter(r=>r.currency==='TZS').reduce((s,r)=>s+r.revenue,0),manualV=manual.filter(r=>r.currency==='TZS').reduce((s,r)=>s+r.revenue,0),usd=rows.filter(r=>r.currency==='USD').reduce((s,r)=>s+r.revenue,0);type.innerHTML=bar('Tax Invoice',taxV)+bar('Agreed Client Fees',manualV)+(usd?`<div style="border-top:1px dashed var(--border);padding-top:6px">USD revenue shown separately <b style="float:right">USD ${usd.toLocaleString()}</b></div>`:'')}
     const clients=q('fdRevByClient');if(clients){const grouped={};tzs.forEach(r=>grouped[r.client]=(grouped[r.client]||0)+r.revenue);clients.innerHTML=Object.entries(grouped).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([n,v],i)=>`<div style="display:flex;gap:6px"><b style="color:var(--muted)">${i+1}.</b><span style="flex:1">${esc(n)}</span><b style="color:#16803c">TZS ${short(v)}</b></div>`).join('')}
-    const practice=q('fdRevByPractice');if(practice){const linked=tax.filter(r=>r.currency==='TZS'&&/^LIT:|^NL:/.test(r.matter)).reduce((s,r)=>s+r.revenue,0),general=tzsTotal-linked;practice.innerHTML=(linked?bar('Matter-linked',linked):'')+(general?bar('General / Unlinked',general):'')}
+    const practice=q('fdRevByPractice');if(practice){
+      const areas=[
+        {key:'litigation',label:'Litigation',color:'#1d4ed8'},
+        {key:'nonlitigation',label:'Non-Litigation',color:'#16803c'},
+        {key:'general',label:'Other / General',color:'#64748b'}
+      ];
+      const classifyPractice=r=>{
+        const matter=String(r.matter||r.matter_ref||r.matter_title||'').toUpperCase();
+        if(/^LIT:|MOL\\/LIT\\//.test(matter))return 'litigation';
+        if(/^NL:|MOL\\/NLT\\//.test(matter))return 'nonlitigation';
+        return 'general';
+      };
+      const all=rows;
+      const totalBy=(key,currency)=>all.filter(r=>classifyPractice(r)===key&&String(r.currency||'TZS').toUpperCase()===currency).reduce((s,r)=>s+num(r.revenue),0);
+      practice.style.setProperty('display','grid','important');
+      practice.style.setProperty('grid-template-columns','repeat(3,minmax(0,1fr))','important');
+      practice.style.setProperty('gap','10px','important');
+      practice.style.setProperty('width','100%','important');
+      practice.style.setProperty('min-width','0','important');
+      practice.innerHTML=areas.map(a=>{
+        const tz=totalBy(a.key,'TZS'),usd=totalBy(a.key,'USD');
+        return '<div class="fd-practice-mini-card" style="min-width:0;box-sizing:border-box;border:1px solid #e4ddd2;border-radius:10px;background:#faf9f6;padding:12px 14px;display:flex;flex-direction:column;gap:9px">'+
+          '<div style="font-size:12px;font-weight:800;color:'+a.color+'">'+esc(a.label)+'</div>'+
+          '<div><div style="font-size:9px;color:var(--muted);margin-bottom:2px">TZS REVENUE</div><div style="font-size:19px;line-height:1.2;font-weight:800;color:#172f69;overflow-wrap:anywhere">TZS '+esc(tz.toLocaleString())+'</div></div>'+
+          '<div style="border-top:1px solid #e4ddd2;padding-top:7px"><div style="font-size:9px;color:var(--muted);margin-bottom:2px">USD REVENUE</div><div style="font-size:15px;line-height:1.2;font-weight:800;color:#172f69;overflow-wrap:anywhere">USD '+esc(usd.toLocaleString())+'</div></div>'+
+        '</div>';
+      }).join('');
+    }
     const partner=q('fdRevByPartner');if(partner)partner.innerHTML='<div style="font-size:11px;color:var(--muted)">Partner attribution is shown only where the source is linked to a matter. Unlinked fees are not guessed.</div>';
   }
 
