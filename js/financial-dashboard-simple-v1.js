@@ -257,6 +257,52 @@
       manualCard.style.setProperty('overflow','visible','important');
       manualCard.style.setProperty('margin-bottom','14px','important');
     }
+    // Phase 2 final layout guard: compact the actual rendered revenue tiles even if a legacy renderer replaces them.
+    const practiceHost=page.querySelector('#fdRevByPractice');
+    const practiceTitle=page.querySelector('#fdPracticePerformance');
+    if(practiceHost){
+      practiceHost.style.setProperty('display','grid','important');
+      practiceHost.style.setProperty('grid-template-columns','repeat(3,minmax(0,1fr))','important');
+      practiceHost.style.setProperty('gap','8px','important');
+      practiceHost.style.setProperty('align-items','stretch','important');
+      practiceHost.style.setProperty('width','100%','important');
+      practiceHost.style.setProperty('min-width','0','important');
+      Array.from(practiceHost.children).forEach(child=>{
+        const label=String(child.textContent||'').trim().toUpperCase();
+        if(label==='USD PRACTICE REVENUE'){
+          child.style.setProperty('grid-column','1 / -1','important');
+          child.style.setProperty('padding','5px 0','important');
+          child.style.setProperty('margin','2px 0 0','important');
+          child.style.setProperty('border-top','1px dashed #d8d0c4','important');
+          child.style.setProperty('background','transparent','important');
+        }else{
+          child.style.setProperty('min-width','0','important');
+          child.style.setProperty('padding','8px 10px','important');
+          child.style.setProperty('margin','0','important');
+          child.style.setProperty('border-radius','8px','important');
+          child.style.setProperty('box-sizing','border-box','important');
+        }
+      });
+      const compactObserver=window.MOLMSFinancialDashboardSimpleV1.practiceObserver;
+      if(!compactObserver){
+        const observer=new MutationObserver(()=>{if(!window.MOLMSFinancialDashboardSimpleV1.practiceLayoutQueued){window.MOLMSFinancialDashboardSimpleV1.practiceLayoutQueued=true;requestAnimationFrame(()=>{window.MOLMSFinancialDashboardSimpleV1.practiceLayoutQueued=false;apply()})}});
+        observer.observe(practiceHost,{childList:true,subtree:true});
+        window.MOLMSFinancialDashboardSimpleV1.practiceObserver=observer;
+      }
+    }
+    if(practiceTitle){
+      let outer=practiceTitle;
+      const stop=page.querySelector('div[style*="overflow-y: auto"],div[style*="overflow-y:auto"]');
+      for(let depth=0;depth<7&&outer.parentElement&&outer.parentElement!==stop;depth++){
+        if(/border-radius:\\s*12px/i.test(outer.getAttribute('style')||'')&&/background:\\s*#fff/i.test(outer.getAttribute('style')||''))break;
+        outer=outer.parentElement;
+      }
+      outer.style.setProperty('width','min(100%,760px)','important');
+      outer.style.setProperty('max-width','760px','important');
+      outer.style.setProperty('min-width','0','important');
+      outer.style.setProperty('box-sizing','border-box','important');
+      outer.style.setProperty('justify-self','start','important');
+    }
     if (!document.getElementById('molms-phase2-practice-compact-css')) {
       const style=document.createElement('style');
       style.id='molms-phase2-practice-compact-css';
