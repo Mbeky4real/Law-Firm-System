@@ -397,6 +397,15 @@
       box.style.borderColor=statusKey==='healthy'?'#86efac':statusKey==='critical'?'#fca5a5':statusKey==='poor'?'#fdba74':statusKey==='watch'?'#fde047':'#fcd34d';
       box.setAttribute('data-financial-status',statusKey);
       box.style.setProperty('--fd-status-dot-color',color);
+      // Keep exactly one status marker: hide the legacy small circular child,
+      // then render the single severity-coloured dot via ::before.
+      box.querySelectorAll('*').forEach(node=>{
+        const cs=window.getComputedStyle?window.getComputedStyle(node):null;
+        if(!cs)return;
+        const w=node.offsetWidth||parseFloat(cs.width)||0,h=node.offsetHeight||parseFloat(cs.height)||0;
+        const round=cs.borderRadius==='50%'||cs.borderRadius==='9999px'||cs.borderRadius==='999px';
+        if(round&&w>0&&h>0&&w<=20&&h<=20)node.style.setProperty('display','none','important');
+      });
       if(!document.getElementById('molms-financial-status-dot-style')){
         const style=document.createElement('style');style.id='molms-financial-status-dot-style';
         style.textContent='#fdStatusIndicator::before{content:"";display:inline-block;width:10px;height:10px;min-width:10px;border-radius:50%;background:var(--fd-status-dot-color,#16a34a);border:1px solid currentColor;margin-right:8px;vertical-align:middle;box-shadow:0 0 0 2px rgba(255,255,255,.65)}#fdStatusIndicator[data-financial-status="healthy"]::before{background:#16a34a}#fdStatusIndicator[data-financial-status="critical"]::before{background:#dc2626}#fdStatusIndicator[data-financial-status="reconciliation"]::before{background:#d97706}#fdStatusIndicator[data-financial-status="poor"]::before{background:#ea580c}#fdStatusIndicator[data-financial-status="watch"]::before{background:#ca8a04}';
