@@ -260,7 +260,7 @@
     // Phase 2 final layout guard: compact the actual rendered revenue tiles even if a legacy renderer replaces them.
     const practiceHost=page.querySelector('#fdRevByPractice');
     const practiceTitle=page.querySelector('#fdPracticePerformance');
-    if(practiceHost){
+    if(practiceHost&&!practiceHost.querySelector('.fd-practice-currency-panels')){
       practiceHost.style.setProperty('display','grid','important');
       practiceHost.style.setProperty('grid-template-columns','repeat(3,minmax(0,1fr))','important');
       practiceHost.style.setProperty('gap','8px','important');
