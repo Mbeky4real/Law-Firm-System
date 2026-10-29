@@ -70,24 +70,26 @@
     }finally{loading=false}
   }
 
-  function card(label,value,total,currency,accent){
-    const pct=total?Math.round(value/total*100):0;
-    return `<div style="background:#faf8f4;border-radius:10px;padding:10px 12px;margin-bottom:8px"><div style="font-size:10px;font-weight:800;color:${accent}">${esc(label)}</div><div style="font-size:16px;font-weight:900;color:${accent};margin-top:2px">${esc(currency)} ${short(value)}</div><div style="font-size:9px;color:var(--muted);margin-top:2px">Revenue · ${pct}% of ${esc(currency)} total</div></div>`;
-  }
-
-  function section(currency,heading){
-    const cur=sourceRows.filter(r=>r.currency===currency),total=cur.reduce((s,r)=>s+r.revenue,0);
-    const value=p=>cur.filter(r=>r.practice===p).reduce((s,r)=>s+r.revenue,0);
-    return `${heading?`<div style="font-size:10px;font-weight:800;color:var(--muted);margin:7px 0 7px">${esc(heading)}</div>`:''}${card('Litigation',value('litigation'),total,currency,'#1d4ed8')}${card('Non-Litigation',value('non_litigation'),total,currency,'#16a34a')}${card('Other / General',value('general'),total,currency,'#64748b')}`;
-  }
-
   function render(){
     const host=q('fdRevByPractice');
     if(!host||!loaded||rendering)return;
     rendering=true;
     try{
-      const extras=[...new Set(sourceRows.map(r=>r.currency).filter(c=>c&&c!=='TZS'))].sort();
-      host.innerHTML=['TZS',...extras].map((c,i)=>section(c,i?`${c} PRACTICE REVENUE`:'' )).join('');
+      const currencies=['TZS',...new Set(sourceRows.map(r=>r.currency).filter(c=>c&&c!=='TZS').sort())];
+      const practices=[
+        {key:'litigation',label:'Litigation',color:'#1d4ed8'},
+        {key:'non_litigation',label:'Non-Litigation',color:'#16803c'},
+        {key:'general',label:'Other / General',color:'#64748b'}
+      ];
+      const sum=(practice,currency)=>sourceRows.filter(r=>r.practice===practice&&r.currency===currency).reduce((s,r)=>s+r.revenue,0);
+      host.innerHTML=`
+        <div class="fd-practice-compact" style="display:grid;grid-template-columns:minmax(130px,1.2fr) repeat(${currencies.length},minmax(110px,1fr));gap:0;border:1px solid var(--border,#e2ddd5);border-radius:9px;overflow:hidden;background:#fff">
+          <div style="padding:7px 9px;background:#f7f5f0;font-size:9px;font-weight:800;color:var(--muted)">PRACTICE AREA</div>
+          ${currencies.map(cur=>`<div style="padding:7px 9px;background:#f7f5f0;text-align:right;font-size:9px;font-weight:800;color:var(--muted)">${esc(cur)} REVENUE</div>`).join('')}
+          ${practices.map(p=>`<div style="padding:8px 9px;border-top:1px solid var(--border,#e2ddd5);font-size:10px;font-weight:800;color:${p.color}">${esc(p.label)}</div>${currencies.map(cur=>`<div style="padding:8px 9px;border-top:1px solid var(--border,#e2ddd5);text-align:right;font-size:11px;font-weight:800;color:var(--navy)">${esc(cur)} ${esc(short(sum(p.key,cur)))}</div>`).join('')}`).join('')}
+        </div>
+        <div style="font-size:9px;color:var(--muted);margin-top:5px">Selected reporting period · approved and recognised revenue only · currencies shown separately</div>
+      `;
     }finally{rendering=false}
   }
 
