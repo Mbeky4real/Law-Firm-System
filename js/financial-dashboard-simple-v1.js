@@ -261,7 +261,9 @@
       const style=document.createElement('style');
       style.id='molms-phase2-practice-compact-css';
       style.textContent=`
-        #page-findash #fdPracticePerformance{width:min(100%,760px)!important;max-width:760px!important;min-width:0!important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;box-sizing:border-box!important}
+        #page-findash #fdPracticePerformance{width:100%!important;max-width:100%!important;min-width:0!important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;box-sizing:border-box!important}
+        #page-findash div:has(> #fdPracticePerformance){width:min(100%,760px)!important;max-width:760px!important;min-width:0!important;justify-self:start!important;box-sizing:border-box!important}
+        #page-findash div:has(> #fdPracticePerformance) #fdRevByPractice{width:100%!important;max-width:100%!important;min-width:0!important}
         #page-findash #fdPracticePerformance *{box-sizing:border-box}
         #page-findash #fdRevByPractice{width:100%!important;max-width:100%!important;min-width:0!important;overflow-x:auto!important}
         #page-findash #fdRevByPractice .fd-practice-compact{width:100%;min-width:0}
@@ -272,7 +274,7 @@
     if (practiceCard && practiceCard !== scroll) {
       practiceCard.classList.remove('fd-compact-workspace-card');
       practiceCard.style.setProperty('display','block','important');
-      practiceCard.style.setProperty('width','100%','important');
+      practiceCard.style.setProperty('width','min(100%, 760px)','important');
       practiceCard.style.setProperty('max-width','760px','important');
       practiceCard.style.setProperty('height','auto','important');
       practiceCard.style.setProperty('min-height','0','important');
