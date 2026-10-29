@@ -397,25 +397,32 @@
       box.style.background=statusKey==='healthy'?'#f0fdf4':statusKey==='critical'?'#fef2f2':statusKey==='poor'?'#fff7ed':statusKey==='watch'?'#fefce8':'#fffbeb';
       box.style.borderColor=statusKey==='healthy'?'#86efac':statusKey==='critical'?'#fca5a5':statusKey==='poor'?'#fdba74':statusKey==='watch'?'#fde047':'#fcd34d';
       box.setAttribute('data-financial-status',statusKey);
-      // Preserve the existing status text node: other dashboard refresh code
-      // may retain or query it. Replace only the marker, not the pill contents.
-      let label=box.querySelector('#fdStatusText');
-      if(!label){
-        label=document.createElement('span');
-        label.id='fdStatusText';
-        label.textContent=statusLabel;
-      }else{
-        label.textContent=statusLabel;
+      // Preserve all existing status-pill children: the legacy dashboard also
+      // updates timestamp/label nodes here. Only recolour the existing dot(s).
+      const markers=[];
+      box.querySelectorAll('*').forEach(node=>{
+        if(node===box)return;
+        const cs=window.getComputedStyle?window.getComputedStyle(node):null;
+        const w=node.offsetWidth||parseFloat(cs?.width)||0,h=node.offsetHeight||parseFloat(cs?.height)||0;
+        const radius=cs?.borderRadius||'';
+        const round=radius==='50%'||radius==='9999px'||radius==='999px';
+        const looksLikeDot=round&&w>=5&&h>=5&&w<=20&&h<=20&&node.children.length===0;
+        if(looksLikeDot)markers.push(node);
+      });
+      let dot=markers.find(node=>node.id!=='fdStatusText'&&node.getAttribute('aria-hidden')==='true')||markers.find(node=>node.id!=='fdStatusText');
+      if(!dot){
+        dot=document.createElement('span');
+        dot.setAttribute('aria-hidden','true');
+        dot.style.cssText='display:inline-block!important;flex:0 0 10px!important;width:10px!important;height:10px!important;min-width:10px!important;border-radius:50%!important;margin:0 8px 0 0!important;box-shadow:none!important';
+        box.insertBefore(dot,box.firstChild);
       }
-      Array.from(box.children).forEach(node=>{if(node!==label)node.remove()});
-      const dot=document.createElement('span');
-      dot.setAttribute('aria-hidden','true');
-      dot.style.cssText=`display:inline-block!important;flex:0 0 10px!important;width:10px!important;height:10px!important;min-width:10px!important;border-radius:50%!important;background:${color}!important;border:0!important;margin:0!important;box-shadow:none!important`;
-      box.style.setProperty('display','inline-flex','important');
-      box.style.setProperty('align-items','center','important');
-      box.style.setProperty('gap','8px','important');
-      box.insertBefore(dot,label);
-      if(!label.isConnected)box.appendChild(label);
+      dot.style.setProperty('background',color,'important');
+      dot.style.setProperty('background-color',color,'important');
+      dot.style.setProperty('border-color',color,'important');
+      dot.style.setProperty('display','inline-block','important');
+      dot.style.setProperty('width','10px','important');
+      dot.style.setProperty('height','10px','important');
+      markers.filter(node=>node!==dot).forEach(node=>node.style.setProperty('display','none','important'));
       const oldDotStyle=document.getElementById('molms-financial-status-dot-style');
       if(oldDotStyle)oldDotStyle.remove();
       const cleanup=document.getElementById('molms-financial-status-dot-cleanup');
