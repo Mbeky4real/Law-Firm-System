@@ -272,7 +272,16 @@
   function start() {
     apply();
     // Reconcile the intended three-card executive snapshot after legacy dashboard paints.
-    const renderSnapshot = () => { try { if (window.MOLMSFinanceV16 && typeof window.MOLMSFinanceV16.render === 'function') window.MOLMSFinanceV16.render(); } catch (e) { console.warn('[MOLMS compact finance snapshot]', e); } };
+    const renderSnapshot = () => {
+      try {
+        if (window.MOLMSFinanceV16 && typeof window.MOLMSFinanceV16.render === 'function') window.MOLMSFinanceV16.render();
+        const row=document.querySelector('#page-findash #fdKpiRow');
+        if(row){
+          const rank=el=>{const t=String(el.textContent||'').toUpperCase();if(t.includes('TOTAL REVENUE'))return 0;if(t.includes('TOTAL EXPENSES'))return 1;if(t.includes('CASH AVAILABLE'))return 2;return 9};
+          Array.from(row.children).sort((a,b)=>rank(a)-rank(b)).forEach(el=>row.appendChild(el));
+        }
+      } catch (e) { console.warn('[MOLMS compact finance snapshot]', e); }
+    };
     renderSnapshot();
     setTimeout(renderSnapshot, 350);
     setTimeout(renderSnapshot, 1200);
