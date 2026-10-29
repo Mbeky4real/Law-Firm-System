@@ -267,13 +267,13 @@
       `;
       document.head.appendChild(style);
     }
+    // Keep the landing dashboard to three decision-useful KPIs only.
+    // Detailed cash receipts, receivables and period result remain available in their
+    // dedicated sections/registers; they are not repeated as top-level cards.
     host.innerHTML=[
-      card('CASH AVAILABLE',m.cashAvailable||{TZS:0},num(m.cashAvailable?.TZS)>=0?'#167244':'#b42318',`Cash received minus approved manual-register expenses · ${label}`),
-      card('CASH RECEIVED',m.collected,'#065f46',`Verified cash only · WHT tracked separately: ${moneyLines(periodWithholdingTax()).map(x=>x.text).join(', ')||'0'} · ${label}`),
-      card('NEW RECEIVABLES',m.newReceivables,'#b54708',`Unpaid recognised fees · ${label}`),
-      card('RECOGNISED REVENUE',m.revenue,'#16803d',`Full agreed/invoiced fees · ${label}`),
-      card('OPERATING EXPENSES',m.expenses,'#b42318',`Recorded expenses · ${label}`),
-      card('PERIOD RESULT',Object.fromEntries(Object.keys({...m.revenue,...m.expenses}).map(c=>[c,num(m.revenue[c])-num(m.expenses[c])])),'#344054',label)
+      card('REVENUE',m.revenue,'#16803d',`Full agreed/invoiced fees · ${label}`),
+      card('EXPENSES',m.expenses,'#b42318',`Recorded expenses · ${label}`),
+      card('CASH AVAILABLE',m.cashAvailable||{TZS:0},num(m.cashAvailable?.TZS)>=0?'#167244':'#b42318',`Cash received minus approved manual-register expenses · ${label}`)
     ].join('');
   }
 
@@ -386,7 +386,18 @@
       if(anchor)anchor.insertBefore(warning,anchor.firstChild);
     }
     if(warning)warning.innerHTML=(issues.length||paymentLedgerLoadError)?`<div style="padding:10px 12px;margin:8px 0;border:1px solid #f59e0b;border-radius:8px;background:#fffbeb;color:#92400e;font-size:12px"><b>Payment reconciliation required:</b> ${paymentLedgerLoadError?'The Invoice Module payment ledger could not be loaded. ':''}${issues.length?`${issues.length} invoice(s) have missing, inconsistent or estimated payment-ledger records. Their payment dates are excluded from period cash totals until verified.`:''}<div style="margin-top:5px;font-weight:700">${issues.slice(0,5).map(x=>esc(x.invoice.invoice_number||x.invoice.id)).join(', ')}${issues.length>5?' and '+(issues.length-5)+' more':''}</div></div>`:'';
-    const box=q('fdStatusIndicator');if(box){box.style.color=color;box.style.background=level==='Healthy'?'#f0fdf4':level==='Critical'?'#fef2f2':'#fffbeb'}
+    const box=q('fdStatusIndicator');if(box){
+      box.style.color=color;box.style.background=level==='Healthy'?'#f0fdf4':level==='Critical'?'#fef2f2':'#fffbeb';
+      // Keep the status marker colour consistent with the text and status background.
+      box.querySelectorAll('*').forEach(node=>{
+        const cs=window.getComputedStyle?window.getComputedStyle(node):null;
+        if(cs&&cs.borderRadius&&cs.borderRadius!=='0px'&&(node.offsetWidth<=24||node.offsetHeight<=24)){
+          node.style.setProperty('background-color',color,'important');
+          node.style.setProperty('border-color',color,'important');
+          node.style.setProperty('color',color,'important');
+        }
+      });
+    }
     const intel=q('fdIntelligence');if(intel)intel.innerHTML=`<b>${level}:</b> ${Math.round(ratio*100)}% of TZS recognised revenue collected. ${cashVerified?`Calculated cash after expenses (zero monthly opening balance) is <b>${money('TZS',cash)}</b>. This is transaction-based and is not a bank-statement-verified balance.`:'Cash available after expenses is <b>pending calculation</b>.'}`;
   }
 
