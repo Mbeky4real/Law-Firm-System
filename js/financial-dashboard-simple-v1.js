@@ -272,14 +272,18 @@
   function start() {
     apply();
     // Reconcile the intended three-card executive snapshot after legacy dashboard paints.
+    const enforceKpiOrder = () => {
+      const row=document.querySelector('#page-findash #fdKpiRow');
+      if(!row)return;
+      const rank=el=>{const t=String(el.textContent||'').toUpperCase();if(t.includes('TOTAL REVENUE'))return 0;if(t.includes('TOTAL EXPENSES'))return 1;if(t.includes('CASH AVAILABLE'))return 2;return 9};
+      const current=Array.from(row.children),sorted=current.slice().sort((a,b)=>rank(a)-rank(b));
+      if(sorted.every((el,i)=>el===current[i]))return;
+      sorted.forEach(el=>row.appendChild(el));
+    };
     const renderSnapshot = () => {
       try {
         if (window.MOLMSFinanceV16 && typeof window.MOLMSFinanceV16.render === 'function') window.MOLMSFinanceV16.render();
-        const row=document.querySelector('#page-findash #fdKpiRow');
-        if(row){
-          const rank=el=>{const t=String(el.textContent||'').toUpperCase();if(t.includes('TOTAL REVENUE'))return 0;if(t.includes('TOTAL EXPENSES'))return 1;if(t.includes('CASH AVAILABLE'))return 2;return 9};
-          Array.from(row.children).sort((a,b)=>rank(a)-rank(b)).forEach(el=>row.appendChild(el));
-        }
+        enforceKpiOrder();
       } catch (e) { console.warn('[MOLMS compact finance snapshot]', e); }
     };
     renderSnapshot();
@@ -287,7 +291,7 @@
     setTimeout(renderSnapshot, 1200);
     const page = document.getElementById('page-findash');
     if (!page || window.MOLMSFinancialDashboardSimpleV1.observer) return;
-    const observer = new MutationObserver(() => apply());
+    const observer = new MutationObserver(() => { apply(); enforceKpiOrder(); });
     observer.observe(page, { childList:true, subtree:true });
     window.MOLMSFinancialDashboardSimpleV1.observer = observer;
   }
