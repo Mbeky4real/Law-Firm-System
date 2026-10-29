@@ -267,6 +267,14 @@
       card('TOTAL EXPENSES',m.expenses,'#b42318',`Recorded expenses · ${label}`,'expenses'),
       card('CASH AVAILABLE',m.cashAvailable||{TZS:0},num(m.cashAvailable?.TZS)>=0?'#167244':'#b42318',`Cash recorded less expenses · ${label}`,'cash')
     ].join('');
+    // Reassert the approved order after each render, regardless of stale DOM order.
+    const order=['TOTAL REVENUE','TOTAL EXPENSES','CASH AVAILABLE'];
+    const cards=Array.from(host.children);
+    cards.sort((a,b)=>{
+      const labelOf=el=>String(el.textContent||'').toUpperCase();
+      const rank=el=>{const t=labelOf(el);return order.findIndex(label=>t.includes(label))};
+      return rank(a)-rank(b);
+    }).forEach(el=>host.appendChild(el));
   }
 
   function renderReceivables(){
@@ -390,23 +398,28 @@
       box.style.setProperty('--fd-status-dot-color',color);
       // Use the existing dot only. Do not create a pseudo-element, which
       // would duplicate the native marker in the status pill.
-      let dotFound=false;
+      // Recolour the single existing status marker, including markers whose
+      // colour is supplied by a stylesheet rather than inline styles.
       box.querySelectorAll('*').forEach(node=>{
         const cs=window.getComputedStyle?window.getComputedStyle(node):null;
-        if(!cs)return;
-        const w=node.offsetWidth||parseFloat(cs.width)||0,h=node.offsetHeight||parseFloat(cs.height)||0;
-        const round=cs.borderRadius==='50%'||cs.borderRadius==='9999px'||cs.borderRadius==='999px';
-        if(round&&w>0&&h>0&&w<=20&&h<=20){
+        const w=node.offsetWidth||parseFloat(cs?.width)||0,h=node.offsetHeight||parseFloat(cs?.height)||0;
+        const round=cs&&(cs.borderRadius==='50%'||cs.borderRadius==='9999px'||cs.borderRadius==='999px');
+        if(round&&w>0&&h>0&&w<=24&&h<=24){
+          node.style.setProperty('background',color,'important');
           node.style.setProperty('background-color',color,'important');
           node.style.setProperty('border-color',color,'important');
           node.style.setProperty('color',color,'important');
-          node.style.setProperty('display','inline-block','important');
-          dotFound=true;
         }
       });
       const oldDotStyle=document.getElementById('molms-financial-status-dot-style');
       if(oldDotStyle)oldDotStyle.remove();
       box.style.setProperty('--fd-status-dot-color',color);
+      // Explicitly disable any legacy pseudo-dot so the status pill has one marker.
+      if(!document.getElementById('molms-financial-status-dot-cleanup')){
+        const dotCleanup=document.createElement('style');dotCleanup.id='molms-financial-status-dot-cleanup';
+        dotCleanup.textContent='#fdStatusIndicator::before,#fdStatusIndicator::after{content:none!important;display:none!important}';
+        document.head.appendChild(dotCleanup);
+      }
     }
     const intel=q('fdIntelligence');if(intel)intel.innerHTML=`<b>${level}:</b> ${Math.round(ratio*100)}% of TZS recognised revenue collected. ${cashVerified?`Calculated cash after expenses (zero monthly opening balance) is <b>${money('TZS',cash)}</b>. This is transaction-based and is not a bank-statement-verified balance.`:'Cash available after expenses is <b>pending calculation</b>.'}`;
   }
