@@ -12,7 +12,7 @@
       if(!page)return;
       const target=page.querySelector('#'+targetId);
       if(!target)return;
-      const scroll=Array.from(page.children).find(el=>/overflow-y:\\s*auto/i.test(el.getAttribute('style')||''));
+      const scroll=Array.from(page.children).find(el=>/overflow-y:\s*auto/i.test(el.getAttribute('style')||''));
       const card=scroll?dashboardCardFor(target,scroll):null;
       if(card&&card!==scroll)card.style.setProperty('display','block','important');
       target.style.setProperty('display','block','important');
