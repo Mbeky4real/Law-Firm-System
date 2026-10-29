@@ -95,8 +95,21 @@
 
   async function refresh(){await loadRows();render()}
 
-  window.addEventListener('load',()=>{setTimeout(refresh,700);setTimeout(refresh,1700)});
-  setInterval(async()=>{if(periodKey()!==lastPeriodKey)await refresh()},1500);
+  window.addEventListener('load',()=>{setTimeout(refresh,700);setTimeout(refresh,1700);setTimeout(refresh,3000)});
+  // Other legacy dashboard renderers may repaint this host after initial load.
+  // Restore the compact matrix only when another renderer has replaced it; our own
+  // render is stable because the expected class is present after each update.
+  function observeHost(){
+    const host=q('fdRevByPractice');
+    if(!host||host.dataset.molmsCompactObserver==='1')return;
+    host.dataset.molmsCompactObserver='1';
+    const observer=new MutationObserver(()=>{
+      if(!rendering&&loaded&&!host.querySelector('.fd-practice-compact'))render();
+    });
+    observer.observe(host,{childList:true,subtree:true});
+  }
+  setInterval(()=>{observeHost();if(periodKey()!==lastPeriodKey)refresh();else if(loaded){const host=q('fdRevByPractice');if(host&&!host.querySelector('.fd-practice-compact'))render()}},1000);
+
 
   window.MOLMSPracticeV5={classify,render,refresh,audit:()=>({period:bounds(),loaded,rows:sourceRows})};
 })();
