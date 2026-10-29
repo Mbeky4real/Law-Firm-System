@@ -159,9 +159,17 @@
     return out;
   }
 
+  // Reconciliation status is scoped to the selected reporting period.
+  // Include invoices issued in-period and invoices with payment-ledger activity
+  // in-period; unrelated historic discrepancies must not contaminate this period.
   function reconciliationIssues(){
-    const {invoices}=data();
-    return invoices.filter(validTax).map(i=>({invoice:i,integrity:paymentIntegrity(i)}))
+    const {start,end}=bounds(),{invoices}=data();
+    return invoices.filter(i=>{
+      if(!validTax(i))return false;
+      const issuedInPeriod=date(i.invoice_date)>=start&&date(i.invoice_date)<=end;
+      const paidInPeriod=receipts(i).some(r=>r.date&&r.date>=start&&r.date<=end);
+      return issuedInPeriod||paidInPeriod;
+    }).map(i=>({invoice:i,integrity:paymentIntegrity(i)}))
       .filter(x=>x.integrity.needsReconciliation);
   }
 
@@ -364,8 +372,10 @@
   }
 
   function renderStatus(){
-    const m=metrics(),ratio=num(m.revenue.TZS)?num(m.collected.TZS)/num(m.revenue.TZS):0,cash=num(m.cashAvailable?.TZS),payrollPending=!(()=>{try{return fdMonthlyObligations().payrollGenerated}catch(e){return false}})();
-    let level='Healthy',color='#16a34a';if(cash<0){level='Critical';color='#dc2626'}else if(ratio<.8||payrollPending){level='Stable';color='#b45309'}
+    const m=metrics(),ratio=num(m.revenue.TZS)?num(m.collected.TZS)/num(m.revenue.TZS):0,cashVerified=!!m.cashAvailable&&!m.cashAvailable.reconciliationPending&&Number.isFinite(Number(m.cashAvailable.TZS)),cash=cashVerified?num(m.cashAvailable.TZS):null;
+    // A low collection ratio or pending payroll preparation is not, by itself,
+    // proof of a financial reconciliation failure.
+    let level='Healthy',color='#16a34a';if(cashVerified&&cash<0){level='Critical';color='#dc2626'}else if(!cashVerified){level='Needs Reconciliation';color='#b45309'}
     const issues=reconciliationIssues();
     if(issues.length||paymentLedgerLoadError){level='Needs Reconciliation';color='#b45309'}
     const text=q('fdStatusText');if(text)text.textContent=`Financial Status: ${level} · ${typeof fdPeriodLabel==='function'?fdPeriodLabel():'Selected period'}`;
@@ -377,7 +387,7 @@
     }
     if(warning)warning.innerHTML=(issues.length||paymentLedgerLoadError)?`<div style="padding:10px 12px;margin:8px 0;border:1px solid #f59e0b;border-radius:8px;background:#fffbeb;color:#92400e;font-size:12px"><b>Payment reconciliation required:</b> ${paymentLedgerLoadError?'The Invoice Module payment ledger could not be loaded. ':''}${issues.length?`${issues.length} invoice(s) have missing, inconsistent or estimated payment-ledger records. Their payment dates are excluded from period cash totals until verified.`:''}<div style="margin-top:5px;font-weight:700">${issues.slice(0,5).map(x=>esc(x.invoice.invoice_number||x.invoice.id)).join(', ')}${issues.length>5?' and '+(issues.length-5)+' more':''}</div></div>`:'';
     const box=q('fdStatusIndicator');if(box){box.style.color=color;box.style.background=level==='Healthy'?'#f0fdf4':level==='Critical'?'#fef2f2':'#fffbeb'}
-    const intel=q('fdIntelligence');if(intel)intel.innerHTML=`<b>${level}:</b> ${Math.round(ratio*100)}% of TZS recognised revenue collected. Cash available (cash received less approved manual expenses) is <b>${money('TZS',cash)}</b>.${payrollPending?' September payroll obligations are pending calculation.':''}`;
+    const intel=q('fdIntelligence');if(intel)intel.innerHTML=`<b>${level}:</b> ${Math.round(ratio*100)}% of TZS recognised revenue collected. ${cashVerified?`Calculated cash after expenses (zero monthly opening balance) is <b>${money('TZS',cash)}</b>. This is transaction-based and is not a bank-statement-verified balance.`:'Cash available after expenses is <b>pending calculation</b>.'}`;
   }
 
   function render(){
