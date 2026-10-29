@@ -396,30 +396,22 @@
       box.style.borderColor=statusKey==='healthy'?'#86efac':statusKey==='critical'?'#fca5a5':statusKey==='poor'?'#fdba74':statusKey==='watch'?'#fde047':'#fcd34d';
       box.setAttribute('data-financial-status',statusKey);
       box.style.setProperty('--fd-status-dot-color',color);
-      // Use the existing dot only. Do not create a pseudo-element, which
-      // would duplicate the native marker in the status pill.
-      // Recolour the single existing status marker, including markers whose
-      // colour is supplied by a stylesheet rather than inline styles.
+      // Render exactly one severity-coloured dot. Hide any legacy dot child
+      // and use a single pseudo-element whose colour follows the status key.
       box.querySelectorAll('*').forEach(node=>{
         const cs=window.getComputedStyle?window.getComputedStyle(node):null;
         const w=node.offsetWidth||parseFloat(cs?.width)||0,h=node.offsetHeight||parseFloat(cs?.height)||0;
         const round=cs&&(cs.borderRadius==='50%'||cs.borderRadius==='9999px'||cs.borderRadius==='999px');
-        if(round&&w>0&&h>0&&w<=24&&h<=24){
-          node.style.setProperty('background',color,'important');
-          node.style.setProperty('background-color',color,'important');
-          node.style.setProperty('border-color',color,'important');
-          node.style.setProperty('color',color,'important');
-        }
+        if(round&&w>0&&h>0&&w<=24&&h<=24)node.style.setProperty('display','none','important');
       });
       const oldDotStyle=document.getElementById('molms-financial-status-dot-style');
       if(oldDotStyle)oldDotStyle.remove();
-      box.style.setProperty('--fd-status-dot-color',color);
-      // Explicitly disable any legacy pseudo-dot so the status pill has one marker.
-      if(!document.getElementById('molms-financial-status-dot-cleanup')){
-        const dotCleanup=document.createElement('style');dotCleanup.id='molms-financial-status-dot-cleanup';
-        dotCleanup.textContent='#fdStatusIndicator::before,#fdStatusIndicator::after{content:none!important;display:none!important}';
-        document.head.appendChild(dotCleanup);
+      if(!document.getElementById('molms-financial-status-dot-style')){
+        const style=document.createElement('style');style.id='molms-financial-status-dot-style';
+        style.textContent='#fdStatusIndicator::before{content:""!important;display:inline-block!important;width:10px!important;height:10px!important;min-width:10px!important;border-radius:50%!important;background:var(--fd-status-dot-color,#16a34a)!important;border:0!important;margin-right:8px!important;vertical-align:middle!important;box-shadow:none!important}#fdStatusIndicator::after{content:none!important;display:none!important}';
+        document.head.appendChild(style);
       }
+      box.style.setProperty('--fd-status-dot-color',color);
     }
     const intel=q('fdIntelligence');if(intel)intel.innerHTML=`<b>${level}:</b> ${Math.round(ratio*100)}% of TZS recognised revenue collected. ${cashVerified?`Calculated cash after expenses (zero monthly opening balance) is <b>${money('TZS',cash)}</b>. This is transaction-based and is not a bank-statement-verified balance.`:'Cash available after expenses is <b>pending calculation</b>.'}`;
   }
