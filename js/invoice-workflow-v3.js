@@ -139,6 +139,6 @@
   const observer=new MutationObserver(()=>{if(page()&&!$('molms-invoice-workflow-v3'))boot();});
   observer.observe(document.body,{childList:true,subtree:true});
   setInterval(()=>{if(page()&&!$('molms-invoice-workflow-v3'))boot();},1000);
-  setInterval(()=>{if(page()&&$('molms-invoice-workflow-v3')&&!$('molms-iwf-editor')&&!$('molms-iwf-review-host .molms-iwf-editor')&&!loading)render();},10000);
+  setInterval(()=>{if(page()&&$('molms-invoice-workflow-v3')&&!$('molms-iwf-editor')&&!document.querySelector('#molms-iwf-review-host .molms-iwf-editor')&&!loading)render();},10000);
   setInterval(()=>{if(page()&&isManager())protectManagerIssueControls();},1500);
 })();
