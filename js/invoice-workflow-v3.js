@@ -14,6 +14,29 @@
   const money=(v,c)=>(c||'TZS')+' '+Number(v||0).toLocaleString('en-US',{maximumFractionDigits:2});
   const isManager=()=>['office_manager','office_admin'].includes(identity.role);
   const isPartner=()=>identity.role==='partner';
+  function protectManagerIssueControls(){
+    if(!isManager())return;
+    const p=page();if(!p)return;
+    [...p.querySelectorAll('button,input[type="button"],input[type="submit"],a')].forEach(el=>{
+      const label=String(el.textContent||el.value||'').replace(/\\s+/g,' ').trim().toLowerCase();
+      if(/\\b(issue|approve|authorize|authorise|finalize|finalise)\\b/.test(label)&&!label.includes('send to partner')){
+        el.disabled=true;el.setAttribute('aria-disabled','true');
+        el.title='Only a Partner may issue an invoice. Use the Partner submission workflow.';
+        el.style.pointerEvents='none';el.style.opacity='.45';
+      }
+    });
+    const status=String(p.textContent||'').toLowerCase();
+    if(status.includes('issued')&&!status.includes('draft'))return;
+    const walker=document.createTreeWalker(p,NodeFilter.SHOW_TEXT),nodes=[];
+    while(walker.nextNode())nodes.push(walker.currentNode);
+    nodes.forEach(n=>{
+      const raw=n.nodeValue||'';
+      if(/signatory/i.test(raw))n.nodeValue=raw.replace(/signatory/gi,'Prepared by');
+      if(/\\bpartner\\b/i.test(n.nodeValue||'')&&/prepared by|signatory|issuer|issued by/i.test(n.parentElement?.parentElement?.textContent||'')){
+        n.nodeValue=n.nodeValue.replace(/\\bpartner\\b/gi,'Office Manager');
+      }
+    });
+  }
 
   async function loadIdentity(){
     const c=db(); if(!c?.auth?.getUser)return false;
@@ -45,6 +68,7 @@
     const body=$('molms-iwf-body');body.innerHTML='<div class="molms-iwf-empty">Loading invoice workflow…</div>';
     try{
       if(!await loadIdentity())throw new Error('Your active MOLMS role could not be verified. Please sign in again.');
+      protectManagerIssueControls();
       if(!isManager()&&!isPartner()){body.innerHTML='<div class="molms-iwf-empty">Invoice workflow access is restricted to the Office Manager and Partners.</div>';return;}
       if(isManager()){
         const {data,error}=await db().from('invoices').select('id,invoice_number,client_name,invoice_type,status,issuance_state,invoice_date,currency,total_due,return_note,created_at').eq('status','draft').in('issuance_state',['draft','returned']).order('created_at',{ascending:false});
