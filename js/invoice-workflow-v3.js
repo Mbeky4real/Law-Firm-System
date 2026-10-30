@@ -141,12 +141,25 @@
     legacy.forEach(el=>{el.disabled=true;el.setAttribute('aria-hidden','true');el.style.display='none';el.style.pointerEvents='none';});
   }
   document.addEventListener('click',function(e){const el=e.target&&e.target.closest&&e.target.closest('#molmsInvoiceSendPartnerV2,[data-legacy-invoice-submit]');if(el){e.preventDefault();e.stopImmediatePropagation();neutraliseLegacySubmit();const panel=$('molms-invoice-workflow-v3');panel?.scrollIntoView({behavior:'smooth',block:'start'});}},true);
-  let lastPage=false;
-  async function boot(){const p=page();if(!p){lastPage=false;return;}if(!lastPage){lastPage=true;await render();}else if(!$('molms-invoice-workflow-v3'))await render();}
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-  const observer=new MutationObserver(()=>{if(page()&&!$('molms-invoice-workflow-v3'))boot();});
-  observer.observe(document.body,{childList:true,subtree:true});
-  setInterval(()=>{if(page()&&!$('molms-invoice-workflow-v3'))boot();},1000);
-  setInterval(()=>{if(page()&&$('molms-invoice-workflow-v3')&&!$('molms-iwf-editor')&&!document.querySelector('#molms-iwf-review-host .molms-iwf-editor')&&!loading)render();},10000);
-  setInterval(()=>{if(page()&&isManager()){protectManagerIssueControls();neutraliseLegacySubmit();}},500);
+  let lastPage=false, observer=null;
+  async function boot(){
+    const p=page();
+    if(!p){lastPage=false;return;}
+    if(!lastPage||!$('molms-invoice-workflow-v3')){
+      lastPage=true;
+      await render();
+    }
+  }
+  function start(){
+    boot();
+    const p=$('page-invoice');
+    if(p&&!observer){
+      observer=new MutationObserver(()=>{
+        if(page()&&!$('molms-invoice-workflow-v3'))boot();
+      });
+      // Observe only direct invoice-page changes; do not watch the entire application DOM.
+      observer.observe(p,{childList:true,subtree:false});
+    }
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
