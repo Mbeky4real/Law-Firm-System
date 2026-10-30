@@ -78,7 +78,15 @@
       }else{
         const {data,error}=await db().from('invoices').select('id,invoice_number,client_name,invoice_type,status,issuance_state,invoice_date,currency,total_due,submitted_for_issue_at,return_note,created_at').eq('status','draft').eq('issuance_state','pending').order('submitted_for_issue_at',{ascending:true});
         if(error)throw error;const rows=data||[];
-        body.innerHTML='<div class="molms-iwf-section" style="border-top:0;padding-top:0;margin-top:0"><h4>Pending Partner review ('+rows.length+')</h4>'+(rows.length?'<div class="molms-iwf-list">'+rows.map(r=>card(r,'pending')).join('')+'</div>':'<div class="molms-iwf-empty">No invoices are waiting for Partner review.</div>')+'</div><div id="molms-iwf-review-host"></div><div id="molms-iwf-message" class="molms-iwf-status"></div>';
+        const issuedQ=await db().from('invoices').select('id,invoice_number,client_name,invoice_type,invoice_date,currency,total_due,amount_paid,withholding_tax_amount,issued_at,voided_at').eq('status','issued').is('voided_at',null).order('issued_at',{ascending:false}).limit(50);
+        if(issuedQ.error)throw issuedQ.error;
+        const issued=issuedQ.data||[];
+        const issuedCards=issued.map(r=>{
+          const paid=Number(r.amount_paid||0)+Number(r.withholding_tax_amount||0);
+          const blocked=paid>0;
+          return '<article class="molms-iwf-card"><strong>'+esc(r.invoice_number)+' · '+esc(r.client_name||'Client not specified')+'</strong><div class="molms-iwf-meta">'+esc((r.invoice_type||'tax').toUpperCase())+' · '+esc(r.invoice_date||'No date')+' · '+money(r.total_due,r.currency)+'<br>Issued '+esc(r.issued_at?new Date(r.issued_at).toLocaleDateString():'—')+(blocked?'<br><b style="color:#9a3412">Payment/WHT recorded — void blocked; process credit note or reversal.</b>':'<br>Unpaid issued invoice')+'</div><div class="molms-iwf-actions"><button class="molms-iwf-btn return" data-iwf="void" data-id="'+esc(r.id)+'" '+(blocked?'disabled title="Invoice has recorded payments"':'')+'>Void invoice</button></div></article>';
+        }).join('');
+        body.innerHTML='<div class="molms-iwf-section" style="border-top:0;padding-top:0;margin-top:0"><h4>Pending Partner review ('+rows.length+')</h4>'+(rows.length?'<div class="molms-iwf-list">'+rows.map(r=>card(r,'pending')).join('')+'</div>':'<div class="molms-iwf-empty">No invoices are waiting for Partner review.</div>')+'</div><div class="molms-iwf-section"><h4>Issued invoices — voiding ('+issued.length+')</h4><div class="molms-iwf-sub" style="margin-bottom:10px">Partners and Admins may void an unpaid issued invoice by recording a reason. Voided invoices remain in the audit trail and are excluded from firm revenue. Invoices with payments or withholding tax require a credit note/payment reversal instead.</div>'+(issued.length?'<div class="molms-iwf-list">'+issuedCards+'</div>':'<div class="molms-iwf-empty">No active issued invoices in the latest 50 records.</div>')+'</div><div id="molms-iwf-review-host"></div><div id="molms-iwf-message" class="molms-iwf-status"></div>';
       }
     }catch(e){body.innerHTML='<div class="molms-iwf-empty" style="color:#b42318">Invoice workflow could not load: '+esc(e.message||e)+'</div>';}
     finally{loading=false;}
@@ -132,6 +140,14 @@
       if(a==='remove-line'){const tr=b.closest('tr'),body=$('molms-iwf-lines-body');if(tr&&body&&body.children.length>1)tr.remove();return;}
       if(a==='save'||a==='submit'){b.disabled=true;await saveDraft(a==='submit');return;}
       if(a==='return'){const note=window.prompt('Explain what needs correction before this invoice can be issued:');if(note===null)return;b.disabled=true;const r=await db().rpc('return_invoice_for_correction',{p_invoice_id:b.dataset.id,p_note:note});if(r.error)throw r.error;await render();const m=$('molms-iwf-message');if(m)m.textContent='Invoice returned to the Office Manager with your comments.';return;}
+      if(a==='void'){
+        const reason=window.prompt('Enter the reason for voiding this issued invoice. This action is recorded in the audit trail:');
+        if(reason===null)return;if(!reason.trim())throw new Error('A reason is required to void an invoice.');
+        if(!window.confirm('Void this unpaid invoice? It will be excluded from firm revenue but retained in the audit trail.'))return;
+        b.disabled=true;const r=await db().rpc('void_issued_invoice',{p_invoice_id:b.dataset.id,p_reason:reason.trim()});if(r.error)throw r.error;
+        await render();const m=$('molms-iwf-message');if(m)m.textContent='Invoice voided. It remains in the audit trail and is excluded from revenue.';
+        return;
+      }
       if(a==='issue'){if(!window.confirm('Issue this invoice now? The issuing Partner and issuance time will be recorded.'))return;b.disabled=true;const r=await db().rpc('issue_submitted_invoice',{p_invoice_id:b.dataset.id});if(r.error)throw r.error;await render();const m=$('molms-iwf-message');if(m)m.textContent='Invoice successfully issued. The database recorded the issuing Partner and issuance time.';}
     }catch(err){const target=$('molms-iwf-editor-message')||$('molms-iwf-message');if(target)target.textContent='Action failed: '+(err.message||err);else window.alert(err.message||err);b.disabled=false;}
   }
