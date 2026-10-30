@@ -18,8 +18,8 @@
     if(!isManager())return;
     const p=page();if(!p)return;
     [...p.querySelectorAll('button,input[type="button"],input[type="submit"],a')].forEach(el=>{
-      const label=String(el.textContent||el.value||'').replace(/\\s+/g,' ').trim().toLowerCase();
-      if(/\\b(issue|approve|authorize|authorise|finalize|finalise)\\b/.test(label)&&!label.includes('send to partner')){
+      const label=String(el.textContent||el.value||'').replace(/\s+/g,' ').trim().toLowerCase();
+      if(/\b(issue|approve|authorize|authorise|finalize|finalise)\b/.test(label)&&!label.includes('send to partner')){
         el.disabled=true;el.setAttribute('aria-disabled','true');
         el.title='Only a Partner may issue an invoice. Use the Partner submission workflow.';
         el.style.pointerEvents='none';el.style.opacity='.45';
@@ -32,8 +32,8 @@
     nodes.forEach(n=>{
       const raw=n.nodeValue||'';
       if(/signatory/i.test(raw))n.nodeValue=raw.replace(/signatory/gi,'Prepared by');
-      if(/\\bpartner\\b/i.test(n.nodeValue||'')&&/prepared by|signatory|issuer|issued by/i.test(n.parentElement?.parentElement?.textContent||'')){
-        n.nodeValue=n.nodeValue.replace(/\\bpartner\\b/gi,'Office Manager');
+      if(/\bpartner\b/i.test(n.nodeValue||'')&&/prepared by|signatory|issuer|issued by/i.test(n.parentElement?.parentElement?.textContent||'')){
+        n.nodeValue=n.nodeValue.replace(/\bpartner\b/gi,'Office Manager');
       }
     });
   }
