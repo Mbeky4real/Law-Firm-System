@@ -60,7 +60,7 @@
   function card(r,mode){
     const status=r.issuance_state==='returned'?'<span style="color:#9a3412;font-weight:800">Returned for correction</span>':mode==='pending'?'<span style="color:#b45309;font-weight:800">Awaiting Partner review</span>':'<span style="color:#166534;font-weight:800">Draft</span>';
     const note=r.return_note?'<br><b>Partner comments:</b> '+esc(r.return_note):'';
-    const action=mode==='pending'?'<button class="molms-iwf-btn" data-iwf="view" data-id="'+esc(r.id)+'">Review details</button>':'<button class="molms-iwf-btn primary" data-iwf="edit" data-id="'+esc(r.id)+'">Edit draft</button>';
+    const action=mode==='pending'?'<button class="molms-iwf-btn" data-iwf="view" data-id="'+esc(r.id)+'">Review details</button>':'<button class="molms-iwf-btn primary" data-iwf="edit" data-id="'+esc(r.id)+'">Edit draft</button><button class="molms-iwf-btn issue" data-iwf="submit-existing" data-id="'+esc(r.id)+'">Send to Partners</button>';
     return '<article class="molms-iwf-card"><strong>'+esc(r.invoice_number||'Unnumbered draft')+' · '+esc(r.client_name||'Client not specified')+'</strong><div class="molms-iwf-meta">'+esc((r.invoice_type||'tax').toUpperCase())+' · '+esc(r.invoice_date||'No date')+' · '+money(r.total_due,r.currency)+'<br>'+status+note+'</div><div class="molms-iwf-actions">'+action+'</div></article>';
   }
   async function render(){
@@ -71,9 +71,10 @@
       protectManagerIssueControls();
       if(!isManager()&&!isPartner()){body.innerHTML='<div class="molms-iwf-empty">Invoice workflow access is restricted to the Office Manager and Partners.</div>';return;}
       if(isManager()){
+        neutraliseLegacySubmit();
         const {data,error}=await db().from('invoices').select('id,invoice_number,client_name,invoice_type,status,issuance_state,invoice_date,currency,total_due,return_note,created_at').eq('status','draft').in('issuance_state',['draft','returned']).order('created_at',{ascending:false});
         if(error)throw error;const rows=data||[];
-        body.innerHTML='<div class="molms-iwf-section" style="border-top:0;padding-top:0;margin-top:0"><h4>Drafts ready for correction and submission ('+rows.length+')</h4>'+(rows.length?'<div class="molms-iwf-list">'+rows.map(r=>card(r,'draft')).join('')+'</div>':'<div class="molms-iwf-empty">No editable draft invoices. Create an invoice using the existing invoice form; saved drafts will appear here.</div>')+'</div><div id="molms-iwf-editor-host"></div><div id="molms-iwf-message" class="molms-iwf-status"></div>';
+        body.innerHTML='<div class="molms-iwf-section" style="border-top:0;padding-top:0;margin-top:0"><h4>Drafts ready for correction and submission ('+rows.length+')</h4><div class="molms-iwf-sub" style="margin-bottom:10px">Once an invoice has been saved, use <b>Edit draft</b> to make corrections or <b>Send to Partners</b> to submit the saved draft. Do not use the old invoice-form submission control.</div>'+(rows.length?'<div class="molms-iwf-list">'+rows.map(r=>card(r,'draft')).join('')+'</div>':'<div class="molms-iwf-empty">No editable draft invoices. Create an invoice using the existing invoice form; saved drafts will appear here.</div>')+'</div><div id="molms-iwf-editor-host"></div><div id="molms-iwf-message" class="molms-iwf-status"></div>';
       }else{
         const {data,error}=await db().from('invoices').select('id,invoice_number,client_name,invoice_type,status,issuance_state,invoice_date,currency,total_due,submitted_for_issue_at,return_note,created_at').eq('status','draft').eq('issuance_state','pending').order('submitted_for_issue_at',{ascending:true});
         if(error)throw error;const rows=data||[];
@@ -124,6 +125,7 @@
     try{
       if(a==='refresh'){await render();return;}
       if(a==='edit'){await openEditor(b.dataset.id);return;}
+      if(a==='submit-existing'){if(!window.confirm('Send this saved draft to the Partners for review and issuance?'))return;b.disabled=true;const r=await db().rpc('submit_invoice_for_issuance',{p_invoice_id:b.dataset.id});if(r.error)throw r.error;await render();const m=$('molms-iwf-message');if(m)m.textContent='Saved invoice submitted to the Partners for review.';return;}
       if(a==='view'){await openReview(b.dataset.id);return;}
       if(a==='close-editor'){currentDraft=null;const h=$('molms-iwf-editor-host');if(h)h.innerHTML='';return;}
       if(a==='add-line'){const body=$('molms-iwf-lines-body');if(body)body.insertAdjacentHTML('beforeend',lineRow({particulars:'',qty:1,rate:0}));return;}
@@ -133,6 +135,12 @@
       if(a==='issue'){if(!window.confirm('Issue this invoice now? The issuing Partner and issuance time will be recorded.'))return;b.disabled=true;const r=await db().rpc('issue_submitted_invoice',{p_invoice_id:b.dataset.id});if(r.error)throw r.error;await render();const m=$('molms-iwf-message');if(m)m.textContent='Invoice successfully issued. The database recorded the issuing Partner and issuance time.';}
     }catch(err){const target=$('molms-iwf-editor-message')||$('molms-iwf-message');if(target)target.textContent='Action failed: '+(err.message||err);else window.alert(err.message||err);b.disabled=false;}
   }
+  function neutraliseLegacySubmit(){
+    const p=page();if(!p)return;
+    const legacy=[...p.querySelectorAll('#molmsInvoiceSendPartnerV2,button,a,input[type="button"]')].filter(el=>el.id==='molmsInvoiceSendPartnerV2'||/send to partner for issuing/i.test(String(el.textContent||el.value||'')));
+    legacy.forEach(el=>{el.disabled=true;el.setAttribute('aria-hidden','true');el.style.display='none';el.style.pointerEvents='none';});
+  }
+  document.addEventListener('click',function(e){const el=e.target&&e.target.closest&&e.target.closest('#molmsInvoiceSendPartnerV2,[data-legacy-invoice-submit]');if(el){e.preventDefault();e.stopImmediatePropagation();neutraliseLegacySubmit();const panel=$('molms-invoice-workflow-v3');panel?.scrollIntoView({behavior:'smooth',block:'start'});}},true);
   let lastPage=false;
   async function boot(){const p=page();if(!p){lastPage=false;return;}if(!lastPage){lastPage=true;await render();}else if(!$('molms-invoice-workflow-v3'))await render();}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
@@ -140,5 +148,5 @@
   observer.observe(document.body,{childList:true,subtree:true});
   setInterval(()=>{if(page()&&!$('molms-invoice-workflow-v3'))boot();},1000);
   setInterval(()=>{if(page()&&$('molms-invoice-workflow-v3')&&!$('molms-iwf-editor')&&!document.querySelector('#molms-iwf-review-host .molms-iwf-editor')&&!loading)render();},10000);
-  setInterval(()=>{if(page()&&isManager())protectManagerIssueControls();},1500);
+  setInterval(()=>{if(page()&&isManager()){protectManagerIssueControls();neutraliseLegacySubmit();}},500);
 })();
