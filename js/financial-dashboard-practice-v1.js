@@ -115,20 +115,18 @@
 
   async function refresh(){await loadRows();render()}
 
-  window.addEventListener('load',()=>{setTimeout(refresh,700);setTimeout(refresh,1700);setTimeout(refresh,3000)});
-  // Other legacy dashboard renderers may repaint this host after initial load.
-  // Restore the compact matrix only when another renderer has replaced it; our own
-  // render is stable because the expected class is present after each update.
-  function observeHost(){
-    const host=q('fdRevByPractice');
-    if(!host||host.dataset.molmsCompactObserver==='1')return;
-    host.dataset.molmsCompactObserver='1';
-    const observer=new MutationObserver(()=>{
-      if(!rendering&&loaded&&!host.querySelector('.fd-practice-compact'))render();
-    });
-    observer.observe(host,{childList:true,subtree:true});
-  }
-  setInterval(()=>{observeHost();if(periodKey()!==lastPeriodKey)refresh();else if(loaded){const host=q('fdRevByPractice');if(host&&!host.querySelector('.fd-practice-compact'))render()}},1000);
+  // Render once after the application has finished loading. Do not observe
+  // mutations on this host: render() itself replaces host.innerHTML, which would
+  // retrigger an observer attached to the same host and create an infinite loop.
+  window.addEventListener('load',()=>{setTimeout(refresh,900)},{once:true});
+  // Refresh when the user changes a dashboard selector (including reporting period).
+  document.addEventListener('change',event=>{
+    const page=q('page-findash');
+    if(!page||!page.contains(event.target))return;
+    if(event.target.matches('select,input[type="date"],input[type="month"]')){
+      setTimeout(refresh,0);
+    }
+  });
 
 
   window.MOLMSPracticeV5={classify,render,refresh,audit:()=>({period:bounds(),loaded,rows:sourceRows})};
