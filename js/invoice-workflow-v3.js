@@ -46,7 +46,7 @@ function btn(action,label,kind){return '<button type="button" data-iwf7="'+actio
 async function findInvoice(){
  const el=numberInput();
  const activeId=(typeof _invActiveId!=='undefined'&&_invActiveId)?String(_invActiveId):'';
- const id=selectedInvoiceId||activeId;
+ const id=selectedInvoiceId||(selectedInvoiceNumber?'':activeId);
  const num=String(selectedInvoiceNumber||el?.value||'').trim();
  if(id){
   const byId=await client().from('invoices').select('id,invoice_number,client_name,status,issuance_state,invoice_type,total_due,currency,amount_paid,withholding_tax_amount,voided_at,submitted_for_issue_at').eq('id',id).maybeSingle();
