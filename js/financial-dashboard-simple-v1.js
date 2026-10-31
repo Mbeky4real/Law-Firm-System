@@ -337,19 +337,37 @@
     const enforceKpiOrder = () => {
       const row=document.querySelector('#page-findash #fdKpiRow');
       if(!row)return;
-      const expected=['TOTAL REVENUE','TOTAL EXPENSES','CASH AVAILABLE'];
-      const cards=Array.from(row.children);
-      const rank=el=>{const t=String(el.textContent||'').toUpperCase();return expected.findIndex(label=>t.includes(label))};
-      const hasExactlyThree=cards.length===3&&expected.every(label=>cards.some(el=>String(el.textContent||'').toUpperCase().includes(label)));
-      if(!hasExactlyThree){
-        if(window.MOLMSFinanceV16&&typeof window.MOLMSFinanceV16.render==='function'){
-          window.MOLMSFinanceV16.render();
-        }
+      const expected=[
+        {label:'TOTAL REVENUE',key:'revenue',color:'#16803d',note:'Recognised invoice and manual revenue'},
+        {label:'TOTAL EXPENSES',key:'expenses',color:'#b42318',note:'Approved manual Other Expenditure and Partner Drawings only'},
+        {label:'CASH AVAILABLE',key:'cashAvailable',color:'#167244',note:'Cash receipts less approved manual expenditure and drawings'}
+      ];
+      const api=window.MOLMSFinanceV16;
+      let audit=null;
+      try{
+        if(api&&typeof api.render==='function')api.render();
+        if(api&&typeof api.audit==='function')audit=api.audit();
+      }catch(e){console.error('[MOLMS KPI enforcement]',e)}
+      const current=Array.from(row.children);
+      const isExact=current.length===3&&expected.every(x=>current.some(el=>String(el.textContent||'').toUpperCase().includes(x.label)));
+      if(isExact){
+        const sorted=current.slice().sort((a,b)=>{
+          const rank=el=>expected.findIndex(x=>String(el.textContent||'').toUpperCase().includes(x.label));
+          return rank(a)-rank(b);
+        });
+        if(!sorted.every((el,i)=>el===current[i]))sorted.forEach(el=>row.appendChild(el));
         return;
       }
-      const sorted=cards.slice().sort((a,b)=>rank(a)-rank(b));
-      if(sorted.every((el,i)=>el===cards[i]))return;
-      sorted.forEach(el=>row.appendChild(el));
+      if(!audit)return;
+      const fmt=(obj)=>{
+        const entries=Object.entries(obj||{}).filter(([,v])=>Number.isFinite(Number(v))&&Number(v)!==0);
+        if(!entries.length)return '<div style="font-size:25px;font-weight:900;line-height:1.25">TZS 0</div>';
+        return entries.map(([currency,value],i)=>'<div style="font-size:'+(i? '13px':'25px')+';font-weight:900;line-height:1.25;color:inherit">'+currency+' '+Number(value).toLocaleString('en-US',{maximumFractionDigits:2})+'</div>').join('');
+      };
+      row.innerHTML=expected.map(item=>{
+        const values=audit[item.key]||{TZS:0};
+        return '<div role="button" tabindex="0" data-finance-detail="'+item.key+'" aria-label="View '+item.label.toLowerCase()+' breakdown" onclick="window.MOLMSFinanceV16&&window.MOLMSFinanceV16.showDetails(\''+item.key+'\')" style="display:block!important;visibility:visible!important;min-width:0;background:#fff;border:1px solid #e4e7ec;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(16,24,40,.05);box-sizing:border-box;cursor:pointer;color:'+item.color+'"><div style="font-size:11px;font-weight:800;color:#667085;margin-bottom:5px;letter-spacing:.25px">'+item.label+'</div>'+fmt(values)+'<div style="font-size:11px;color:#667085;margin-top:6px;line-height:1.4">'+item.note+'</div><div style="font-size:11px;font-weight:750;color:#1d4ed8;margin-top:9px">View breakdown ↗</div></div>';
+      }).join('');
     };
     const renderSnapshot = () => {
       try {
