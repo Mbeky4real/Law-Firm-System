@@ -4,7 +4,7 @@
 (function(){
   'use strict';
   if(window.MOLMSReceivablesRecoveryV1) return;
-  const api=window.MOLMSReceivablesRecoveryV1={version:1,loaded:false,error:null};
+  const api=window.MOLMSReceivablesRecoveryV1={version:2,loaded:false,loading:false,error:null};
   const $=id=>document.getElementById(id);
   const n=v=>Number(v||0);
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -29,7 +29,8 @@
     document.head.appendChild(s);
   }
   async function load(){
-    const h=host(); if(!h||typeof sb==='undefined'||!sb)return;
+    const h=host(); if(!h||typeof sb==='undefined'||!sb||api.loading)return;
+    api.loading=true;
     h.innerHTML='<div style="font-size:11px;color:var(--muted);padding:8px 0">Loading receivables…</div>';
     try{
       const end=today();
@@ -49,7 +50,7 @@
         const activeTax=type==='tax'&&!['draft','void','cancelled','superseded'].includes(status);
         const issuedProforma=type==='proforma'&&status==='issued';
         if(!activeTax&&!issuedProforma)return;
-        const total=n(i.total_due),p=n(paid[i.id]),due=Math.max(0,total-p);
+        const total=n(i.total_due),ledgerRows=(payRes.data||[]).filter(p=>p.invoice_id===i.id),p=ledgerRows.length?n(paid[i.id]):n(i.amount_paid)+n(i.withholding_tax_amount),due=Math.max(0,total-p);
         if(due>.01)rows.push({kind:'invoice',id:i.id,client:i.client_name||'Unknown client',source:i.invoice_number||'—',currency:i.currency||'TZS',revenue:total,paid:p,outstanding:due,status:issuedProforma?'Proforma Outstanding':p>0?'Part Paid':'Unpaid'});
       });
       (manRes.data||[]).forEach(t=>{
@@ -61,24 +62,32 @@
       rows.sort((a,b)=>b.outstanding-a.outstanding);
       const currencies=[...new Set(rows.map(r=>r.currency||'TZS'))];
       const totals=currencies.map(c=>({currency:c,value:rows.filter(r=>r.currency===c).reduce((s,r)=>s+r.outstanding,0)}));
-      h.innerHTML='<div class="rr-summary"><div><div style="font-size:11px;font-weight:800;color:var(--navy)">TOTAL CLIENT RECEIVABLES</div>'+
+      h.innerHTML='<div data-receivables-recovery="v2" class="rr-summary"><div><div style="font-size:11px;font-weight:800;color:var(--navy)">TOTAL CLIENT RECEIVABLES</div>'+
         totals.map(t=>'<div class="rr-total">'+esc(money(t.currency,t.value))+'</div>').join('')+
         '<div style="font-size:10px;color:var(--muted);margin-top:3px">Open balances as at '+esc(end)+'</div></div>'+
         '<div style="font-size:10px;color:var(--muted);text-align:right">'+rows.length+' open item'+(rows.length===1?'':'s')+'</div></div>'+
         '<div class="rr-list">'+(rows.map(r=>'<button class="rr-row" data-rr-kind="'+esc(r.kind)+'" data-rr-id="'+esc(r.id)+'"><span class="rr-client">'+esc(r.client)+'<small class="rr-ref">'+esc(r.source)+' · '+esc(r.status)+'</small></span><span class="rr-metric">Agreed<b>'+esc(money(r.currency,r.revenue))+'</b></span><span class="rr-metric" style="color:#16803c">Paid<b>'+esc(money(r.currency,r.paid))+'</b></span><span class="rr-metric" style="color:#b42318">Outstanding<b>'+esc(money(r.currency,r.outstanding))+'</b></span></button>').join('')||'<div style="font-size:11px;color:var(--muted);padding:8px 0">No open receivables recorded.</div>')+'</div>';
       h.onclick=e=>{const b=e.target.closest('[data-rr-kind]');if(!b)return;if(typeof fdOpenReceivableSourceV2==='function')fdOpenReceivableSourceV2(b.dataset.rrKind,b.dataset.rrId)};
-      api.loaded=true;api.error=null;api.rows=rows;
+      api.loaded=true;api.error=null;api.rows=rows;h.dataset.receivablesRecoveryVersion='2';
     }catch(e){
       api.error=String(e&&e.message||e);
       console.error('[MOLMS receivables recovery]',e);
       h.innerHTML='<div style="font-size:11px;color:#b42318;padding:8px 0">Receivables could not be loaded. Please refresh or contact the system administrator.</div>';
-    }
+    }finally{api.loading=false}
   }
+  api.refresh=load;
   function start(){
     installStyle();
     const p=$('page-findash');if(!p)return;
-    if(host()&&!api.loaded)load();
-    if(!api.observer){api.observer=new MutationObserver(()=>{installStyle();if(host()&&!api.loaded)load()});api.observer.observe(p,{childList:true,subtree:true})}
+    if(host()&&(!api.loaded||host().dataset.receivablesRecoveryVersion!=='2'))load();
+    if(!api.observer){
+      api.observer=new MutationObserver(()=>{
+        installStyle();
+        const h=host();
+        if(h&&!api.loading&&!h.querySelector('[data-receivables-recovery="v2"]'))load();
+      });
+      api.observer.observe(p,{childList:true,subtree:true});
+    }
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
   window.addEventListener('load',start,{once:true});
