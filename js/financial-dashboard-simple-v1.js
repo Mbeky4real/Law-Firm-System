@@ -4,9 +4,9 @@
  */
 (function () {
   'use strict';
-  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 29) return;
+  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 30) return;
   window.MOLMSFinancialDashboardSimpleV1 = {
-    version: 29, applied: false,
+    version: 30, applied: false,
     showDetails(targetId) {
       const page=document.getElementById('page-findash');
       if(!page)return;
@@ -20,7 +20,7 @@
       else target.scrollIntoView({behavior:'smooth',block:'start'});
     }
   };
-  const styleId = 'molms-financial-dashboard-simple-v2-style';
+  const styleId = 'molms-financial-dashboard-simple-v3-style';
 
   function installStyle() {
     if (document.getElementById(styleId)) return;
@@ -29,6 +29,8 @@
     style.textContent = `
       #page-findash #fdKpiRow { display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;align-items:stretch!important;gap:10px!important;padding:12px 20px!important;margin:0 0 12px!important; }
       #page-findash #fdKpiRow>* { min-width:0!important;width:auto!important;max-width:none!important;margin:0!important;padding:14px 14px!important;box-sizing:border-box!important;border:1px solid #e4ddd2!important;border-radius:12px!important;box-shadow:0 2px 8px rgba(16,35,59,.045)!important;background:#fff!important; }
+      /* Override the legacy V15 rule that explicitly hid KPI card three. */
+      #page-findash #fdKpiRow>div:nth-child(3) { display:block!important;visibility:visible!important;opacity:1!important; }
       #page-findash #fdKpiRow>div:nth-child(1) { background:#fff!important;border-color:#e4ddd2!important;box-shadow:0 2px 8px rgba(16,35,59,.045)!important; }
       #page-findash #fdKpiRow>div:nth-child(2) { background:#fff!important;border-color:#e4ddd2!important;box-shadow:0 2px 8px rgba(16,35,59,.045)!important; }
       #page-findash #fdKpiRow>div:nth-child(3) { border:1px solid #b8d8c5!important;background:#f3faf5!important;box-shadow:0 3px 10px rgba(28,110,65,.08)!important; }
