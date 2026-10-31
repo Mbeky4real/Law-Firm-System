@@ -4,9 +4,9 @@
  */
 (function () {
   'use strict';
-  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 27) return;
+  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 28) return;
   window.MOLMSFinancialDashboardSimpleV1 = {
-    version: 27, applied: false,
+    version: 28, applied: false,
     showDetails(targetId) {
       const page=document.getElementById('page-findash');
       if(!page)return;
