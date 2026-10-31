@@ -54,31 +54,18 @@
     }finally{busy=false}
   }
   function start(){
-    if(observer){apply();return true;}
-    const page=document.getElementById('page-findash');
-    if(!page){
-      if(!rootObserver&&document.documentElement){
-        rootObserver=new MutationObserver(()=>{
-          if(document.getElementById('page-findash'))start();
-        });
-        rootObserver.observe(document.documentElement,{childList:true,subtree:true});
-      }
-      return false;
+    // Observe the document root: the application can replace #page-findash.
+    if(!observer&&document.documentElement){
+      observer=new MutationObserver(()=>{apply()});
+      observer.observe(document.documentElement,{childList:true,subtree:true});
     }
-    observer=new MutationObserver(()=>{apply()});
-    observer.observe(page,{childList:true,subtree:true});
-    if(rootObserver){rootObserver.disconnect();rootObserver=null;}
     apply();
-    return true;
+    return !!observer;
   }
   window.MOLMSKpiLockV1={active:true,apply,start};
   start();
   window.addEventListener('load',start,{once:true});
-  let tries=0;
-  const timer=setInterval(()=>{
-    const started=start();
-    const applied=apply();
-    if(started&&applied)clearInterval(timer);
-    if(++tries>240)clearInterval(timer);
-  },250);
+  // Persistent watchdog repairs later dashboard subtree replacements.
+  start();
+  setInterval(()=>{start();apply()},1000);
 })();
