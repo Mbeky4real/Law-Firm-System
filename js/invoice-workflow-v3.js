@@ -1,181 +1,129 @@
-/* MOLMS INVOICE WORKFLOW V3
- * Office Manager draft editing/submission; Partner review/return/issuance.
- * Workflow transitions are enforced by Supabase RPCs and database triggers.
+/* MOLMS Invoice Actions V7 — preserve the original invoice workspace.
+ * The original invoice form, saved-invoice list and preview remain authoritative.
+ * Role-specific workflow actions are placed in one compact footer at the bottom.
  */
-(function () {
-  'use strict';
-  if (window.__molmsInvoiceWorkflowV3) return;
-  window.__molmsInvoiceWorkflowV3 = true;
-  const $ = id => document.getElementById(id);
-  const db = () => (typeof sb !== 'undefined' ? sb : (window.supabaseClient || window.sb || null));
-  const page = () => { const p=$('page-invoice'); return p && p.style.display!=='none' && !p.hidden ? p : null; };
-  let identity={id:null,role:'',name:''}, loading=false, currentDraft=null;
-  const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const money=(v,c)=>(c||'TZS')+' '+Number(v||0).toLocaleString('en-US',{maximumFractionDigits:2});
-  const isManager=()=>['office_manager','office_admin'].includes(identity.role);
-  const isPartner=()=>identity.role==='partner';
-  function protectManagerIssueControls(){
-    if(!isManager())return;
-    const p=page();if(!p)return;
-    [...p.querySelectorAll('button,input[type="button"],input[type="submit"],a')].forEach(el=>{
-      const label=String(el.textContent||el.value||'').replace(/\s+/g,' ').trim().toLowerCase();
-      if(/\b(issue|approve|authorize|authorise|finalize|finalise)\b/.test(label)&&!label.includes('send to partner')){
-        el.disabled=true;el.setAttribute('aria-disabled','true');
-        el.title='Only a Partner may issue an invoice. Use the Partner submission workflow.';
-        el.style.pointerEvents='none';el.style.opacity='.45';
-      }
-    });
-    const status=String(p.textContent||'').toLowerCase();
-    if(status.includes('issued')&&!status.includes('draft'))return;
-    const walker=document.createTreeWalker(p,NodeFilter.SHOW_TEXT),nodes=[];
-    while(walker.nextNode())nodes.push(walker.currentNode);
-    nodes.forEach(n=>{
-      const raw=n.nodeValue||'';
-      if(/signatory/i.test(raw))n.nodeValue=raw.replace(/signatory/gi,'Prepared by');
-      if(/\bpartner\b/i.test(n.nodeValue||'')&&/prepared by|signatory|issuer|issued by/i.test(n.parentElement?.parentElement?.textContent||'')){
-        n.nodeValue=n.nodeValue.replace(/\bpartner\b/gi,'Office Manager');
-      }
-    });
+(function(){
+'use strict';
+if(window.__molmsInvoiceActionsV7)return;
+window.__molmsInvoiceActionsV7=true;
+const $=id=>document.getElementById(id);
+const db=()=>typeof sb!=='undefined'?sb:(window.supabaseClient||window.sb||null);
+const page=()=>{const p=$('page-invoice');return p&&p.style.display!=='none'&&!p.hidden?p:null;};
+let identity={id:null,role:'',name:''},lastNumber='',lastInvoice=null,busy=false;
+const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function roleName(v){return String(v||'').trim().toLowerCase().replace(/[\s-]+/g,'_');}
+function isManager(){return ['office_manager','office_admin'].includes(identity.role);}
+function isPartner(){return ['partner','admin'].includes(identity.role);}
+function client(){const c=db();if(!c?.auth)throw new Error('Database session is unavailable.');return c;}
+async function loadIdentity(){
+ const c=client();let user=null,authError=null;
+ try{const s=await c.auth.getSession();user=s?.data?.session?.user||null;authError=s?.error||null;}catch(e){authError=e;}
+ if(!user){try{const u=await c.auth.getUser();user=u?.data?.user||null;authError=u?.error||authError;}catch(e){authError=e;}}
+ if(!user?.id)throw new Error('Your sign-in session could not be read. Please sign out and sign in again.'+(authError?.message?' ('+authError.message+')':''));
+ let q=await c.from('roles').select('user_id,full_name,role,active,position').eq('user_id',user.id).maybeSingle();
+ if(q.error)throw new Error('Your account role could not be read: '+q.error.message);
+ if(!q.data)throw new Error('No MOLMS role is assigned to this account. Contact the system administrator.');
+ if(q.data.active===false)throw new Error('Your MOLMS account is inactive. Contact the system administrator.');
+ identity={id:user.id,role:roleName(q.data.role),name:q.data.full_name||''};
+ if(!identity.role)throw new Error('Your MOLMS role is blank. Contact the system administrator.');
+}
+function numberInput(){
+ const p=page();if(!p)return null;
+ return p.querySelector('input[name="invoice_number"],input[name="invoiceNumber"],input[id*="invoice"][id*="number" i],input[id*="inv"][id*="number" i],input[placeholder*="MOL/INV"]');
+}
+function ensureFooter(){
+ const p=page();if(!p)return null;
+ let old=$('molms-invoice-workflow-v3');if(old)old.remove();
+ let bar=$('molms-invoice-actions-footer-v7');
+ if(!bar){
+  bar=document.createElement('section');bar.id='molms-invoice-actions-footer-v7';
+  bar.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:14px 16px 20px;padding:12px 14px;border:1px solid #dfd4c5;border-radius:10px;background:#fff;box-sizing:border-box;color:#183247;font:inherit';
+  p.appendChild(bar);
+ }
+ return bar;
+}
+function btn(action,label,kind){return '<button type="button" data-iwf7="'+action+'" style="border:1px solid #c9b89f;border-radius:7px;padding:8px 13px;background:'+(kind==='primary'?'#183247':kind==='danger'?'#fff7ed':'#faf8f4')+';color:'+(kind==='primary'?'#fff':kind==='danger'?'#9a3412':'#183247')+';font-weight:700;font-size:12px;cursor:pointer">'+label+'</button>';}
+async function findInvoice(){
+ const el=numberInput(),num=String(el?.value||'').trim();
+ if(!num)return {num:'',row:null};
+ const c=client(),q=await c.from('invoices').select('id,invoice_number,client_name,status,issuance_state,invoice_type,total_due,currency,amount_paid,withholding_tax_amount,voided_at,submitted_for_issue_at').eq('invoice_number',num).maybeSingle();
+ if(q.error)throw q.error;
+ return {num,row:q.data||null};
+}
+async function render(){
+ const p=page();if(!p)return;
+ const bar=ensureFooter();if(!bar)return;
+ try{
+  if(!identity.id)await loadIdentity();
+  const {num,row}=await findInvoice();lastNumber=num;lastInvoice=row;
+  const status=row?String(row.status||'').replace(/_/g,' ').toUpperCase():'No saved invoice selected';
+  let actions='';
+  if(isManager()){
+   if(row&&row.status==='draft'&&['draft','returned'].includes(row.issuance_state))
+    actions=btn('send','Send to Partners for Issuing','primary');
+   else if(!row)actions='<span style="font-size:12px;color:#667085">Create an invoice and use the original Save as Draft control. You can then send the saved draft to Partners.</span>';
+   else actions='<span style="font-size:12px;color:#667085">This invoice is not an editable draft. Only Partners can issue or void invoices.</span>';
+  }else if(isPartner()){
+   if(row&&row.status==='draft'&&row.issuance_state==='pending'){
+    actions=btn('issue','Issue Invoice','primary')+btn('return','Return for Correction','');
+   }else if(row&&row.status==='issued'&&!row.voided_at){
+    const blocked=Number(row.amount_paid||0)>0||Number(row.withholding_tax_amount||0)>0;
+    actions=blocked?'<span style="font-size:12px;color:#9a3412">Payments or withholding tax recorded. Use the appropriate credit note/payment reversal.</span>':btn('void','Void Invoice','danger');
+   }else if(row&&row.status==='draft'){
+    actions='<span style="font-size:12px;color:#667085">This draft has not been submitted. Office Manager may send it to Partners for issuance.</span>';
+   }else actions='<span style="font-size:12px;color:#667085">Select an invoice from the existing saved-invoices list to view available actions.</span>';
+  }else actions='<span style="font-size:12px;color:#b42318">You do not have invoice workflow permissions.</span>';
+  bar.innerHTML='<div style="min-width:180px"><div style="font-size:12px;font-weight:800;color:#183247">INVOICE ACTIONS</div><div style="font-size:11px;color:#667085;margin-top:3px">'+esc(identity.name)+' · '+esc(identity.role.replace(/_/g,' '))+' · '+esc(row?row.invoice_number+' — '+status:'Select or create an invoice')+'</div></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'+actions+'</div><div id="molms-invoice-actions-message-v7" style="width:100%;font-size:12px;color:#475467"></div>';
+ }catch(e){
+  bar.innerHTML='<div style="font-size:12px;color:#b42318">Invoice actions unavailable: '+esc(e.message||e)+'</div><button type="button" data-iwf7="retry" style="border:1px solid #c9b89f;border-radius:7px;padding:7px 12px;background:#faf8f4">Retry</button>';
+  console.error('[MOLMS invoice actions V7]',e);
+ }
+}
+async function act(action,button){
+ if(busy)return;busy=true;if(button)button.disabled=true;
+ const message=()=> $('molms-invoice-actions-message-v7');
+ try{
+  const c=client();if(!identity.id)await loadIdentity();
+  if(action==='retry'){identity.id=null;await render();return;}
+  const {row}=await findInvoice();
+  if(!row)throw new Error('Save the invoice first, then select it from the existing saved-invoices list.');
+  if(action==='send'){
+   if(!isManager())throw new Error('Only the Office Manager can submit a draft to Partners.');
+   if(row.status!=='draft'||!['draft','returned'].includes(row.issuance_state))throw new Error('Only an editable draft can be submitted.');
+   const r=await c.rpc('submit_invoice_for_issuance',{p_invoice_id:row.id});if(r.error)throw r.error;
+   await render();const m=message();if(m)m.textContent='Invoice sent to Partners for issuing.';return;
   }
-
-  async function loadIdentity(){
-    const c=db(); if(!c?.auth?.getUser)return false;
-    const {data:a,error:ae}=await c.auth.getUser(); if(ae||!a?.user)return false;
-    const {data,error}=await c.from('roles').select('user_id,full_name,role,active').eq('user_id',a.user.id).eq('active',true).maybeSingle();
-    if(error||!data)return false;
-    identity={id:a.user.id,role:String(data.role||'').toLowerCase(),name:data.full_name||''}; return true;
+  if(action==='issue'){
+   if(!isPartner())throw new Error('Only a Partner or Admin can issue invoices.');
+   if(!window.confirm('Issue '+row.invoice_number+'? Your account will be recorded as the issuing Partner.'))return;
+   const r=await c.rpc('issue_submitted_invoice',{p_invoice_id:row.id});if(r.error)throw r.error;
+   await render();const m=message();if(m)m.textContent='Invoice issued successfully.';return;
   }
-  function styles(){
-    if($('molms-invoice-workflow-style-v3'))return;
-    const s=document.createElement('style');s.id='molms-invoice-workflow-style-v3';
-    s.textContent="#molms-invoice-workflow-v3{display:block;box-sizing:border-box;margin:12px 16px 18px;padding:16px;border:1px solid #dfd4c5;border-radius:14px;background:#fff;position:relative;z-index:2;color:#183247;font:inherit}#molms-invoice-workflow-v3 *{box-sizing:border-box}.molms-iwf-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}.molms-iwf-title{font-size:16px;font-weight:800;color:#183247}.molms-iwf-sub{font-size:12px;color:#667085;margin-top:4px;line-height:1.5}.molms-iwf-refresh,.molms-iwf-btn{border:1px solid #c9b89f;border-radius:8px;padding:8px 12px;background:#faf8f4;color:#183247;font-weight:700;cursor:pointer;font-size:12px}.molms-iwf-btn.primary{background:#183247;color:#fff;border-color:#183247}.molms-iwf-btn.issue{background:#166534;color:#fff;border-color:#166534}.molms-iwf-btn.return{background:#fff7ed;color:#9a3412;border-color:#fed7aa}.molms-iwf-btn:disabled{opacity:.5;cursor:not-allowed}.molms-iwf-section{border-top:1px solid #edf0f2;padding-top:13px;margin-top:13px}.molms-iwf-section h4{font-size:13px;margin:0 0 9px;color:#183247}.molms-iwf-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:10px}.molms-iwf-card{border:1px solid #e5e7eb;border-radius:10px;padding:12px;background:#fff;min-width:0}.molms-iwf-card strong{font-size:13px}.molms-iwf-meta{font-size:11px;color:#667085;line-height:1.6;margin:5px 0 9px;overflow-wrap:anywhere}.molms-iwf-actions{display:flex;gap:7px;flex-wrap:wrap}.molms-iwf-empty{font-size:12px;color:#667085;padding:12px;border-radius:8px;background:#f8fafc}.molms-iwf-editor{margin-top:12px;padding:14px;border:1px solid #c9b89f;border-radius:10px;background:#fcfbf9}.molms-iwf-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:9px}.molms-iwf-field{display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:700;color:#475467}.molms-iwf-field input,.molms-iwf-field select,.molms-iwf-field textarea{width:100%;min-width:0;border:1px solid #d0d5dd;border-radius:7px;padding:8px;background:#fff;color:#183247;font:inherit;font-size:12px}.molms-iwf-field textarea{min-height:58px;resize:vertical}.molms-iwf-lines{width:100%;border-collapse:collapse;margin-top:10px;font-size:12px}.molms-iwf-lines th,.molms-iwf-lines td{padding:6px;border-bottom:1px solid #e5e7eb;text-align:left}.molms-iwf-lines input{width:100%;min-width:60px;border:1px solid #d0d5dd;border-radius:6px;padding:7px;font:inherit}.molms-iwf-status{font-size:12px;margin:8px 0;color:#475467}@media(max-width:600px){#molms-invoice-workflow-v3{margin:8px;padding:11px}.molms-iwf-lines{min-width:620px}.molms-iwf-lines-wrap{overflow:auto}}";
-    document.head.appendChild(s);
+  if(action==='return'){
+   if(!isPartner())throw new Error('Only a Partner can return an invoice.');
+   const note=window.prompt('Enter the corrections required from the Office Manager:');if(note===null)return;if(!note.trim())throw new Error('A correction note is required.');
+   const r=await c.rpc('return_invoice_for_correction',{p_invoice_id:row.id,p_note:note.trim()});if(r.error)throw r.error;
+   await render();const m=message();if(m)m.textContent='Invoice returned to the Office Manager for correction.';return;
   }
-  function ensurePanel(){
-    const p=page();if(!p)return null;let panel=$('molms-invoice-workflow-v3');
-    if(!panel){panel=document.createElement('section');panel.id='molms-invoice-workflow-v3';panel.innerHTML='<div class="molms-iwf-head"><div><div class="molms-iwf-title">Invoice Preparation & Issuance</div><div class="molms-iwf-sub">Office Manager prepares and corrects drafts. Only a Partner can authorise issuance.</div></div><button type="button" class="molms-iwf-refresh" data-iwf="refresh">Refresh</button></div><div id="molms-iwf-body"></div>';p.insertBefore(panel,p.firstChild);panel.addEventListener('click',onClick);}
-    return panel;
+  if(action==='void'){
+   if(!isPartner())throw new Error('Only a Partner or Admin can void an invoice.');
+   const reason=window.prompt('Enter the reason for voiding '+row.invoice_number+':');if(reason===null)return;if(!reason.trim())throw new Error('A reason is required.');
+   if(!window.confirm('Void this invoice? It will be excluded from firm revenue and retained in the audit trail.'))return;
+   const r=await c.rpc('void_issued_invoice',{p_invoice_id:row.id,p_reason:reason.trim()});if(r.error)throw r.error;
+   await render();const m=message();if(m)m.textContent='Invoice voided. It remains in the audit trail and is excluded from revenue.';return;
   }
-  async function getLines(id){const {data,error}=await db().from('invoice_lines').select('id,sn,particulars,qty,rate,amount').eq('invoice_id',id).order('sn');if(error)throw error;return data||[];}
-  function card(r,mode){
-    const status=r.issuance_state==='returned'?'<span style="color:#9a3412;font-weight:800">Returned for correction</span>':mode==='pending'?'<span style="color:#b45309;font-weight:800">Awaiting Partner review</span>':'<span style="color:#166534;font-weight:800">Draft</span>';
-    const note=r.return_note?'<br><b>Partner comments:</b> '+esc(r.return_note):'';
-    const action=mode==='pending'?'<button class="molms-iwf-btn" data-iwf="view" data-id="'+esc(r.id)+'">Review details</button>':'<button class="molms-iwf-btn primary" data-iwf="edit" data-id="'+esc(r.id)+'">Edit draft</button><button class="molms-iwf-btn issue" data-iwf="submit-existing" data-id="'+esc(r.id)+'">Send to Partners</button>';
-    return '<article class="molms-iwf-card"><strong>'+esc(r.invoice_number||'Unnumbered draft')+' · '+esc(r.client_name||'Client not specified')+'</strong><div class="molms-iwf-meta">'+esc((r.invoice_type||'tax').toUpperCase())+' · '+esc(r.invoice_date||'No date')+' · '+money(r.total_due,r.currency)+'<br>'+status+note+'</div><div class="molms-iwf-actions">'+action+'</div></article>';
-  }
-  async function render(){
-    const p=page(),panel=ensurePanel();if(!p||!panel||loading)return;loading=true;styles();
-    const body=$('molms-iwf-body');body.innerHTML='<div class="molms-iwf-empty">Loading invoice workflow…</div>';
-    try{
-      if(!await loadIdentity())throw new Error('Your active MOLMS role could not be verified. Please sign in again.');
-      protectManagerIssueControls();
-      if(!isManager()&&!isPartner()){body.innerHTML='<div class="molms-iwf-empty">Invoice workflow access is restricted to the Office Manager and Partners.</div>';return;}
-      if(isManager()){
-        neutraliseLegacySubmit();
-        const {data,error}=await db().from('invoices').select('id,invoice_number,client_name,invoice_type,status,issuance_state,invoice_date,currency,total_due,return_note,created_at').eq('status','draft').in('issuance_state',['draft','returned']).order('created_at',{ascending:false});
-        if(error)throw error;const rows=data||[];
-        body.innerHTML='<div class="molms-iwf-section" style="border-top:0;padding-top:0;margin-top:0"><h4>Drafts ready for correction and submission ('+rows.length+')</h4><div class="molms-iwf-sub" style="margin-bottom:10px">Once an invoice has been saved, use <b>Edit draft</b> to make corrections or <b>Send to Partners</b> to submit the saved draft. Do not use the old invoice-form submission control.</div>'+(rows.length?'<div class="molms-iwf-list">'+rows.map(r=>card(r,'draft')).join('')+'</div>':'<div class="molms-iwf-empty">No editable draft invoices. Create an invoice using the existing invoice form; saved drafts will appear here.</div>')+'</div><div id="molms-iwf-editor-host"></div><div id="molms-iwf-message" class="molms-iwf-status"></div>';
-      }else{
-        const {data,error}=await db().from('invoices').select('id,invoice_number,client_name,invoice_type,status,issuance_state,invoice_date,currency,total_due,submitted_for_issue_at,return_note,created_at').eq('status','draft').eq('issuance_state','pending').order('submitted_for_issue_at',{ascending:true});
-        if(error)throw error;const rows=data||[];
-        const issuedQ=await db().from('invoices').select('id,invoice_number,client_name,invoice_type,invoice_date,currency,total_due,amount_paid,withholding_tax_amount,issued_at,voided_at').eq('status','issued').is('voided_at',null).order('issued_at',{ascending:false}).limit(50);
-        if(issuedQ.error)throw issuedQ.error;
-        const issued=issuedQ.data||[];
-        const issuedCards=issued.map(r=>{
-          const paid=Number(r.amount_paid||0)+Number(r.withholding_tax_amount||0);
-          const blocked=paid>0;
-          return '<article class="molms-iwf-card"><strong>'+esc(r.invoice_number)+' · '+esc(r.client_name||'Client not specified')+'</strong><div class="molms-iwf-meta">'+esc((r.invoice_type||'tax').toUpperCase())+' · '+esc(r.invoice_date||'No date')+' · '+money(r.total_due,r.currency)+'<br>Issued '+esc(r.issued_at?new Date(r.issued_at).toLocaleDateString():'—')+(blocked?'<br><b style="color:#9a3412">Payment/WHT recorded — void blocked; process credit note or reversal.</b>':'<br>Unpaid issued invoice')+'</div><div class="molms-iwf-actions"><button class="molms-iwf-btn return" data-iwf="void" data-id="'+esc(r.id)+'" '+(blocked?'disabled title="Invoice has recorded payments"':'')+'>Void invoice</button></div></article>';
-        }).join('');
-        body.innerHTML='<div class="molms-iwf-section" style="border-top:0;padding-top:0;margin-top:0"><h4>Pending Partner review ('+rows.length+')</h4>'+(rows.length?'<div class="molms-iwf-list">'+rows.map(r=>card(r,'pending')).join('')+'</div>':'<div class="molms-iwf-empty">No invoices are waiting for Partner review.</div>')+'</div><div class="molms-iwf-section"><h4>Issued invoices — voiding ('+issued.length+')</h4><div class="molms-iwf-sub" style="margin-bottom:10px">Partners and Admins may void an unpaid issued invoice by recording a reason. Voided invoices remain in the audit trail and are excluded from firm revenue. Invoices with payments or withholding tax require a credit note/payment reversal instead.</div>'+(issued.length?'<div class="molms-iwf-list">'+issuedCards+'</div>':'<div class="molms-iwf-empty">No active issued invoices in the latest 50 records.</div>')+'</div><div id="molms-iwf-review-host"></div><div id="molms-iwf-message" class="molms-iwf-status"></div>';
-      }
-    }catch(e){body.innerHTML='<div class="molms-iwf-empty" style="color:#b42318">Invoice workflow could not load: '+esc(e.message||e)+'</div>';}
-    finally{loading=false;}
-  }
-  function field(label,name,value,type){
-    const val=value==null?'':String(value);
-    if(name==='currency')return '<label class="molms-iwf-field">'+label+'<select name="'+name+'"><option value="TZS"'+(val==='TZS'?' selected':'')+'>TZS</option><option value="USD"'+(val==='USD'?' selected':'')+'>USD</option></select></label>';
-    if(name==='invoice_type')return '<label class="molms-iwf-field">'+label+'<select name="'+name+'"><option value="tax"'+(val==='tax'?' selected':'')+'>Tax Invoice</option><option value="proforma"'+(val==='proforma'?' selected':'')+'>Proforma Invoice</option></select></label>';
-    return '<label class="molms-iwf-field">'+label+'<input name="'+name+'" type="'+(type||'text')+'" value="'+esc(val)+'"></label>';
-  }
-  function lineRow(l){
-    return '<tr><td><input data-line="particulars" value="'+esc(l.particulars||'')+'" placeholder="Description of service"></td><td><input data-line="qty" type="number" min="0.01" step="0.01" value="'+esc(l.qty==null?1:l.qty)+'"></td><td><input data-line="rate" type="number" min="0" step="0.01" value="'+esc(l.rate==null?0:l.rate)+'"></td><td><button type="button" class="molms-iwf-btn return" data-iwf="remove-line">Remove</button></td></tr>';
-  }
-  async function openEditor(id){
-    const {data,error}=await db().from('invoices').select('id,invoice_number,client_id,client_name,matter_ref,matter_title,currency,invoice_type,invoice_date,due_date,attention,notes,vat_rate,bank_account_id,service_type,retainer_period,practice_area,issuance_state,total_due').eq('id',id).maybeSingle();
-    if(error)throw error;if(!data)throw new Error('Invoice draft was not found.');
-    if(!['draft','returned'].includes(data.issuance_state))throw new Error('This invoice is not currently editable.');
-    const lines=await getLines(id);currentDraft=data;const host=$('molms-iwf-editor-host');if(!host)throw new Error('The invoice editor could not be opened.');
-    host.innerHTML='<div class="molms-iwf-editor" id="molms-iwf-editor"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center"><div><b>Correct invoice '+esc(data.invoice_number)+'</b><div class="molms-iwf-meta">Changes are saved to the draft. Once submitted, only a Partner can issue it or return it for correction.</div></div><button class="molms-iwf-btn" data-iwf="close-editor">Close</button></div><div class="molms-iwf-grid">'+field('Client name','client_name',data.client_name)+field('Matter reference','matter_ref',data.matter_ref)+field('Matter title','matter_title',data.matter_title)+field('Currency','currency',data.currency)+field('Document type','invoice_type',data.invoice_type)+field('Invoice date','invoice_date',data.invoice_date,'date')+field('Due date','due_date',data.due_date,'date')+field('VAT rate (%)','vat_rate',data.vat_rate,'number')+field('Service type','service_type',data.service_type)+field('Practice area','practice_area',data.practice_area)+field('Retainer period','retainer_period',data.retainer_period)+field('Attention','attention',data.attention)+'</div><label class="molms-iwf-field" style="margin-top:9px">Notes<textarea name="notes">'+esc(data.notes||'')+'</textarea></label><div class="molms-iwf-lines-wrap"><table class="molms-iwf-lines"><thead><tr><th>Particulars</th><th>Qty</th><th>Rate</th><th></th></tr></thead><tbody id="molms-iwf-lines-body">'+(lines.length?lines:[{particulars:'',qty:1,rate:0}]).map(lineRow).join('')+'</tbody></table></div><div class="molms-iwf-actions" style="margin-top:9px"><button class="molms-iwf-btn" data-iwf="add-line">Add line</button><button class="molms-iwf-btn primary" data-iwf="save">Save corrections</button><button class="molms-iwf-btn issue" data-iwf="submit">Save & send to Partners</button></div><div id="molms-iwf-editor-message" class="molms-iwf-status"></div></div>';
-    host.scrollIntoView({behavior:'smooth',block:'nearest'});
-  }
-  function readEditor(){
-    const ed=$('molms-iwf-editor');if(!ed)throw new Error('Open a draft before saving.');
-    const val=n=>{const el=ed.querySelector('[name="'+n+'"]');return el?el.value.trim():'';};
-    const invoice={};['client_name','matter_ref','matter_title','currency','invoice_type','invoice_date','due_date','vat_rate','service_type','practice_area','retainer_period','attention','notes'].forEach(k=>invoice[k]=val(k));
-    const lines=[...ed.querySelectorAll('#molms-iwf-lines-body tr')].map(tr=>({particulars:tr.querySelector('[data-line="particulars"]').value.trim(),qty:Number(tr.querySelector('[data-line="qty"]').value),rate:Number(tr.querySelector('[data-line="rate"]').value)}));
-    return {invoice,lines};
-  }
-  async function saveDraft(submit){
-    if(!currentDraft)throw new Error('No draft selected.');const {invoice,lines}=readEditor();const msg=$('molms-iwf-editor-message');if(msg)msg.textContent='Saving draft…';
-    const saved=await db().rpc('save_invoice_draft',{p_invoice_id:currentDraft.id,p_invoice:invoice,p_lines:lines});if(saved.error)throw saved.error;
-    const id=currentDraft.id;
-    if(submit){const sent=await db().rpc('submit_invoice_for_issuance',{p_invoice_id:id});if(sent.error)throw sent.error;currentDraft=null;await render();const m=$('molms-iwf-message');if(m)m.textContent='Invoice saved and submitted to the Partners for review.';}
-    else{if(msg)msg.textContent='Draft corrections saved successfully.';await render();await openEditor(id);}
-  }
-  async function openReview(id){
-    const {data,error}=await db().from('invoices').select('id,invoice_number,client_name,matter_ref,matter_title,currency,invoice_type,invoice_date,due_date,attention,notes,subtotal,vat_rate,vat_amount,total_due').eq('id',id).maybeSingle();
-    if(error)throw error;if(!data)throw new Error('Submitted invoice not found.');const lines=await getLines(id);const host=$('molms-iwf-review-host');if(!host)throw new Error('Review panel could not be opened.');
-    host.innerHTML='<div class="molms-iwf-editor"><b>Partner review · '+esc(data.invoice_number)+'</b><div class="molms-iwf-meta">'+esc(data.client_name)+' · '+esc(data.matter_ref||'General matter')+' · '+esc(data.invoice_date)+'<br>Subtotal: '+money(data.subtotal,data.currency)+' · VAT ('+esc(data.vat_rate)+'%): '+money(data.vat_amount,data.currency)+' · <b>Total: '+money(data.total_due,data.currency)+'</b></div><div style="font-size:12px;margin:8px 0">'+lines.map((l,i)=>(i+1)+'. '+esc(l.particulars)+' — '+esc(l.qty)+' × '+money(l.rate,data.currency)+' = '+money(l.amount==null?Number(l.qty)*Number(l.rate):l.amount,data.currency)).join('<br>')+'</div><div class="molms-iwf-actions"><button class="molms-iwf-btn return" data-iwf="return" data-id="'+esc(id)+'">Return for correction</button><button class="molms-iwf-btn issue" data-iwf="issue" data-id="'+esc(id)+'">Issue invoice</button></div></div>';
-    host.scrollIntoView({behavior:'smooth',block:'nearest'});
-  }
-  async function onClick(e){
-    const b=e.target.closest('[data-iwf]');if(!b)return;const a=b.dataset.iwf;
-    try{
-      if(a==='refresh'){await render();return;}
-      if(a==='edit'){await openEditor(b.dataset.id);return;}
-      if(a==='submit-existing'){if(!window.confirm('Send this saved draft to the Partners for review and issuance?'))return;b.disabled=true;const r=await db().rpc('submit_invoice_for_issuance',{p_invoice_id:b.dataset.id});if(r.error)throw r.error;await render();const m=$('molms-iwf-message');if(m)m.textContent='Saved invoice submitted to the Partners for review.';return;}
-      if(a==='view'){await openReview(b.dataset.id);return;}
-      if(a==='close-editor'){currentDraft=null;const h=$('molms-iwf-editor-host');if(h)h.innerHTML='';return;}
-      if(a==='add-line'){const body=$('molms-iwf-lines-body');if(body)body.insertAdjacentHTML('beforeend',lineRow({particulars:'',qty:1,rate:0}));return;}
-      if(a==='remove-line'){const tr=b.closest('tr'),body=$('molms-iwf-lines-body');if(tr&&body&&body.children.length>1)tr.remove();return;}
-      if(a==='save'||a==='submit'){b.disabled=true;await saveDraft(a==='submit');return;}
-      if(a==='return'){const note=window.prompt('Explain what needs correction before this invoice can be issued:');if(note===null)return;b.disabled=true;const r=await db().rpc('return_invoice_for_correction',{p_invoice_id:b.dataset.id,p_note:note});if(r.error)throw r.error;await render();const m=$('molms-iwf-message');if(m)m.textContent='Invoice returned to the Office Manager with your comments.';return;}
-      if(a==='void'){
-        const reason=window.prompt('Enter the reason for voiding this issued invoice. This action is recorded in the audit trail:');
-        if(reason===null)return;if(!reason.trim())throw new Error('A reason is required to void an invoice.');
-        if(!window.confirm('Void this unpaid invoice? It will be excluded from firm revenue but retained in the audit trail.'))return;
-        b.disabled=true;const r=await db().rpc('void_issued_invoice',{p_invoice_id:b.dataset.id,p_reason:reason.trim()});if(r.error)throw r.error;
-        await render();const m=$('molms-iwf-message');if(m)m.textContent='Invoice voided. It remains in the audit trail and is excluded from revenue.';
-        return;
-      }
-      if(a==='issue'){if(!window.confirm('Issue this invoice now? The issuing Partner and issuance time will be recorded.'))return;b.disabled=true;const r=await db().rpc('issue_submitted_invoice',{p_invoice_id:b.dataset.id});if(r.error)throw r.error;await render();const m=$('molms-iwf-message');if(m)m.textContent='Invoice successfully issued. The database recorded the issuing Partner and issuance time.';}
-    }catch(err){const target=$('molms-iwf-editor-message')||$('molms-iwf-message');if(target)target.textContent='Action failed: '+(err.message||err);else window.alert(err.message||err);b.disabled=false;}
-  }
-  function neutraliseLegacySubmit(){
-    const p=page();if(!p)return;
-    const legacy=[...p.querySelectorAll('#molmsInvoiceSendPartnerV2,button,a,input[type="button"]')].filter(el=>el.id==='molmsInvoiceSendPartnerV2'||/send to partner for issuing/i.test(String(el.textContent||el.value||'')));
-    legacy.forEach(el=>{el.disabled=true;el.setAttribute('aria-hidden','true');el.style.display='none';el.style.pointerEvents='none';});
-  }
-  document.addEventListener('click',function(e){const el=e.target&&e.target.closest&&e.target.closest('#molmsInvoiceSendPartnerV2,[data-legacy-invoice-submit]');if(el){e.preventDefault();e.stopImmediatePropagation();neutraliseLegacySubmit();const panel=$('molms-invoice-workflow-v3');panel?.scrollIntoView({behavior:'smooth',block:'start'});}},true);
-  let lastPage=false, observer=null;
-  async function boot(){
-    const p=page();
-    if(!p){lastPage=false;return;}
-    if(!lastPage||!$('molms-invoice-workflow-v3')){
-      lastPage=true;
-      await render();
-    }
-  }
-  function start(){
-    boot();
-    const p=$('page-invoice');
-    if(p&&!observer){
-      observer=new MutationObserver(()=>{
-        if(page()&&!$('molms-invoice-workflow-v3'))boot();
-      });
-      // Observe only direct invoice-page changes; do not watch the entire application DOM.
-      observer.observe(p,{childList:true,subtree:false});
-    }
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+ }catch(e){const m=message();if(m)m.textContent=e.message||String(e);else alert(e.message||String(e));}
+ finally{busy=false;if(button)button.disabled=false;}
+}
+function boot(){
+ const p=page();if(!p)return;
+ const bar=ensureFooter();if(!bar)return;
+ if(!bar.dataset.bound){bar.dataset.bound='1';bar.addEventListener('click',e=>{const b=e.target.closest('[data-iwf7]');if(b)act(b.dataset.iwf7,b);});}
+ render();
+ const el=numberInput();if(el&&!el.dataset.iwf7Bound){el.dataset.iwf7Bound='1';el.addEventListener('change',()=>render());el.addEventListener('input',()=>{clearTimeout(el._iwf7Timer);el._iwf7Timer=setTimeout(render,350);});}
+}
+let attempts=0;const timer=setInterval(()=>{if(page()){boot();if(++attempts>20)clearInterval(timer);}else if(++attempts>120)clearInterval(timer);},500);
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+const observer=new MutationObserver(()=>{if(page()&&!$('molms-invoice-actions-footer-v7'))boot();});
+observer.observe(document.body,{childList:true,subtree:true});
 })();
