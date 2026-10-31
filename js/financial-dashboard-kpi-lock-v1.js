@@ -10,7 +10,7 @@
     {title:'TOTAL EXPENSES',key:'expenses',note:'Approved manual Other Expenditure and Partner Drawings only',color:'#b42318'},
     {title:'CASH AVAILABLE',key:'cashAvailable',note:'Invoice cash receipts less approved manual expenditure and drawings',color:'#167244'}
   ];
-  let busy=false,observer=null;
+  let busy=false,observer=null,rootObserver=null;
   const money=(values)=>{
     const entries=Object.entries(values||{}).filter(([k,v])=>k&&Number.isFinite(Number(v))&&(k==='TZS'||Number(v)!==0));
     if(!entries.length)return [['TZS','0']];
@@ -54,16 +54,31 @@
     }finally{busy=false}
   }
   function start(){
-    if(observer)return;
+    if(observer){apply();return true;}
     const page=document.getElementById('page-findash');
-    if(!page)return;
+    if(!page){
+      if(!rootObserver&&document.documentElement){
+        rootObserver=new MutationObserver(()=>{
+          if(document.getElementById('page-findash'))start();
+        });
+        rootObserver.observe(document.documentElement,{childList:true,subtree:true});
+      }
+      return false;
+    }
     observer=new MutationObserver(()=>{apply()});
     observer.observe(page,{childList:true,subtree:true});
+    if(rootObserver){rootObserver.disconnect();rootObserver=null;}
     apply();
+    return true;
   }
   window.MOLMSKpiLockV1={active:true,apply,start};
   start();
   window.addEventListener('load',start,{once:true});
   let tries=0;
-  const timer=setInterval(()=>{start();apply();if(++tries>60)clearInterval(timer)},250);
+  const timer=setInterval(()=>{
+    const started=start();
+    const applied=apply();
+    if(started&&applied)clearInterval(timer);
+    if(++tries>240)clearInterval(timer);
+  },250);
 })();
