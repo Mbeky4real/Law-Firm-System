@@ -399,7 +399,7 @@
   }
 
   function renderStatus(){
-    const m=metrics(),ratio=num(m.revenue.TZS)?num(m.collected.TZS)/num(m.revenue.TZS):0,cashVerified=!!m.cashAvailable&&!m.cashAvailable.reconciliationPending&&Number.isFinite(Number(m.cashAvailable.TZS)),cash=cashVerified?num(m.cashAvailable.TZS):null;
+    const m=metrics(),periodRows=periodClientRows(),periodRevenue=totals(periodRows,'revenue'),periodSettled=totals(periodRows,'paid'),ratio=num(periodRevenue.TZS)?num(periodSettled.TZS)/num(periodRevenue.TZS):0,cashVerified=!!m.cashAvailable&&!m.cashAvailable.reconciliationPending&&Number.isFinite(Number(m.cashAvailable.TZS)),cash=cashVerified?num(m.cashAvailable.TZS):null;
     // Status priority: reconciliation exception > negative cash > collection quality.
     // Poor collection is not itself a ledger integrity failure.
     let level='Healthy',color='#16a34a',statusKey='healthy';
