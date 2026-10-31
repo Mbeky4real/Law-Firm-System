@@ -516,27 +516,35 @@
   const baseRefresh=window.fdRefresh;
   if(typeof baseRefresh==='function')window.fdRefresh=async function(){const result=await baseRefresh.apply(this,arguments);await refresh();return result};
   window.addEventListener('load',()=>{setTimeout(refresh,900);setTimeout(refresh,1800)});
-  // The legacy application renders again after authentication and after its
-  // asynchronous financial queries complete. Reconcile after those paints so
-  // the canonical figures cannot be replaced by the old dashboard output.
+  // The legacy application can repaint its executive snapshot after the V16
+  // render. Enforce the approved three-card structure, not merely the old labels.
+  const approvedKpiLabels=['TOTAL REVENUE','TOTAL EXPENSES','CASH AVAILABLE'];
+  function executiveSnapshotIsCorrect(){
+    const host=q('fdKpiRow');if(!host)return false;
+    const cards=Array.from(host.children);
+    return cards.length===3&&approvedKpiLabels.every(label=>cards.some(el=>String(el.textContent||'').toUpperCase().includes(label)));
+  }
+  let snapshotRepairQueued=false;
+  function enforceExecutiveSnapshot(){
+    if(executiveSnapshotIsCorrect()||snapshotRepairQueued)return;
+    snapshotRepairQueued=true;
+    queueMicrotask(()=>{snapshotRepairQueued=false;try{render()}catch(e){console.error('[MOLMS KPI snapshot repair]',e)}});
+  }
   let lastDataSignature='';
   setInterval(()=>{
     const kpi=q('fdKpiRow'),client=q('fdClientMatterRevenueV2');
     if(!kpi&&!client)return;
     const d=data();
     const signature=[d.invoices.length,d.manual.length,d.entries.length,d.payroll.length,d.office.length,bounds().start,bounds().end].join('|');
-    const legacyVisible=(kpi&&/OUTSTANDING PAYMENTS/.test(kpi.textContent||''))||(client&&/CLIENT\s*&\s*MATTER REVENUE/.test(client.textContent||''));
-    if(legacyVisible)render();
+    enforceExecutiveSnapshot();
     if(signature!==lastDataSignature){lastDataSignature=signature;refresh()}
   },500);
-  let reconcileQueued=false;
-  if(typeof MutationObserver!=='undefined')new MutationObserver(()=>{
-      const kpi=q('fdKpiRow'),client=q('fdClientMatterRevenueV2');
-      const legacyVisible=(kpi&&/OUTSTANDING PAYMENTS/.test(kpi.textContent||''))||(client&&/CLIENT\s*&\s*MATTER REVENUE/.test(client.textContent||''));
-      if(!legacyVisible||reconcileQueued)return;
-      reconcileQueued=true;
-      queueMicrotask(()=>{reconcileQueued=false;render()});
-    }).observe(document.documentElement,{childList:true,subtree:true});
+  if(typeof MutationObserver!=='undefined'){
+    const snapshotObserver=new MutationObserver(()=>enforceExecutiveSnapshot());
+    const observeSnapshot=()=>{const host=q('fdKpiRow');if(host&&!host.__molmsApprovedSnapshotObserver){snapshotObserver.observe(host,{childList:true,subtree:true,characterData:true});host.__molmsApprovedSnapshotObserver=true}};
+    observeSnapshot();
+    new MutationObserver(observeSnapshot).observe(document.documentElement,{childList:true,subtree:true});
+  }
   window.MOLMSFinanceV16={metrics,periodClientRows,allReceivables,render,refresh,showDetails,
     setPaymentRowsForTest(rows){paymentRows=Array.isArray(rows)?rows:[];paymentLedgerLoadError=false},
     paymentIntegrity,
