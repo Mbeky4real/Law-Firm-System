@@ -181,9 +181,12 @@
   // recorded once in Manual Financial Transactions.
   function periodExpenseBreakdown(){
     const {start,end}=bounds(),{manual}=data();
-    const out={manual:{TZS:0},register:{TZS:0},payroll:{TZS:0}};
+    const out={manual:{TZS:0},otherExpenditure:{TZS:0},drawings:{TZS:0},register:{TZS:0},payroll:{TZS:0}};
     manual.filter(t=>approved(t)&&date(t.date)>=start&&date(t.date)<=end&&String(t.status||'').toLowerCase()!=='cancelled'&&['expenditure','drawing'].includes(String(t.tx_type||'').toLowerCase()))
-      .forEach(t=>add(out.manual,t.currency,t.amount));
+      .forEach(t=>{
+        add(out.manual,t.currency,t.amount);
+        add(String(t.tx_type).toLowerCase()==='drawing'?out.drawings:out.otherExpenditure,t.currency,t.amount);
+      });
     // Kept as zero-valued compatibility buckets for existing detail consumers.
     // No expense-register or payroll source is read into this calculation.
     return out;
@@ -247,10 +250,10 @@
       {label:'Cash recorded in selected period',value:collected},{label:'Outstanding on selected-period revenue',value:periodReceivables},{label:'Current total client receivables',value:currentReceivables}
     ]);
     else if(which==='expenses')content=detailRows('Expense calculation',[
-      {label:'Approved manual Other Expenditure',value:parts.manual},{label:'Approved manual Partner Drawings (included in expenses KPI)',value:parts.manual},{label:'TOTAL EXPENSES — MANUAL TRANSACTIONS ONLY',value:m.expenses}
+      {label:'Approved manual Other Expenditure',value:parts.otherExpenditure},{label:'Approved manual Partner Drawings',value:parts.drawings},{label:'TOTAL EXPENSES — MANUAL TRANSACTIONS ONLY',value:m.expenses}
     ]);
     else content=detailRows('Cash available calculation',[
-      {label:'Cash received from invoice payment ledger',value:collected},{label:'Less: approved manual Other Expenditure and Partner Drawings',value:negateTotals(parts.manual)},{label:'CASH AVAILABLE',value:m.cashAvailable}
+      {label:'Cash received from invoice payment ledger',value:collected},{label:'Less: approved manual Other Expenditure',value:negateTotals(parts.otherExpenditure)},{label:'Less: approved manual Partner Drawings',value:negateTotals(parts.drawings)},{label:'CASH AVAILABLE',value:m.cashAvailable}
     ]);
     panel.dataset.kind=which;
     panel.style.cssText='grid-column:1/-1;min-width:0;width:100%;box-sizing:border-box;padding:14px;background:#fff;border:1px solid #d0d5dd;border-radius:12px;box-shadow:0 4px 14px rgba(16,24,40,.06);margin-top:2px';
