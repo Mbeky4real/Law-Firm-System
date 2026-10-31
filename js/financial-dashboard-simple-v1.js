@@ -4,9 +4,9 @@
  */
 (function () {
   'use strict';
-  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 28) return;
+  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 29) return;
   window.MOLMSFinancialDashboardSimpleV1 = {
-    version: 28, applied: false,
+    version: 29, applied: false,
     showDetails(targetId) {
       const page=document.getElementById('page-findash');
       if(!page)return;
@@ -20,7 +20,7 @@
       else target.scrollIntoView({behavior:'smooth',block:'start'});
     }
   };
-  const styleId = 'molms-financial-dashboard-simple-v1-style';
+  const styleId = 'molms-financial-dashboard-simple-v2-style';
 
   function installStyle() {
     if (document.getElementById(styleId)) return;
@@ -76,9 +76,9 @@
       #page-findash #fdPracticePerformance button { font-size:11px!important; }
       #page-findash .fd-compact-workspace { display:block!important;width:100%!important;max-width:100%!important;overflow:visible!important;margin:8px 0 14px!important; }
       #page-findash .fd-compact-workspace-card { display:block!important;min-width:0!important;width:100%!important;max-width:100%!important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;box-sizing:border-box!important;margin:0 0 14px!important;padding:14px!important;border:1px solid #e4ddd2!important;border-radius:14px!important;background:#fff!important;box-shadow:0 3px 12px rgba(16,35,59,.05)!important; }
-      @media(max-width:1250px){#page-findash #fdKpiRow{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
-      @media(max-width:760px){#page-findash #fdKpiRow{grid-template-columns:repeat(2,minmax(0,1fr))!important;padding:12px!important;gap:8px!important}#page-findash #fdKpiRow>*{padding:11px!important}#page-findash>div[style*="overflow-y:auto"]{padding:12px!important}}
-      @media(max-width:420px){#page-findash #fdKpiRow{grid-template-columns:1fr!important}}
+      @media(max-width:1250px){#page-findash #fdKpiRow{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
+      @media(max-width:760px){#page-findash #fdKpiRow{grid-template-columns:repeat(3,minmax(0,1fr))!important;padding:10px!important;gap:7px!important}#page-findash #fdKpiRow>*{padding:8px!important}#page-findash>div[style*="overflow-y:auto"]{padding:12px!important}}
+      @media(max-width:420px){#page-findash #fdKpiRow{grid-template-columns:repeat(3,minmax(0,1fr))!important}#page-findash #fdKpiRow>*{padding:6px!important}}
     `;
     document.head.appendChild(style);
   }
