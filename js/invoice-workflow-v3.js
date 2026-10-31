@@ -136,6 +136,44 @@ function boot(){
  render();
  const el=numberInput();if(el&&!el.dataset.iwf7Bound){el.dataset.iwf7Bound='1';el.addEventListener('change',()=>render());el.addEventListener('input',()=>{clearTimeout(el._iwf7Timer);el._iwf7Timer=setTimeout(render,350);});}
 }
+
+/* Integrate the original invoice-form Issue button with the same protected RPC
+   used by the Partner action footer. Never update invoices.status directly here. */
+window.invIssueInvoice=async function(){
+ if(typeof invCanIssue==='function'&&!invCanIssue()){
+  if(typeof notice==='function')notice('Only Partners can issue invoices.','err');
+  return;
+ }
+ const currency=typeof val==='function'?(val('invCurrency')||'TZS'):'TZS';
+ if(typeof _invSelectedBank!=='undefined'&&(!_invSelectedBank||_invSelectedBank.currency!==currency)){
+  if(typeof notice==='function')notice('No active '+currency+' payment account is configured. An invoice cannot be issued without a compatible bank account.','err');
+  return;
+ }
+ if(typeof _invIssuing!=='undefined'&&_invIssuing)return;
+ if(typeof _invIssuing!=='undefined')_invIssuing=true;
+ const button=document.getElementById('invBtnIssue'),original=button?button.textContent:'';
+ if(button){button.disabled=true;button.textContent='Issuing…';}
+ try{
+  if(typeof invSaveDraft!=='function')throw new Error('Invoice save function is unavailable. Refresh MOLMS and try again.');
+  await invSaveDraft();
+  if(typeof _invActiveId==='undefined'||!_invActiveId)throw new Error('The invoice was not saved. Save it as a draft first.');
+  const c=db();if(!c)throw new Error('Database connection is unavailable.');
+  const result=await c.rpc('issue_submitted_invoice',{p_invoice_id:_invActiveId});
+  if(result.error)throw result.error;
+  if(typeof invLockForm==='function')invLockForm();
+  if(typeof invRenderKpi==='function')await invRenderKpi();
+  if(typeof notice==='function')notice('Invoice issued successfully through the authorised Partner workflow.');
+  if(typeof invRenderPreview==='function')invRenderPreview();
+  await render();
+ }catch(error){
+  if(typeof notice==='function')notice('Issue failed: '+(error.message||error),'err');
+  else window.alert('Issue failed: '+(error.message||error));
+ }finally{
+  if(typeof _invIssuing!=='undefined')_invIssuing=false;
+  if(button){button.disabled=false;button.textContent=original||'Issue Invoice';}
+ }
+};
+
 let attempts=0;const timer=setInterval(()=>{if(page()){boot();if(++attempts>20)clearInterval(timer);}else if(++attempts>120)clearInterval(timer);},500);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 const observer=new MutationObserver(()=>{if(page()&&!$('molms-invoice-actions-footer-v7'))boot();});
