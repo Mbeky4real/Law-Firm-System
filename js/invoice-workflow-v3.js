@@ -9,7 +9,7 @@ window.__molmsInvoiceActionsV7=true;
 const $=id=>document.getElementById(id);
 const db=()=>typeof sb!=='undefined'?sb:(window.supabaseClient||window.sb||null);
 const page=()=>{const p=$('page-invoice');return p&&p.style.display!=='none'&&!p.hidden?p:null;};
-let identity={id:null,role:'',name:''},lastNumber='',lastInvoice=null,busy=false;
+let identity={id:null,role:'',name:''},lastNumber='',lastInvoice=null,selectedInvoiceNumber='',busy=false;
 const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function roleName(v){return String(v||'').trim().toLowerCase().replace(/[\s-]+/g,'_');}
 function isManager(){return ['office_manager','office_admin'].includes(identity.role);}
@@ -44,7 +44,7 @@ function ensureFooter(){
 }
 function btn(action,label,kind){return '<button type="button" data-iwf7="'+action+'" style="border:1px solid #c9b89f;border-radius:7px;padding:8px 13px;background:'+(kind==='primary'?'#183247':kind==='danger'?'#fff7ed':'#faf8f4')+';color:'+(kind==='primary'?'#fff':kind==='danger'?'#9a3412':'#183247')+';font-weight:700;font-size:12px;cursor:pointer">'+label+'</button>';}
 async function findInvoice(){
- const el=numberInput(),num=String(el?.value||'').trim();
+ const el=numberInput(),num=String(selectedInvoiceNumber||el?.value||'').trim();
  if(!num)return {num:'',row:null};
  const c=client(),q=await c.from('invoices').select('id,invoice_number,client_name,status,issuance_state,invoice_type,total_due,currency,amount_paid,withholding_tax_amount,voided_at,submitted_for_issue_at').eq('invoice_number',num).maybeSingle();
  if(q.error)throw q.error;
@@ -64,7 +64,7 @@ async function render(){
    else if(!row)actions='<span style="font-size:12px;color:#667085">Create an invoice and use the original Save as Draft control. You can then send the saved draft to Partners.</span>';
    else actions='<span style="font-size:12px;color:#667085">This invoice is not an editable draft. Only Partners can issue or void invoices.</span>';
   }else if(isPartner()){
-   if(row&&row.status==='draft'&&['draft','pending'].includes(row.issuance_state)){
+   if(row&&row.status==='draft'&&['draft','pending','returned'].includes(row.issuance_state)){
     actions=btn('issue','Issue Invoice','primary')+(row.issuance_state==='pending'?btn('return','Return for Correction',''):'');
    }else if(row&&row.status==='issued'&&!row.voided_at){
     const blocked=Number(row.amount_paid||0)>0||Number(row.withholding_tax_amount||0)>0;
@@ -115,10 +115,24 @@ async function act(action,button){
  }catch(e){const m=message();if(m)m.textContent=e.message||String(e);else alert(e.message||String(e));}
  finally{busy=false;if(button)button.disabled=false;}
 }
+function captureSavedInvoiceSelection(e){
+ const p=page();if(!p)return;
+ const target=e.target&&e.target.nodeType===1?e.target:e.target?.parentElement;
+ if(!target||target.closest('#molms-invoice-actions-footer-v7'))return;
+ let node=target;
+ for(let depth=0;node&&node!==p&&depth<7;depth++,node=node.parentElement){
+  const txt=String(node.innerText||node.textContent||'');
+  const match=txt.match(/MOL\\/INV\\/[A-Z0-9]+(?:\\/[A-Z0-9]+){2,}/i);
+  if(match){selectedInvoiceNumber=match[0].trim();setTimeout(()=>{if(page())render();},80);return;}
+ }
+ const label=String(target.innerText||target.textContent||'').trim();
+ if(/^(new invoice|create invoice|clear form)$/i.test(label)){selectedInvoiceNumber='';setTimeout(()=>{if(page())render();},80);}
+}
 function boot(){
  const p=page();if(!p)return;
  const bar=ensureFooter();if(!bar)return;
  if(!bar.dataset.bound){bar.dataset.bound='1';bar.addEventListener('click',e=>{const b=e.target.closest('[data-iwf7]');if(b)act(b.dataset.iwf7,b);});}
+ if(!p.dataset.iwf7SelectionBound){p.dataset.iwf7SelectionBound='1';p.addEventListener('click',captureSavedInvoiceSelection,true);}
  render();
  const el=numberInput();if(el&&!el.dataset.iwf7Bound){el.dataset.iwf7Bound='1';el.addEventListener('change',()=>render());el.addEventListener('input',()=>{clearTimeout(el._iwf7Timer);el._iwf7Timer=setTimeout(render,350);});}
 }
