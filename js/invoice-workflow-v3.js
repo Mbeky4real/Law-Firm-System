@@ -64,8 +64,8 @@ async function render(){
    else if(!row)actions='<span style="font-size:12px;color:#667085">Create an invoice and use the original Save as Draft control. You can then send the saved draft to Partners.</span>';
    else actions='<span style="font-size:12px;color:#667085">This invoice is not an editable draft. Only Partners can issue or void invoices.</span>';
   }else if(isPartner()){
-   if(row&&row.status==='draft'&&row.issuance_state==='pending'){
-    actions=btn('issue','Issue Invoice','primary')+btn('return','Return for Correction','');
+   if(row&&row.status==='draft'&&['draft','pending'].includes(row.issuance_state)){
+    actions=btn('issue','Issue Invoice','primary')+(row.issuance_state==='pending'?btn('return','Return for Correction',''):'');
    }else if(row&&row.status==='issued'&&!row.voided_at){
     const blocked=Number(row.amount_paid||0)>0||Number(row.withholding_tax_amount||0)>0;
     actions=blocked?'<span style="font-size:12px;color:#9a3412">Payments or withholding tax recorded. Use the appropriate credit note/payment reversal.</span>':btn('void','Void Invoice','danger');
