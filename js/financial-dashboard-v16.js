@@ -562,6 +562,20 @@
     observeSnapshot();
     new MutationObserver(observeSnapshot).observe(document.documentElement,{childList:true,subtree:true});
   }
+  // The legacy app-core fdRender() calls fdRenderKpi() on every refresh.
+  // That function creates the old six-card snapshot. Wrap it at the source
+  // boundary so every legacy refresh is immediately followed by the approved
+  // V16 three-card renderer. This is the authoritative integration point.
+  const legacyFdRenderKpi=window.fdRenderKpi;
+  if(typeof legacyFdRenderKpi==='function'&&!legacyFdRenderKpi.__molmsV16ThreeCardBridge){
+    const bridgedFdRenderKpi=function(){
+      const result=legacyFdRenderKpi.apply(this,arguments);
+      try{render()}catch(e){console.error('[MOLMS V16 KPI bridge]',e)}
+      return result;
+    };
+    bridgedFdRenderKpi.__molmsV16ThreeCardBridge=true;
+    window.fdRenderKpi=bridgedFdRenderKpi;
+  }
   window.MOLMSFinanceV16={metrics,periodClientRows,allReceivables,render,refresh,showDetails,
     setPaymentRowsForTest(rows){paymentRows=Array.isArray(rows)?rows:[];paymentLedgerLoadError=false},
     paymentIntegrity,
