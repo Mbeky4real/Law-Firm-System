@@ -9,7 +9,7 @@ window.__molmsInvoiceActionsV7=true;
 const $=id=>document.getElementById(id);
 const db=()=>typeof sb!=='undefined'?sb:(window.supabaseClient||window.sb||null);
 const page=()=>{const p=$('page-invoice');return p&&p.style.display!=='none'&&!p.hidden?p:null;};
-let identity={id:null,role:'',name:''},lastNumber='',lastInvoice=null,selectedInvoiceNumber='',busy=false;
+let identity={id:null,role:'',name:''},lastNumber='',lastInvoice=null,selectedInvoiceId='',selectedInvoiceNumber='',busy=false;
 const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function roleName(v){return String(v||'').trim().toLowerCase().replace(/[\s-]+/g,'_');}
 function isManager(){return ['office_manager','office_admin'].includes(identity.role);}
@@ -20,7 +20,7 @@ async function loadIdentity(){
  try{const s=await c.auth.getSession();user=s?.data?.session?.user||null;authError=s?.error||null;}catch(e){authError=e;}
  if(!user){try{const u=await c.auth.getUser();user=u?.data?.user||null;authError=u?.error||authError;}catch(e){authError=e;}}
  if(!user?.id)throw new Error('Your sign-in session could not be read. Please sign out and sign in again.'+(authError?.message?' ('+authError.message+')':''));
- let q=await c.from('roles').select('user_id,full_name,role,active,position').eq('user_id',user.id).maybeSingle();
+ let q=await c.from('roles').select('user_id,full_name,role,active,position').eq('user_id',user.id).eq('active',true).maybeSingle();
  if(q.error)throw new Error('Your account role could not be read: '+q.error.message);
  if(!q.data)throw new Error('No MOLMS role is assigned to this account. Contact the system administrator.');
  if(q.data.active===false)throw new Error('Your MOLMS account is inactive. Contact the system administrator.');
@@ -44,10 +44,20 @@ function ensureFooter(){
 }
 function btn(action,label,kind){return '<button type="button" data-iwf7="'+action+'" style="border:1px solid #c9b89f;border-radius:7px;padding:8px 13px;background:'+(kind==='primary'?'#183247':kind==='danger'?'#fff7ed':'#faf8f4')+';color:'+(kind==='primary'?'#fff':kind==='danger'?'#9a3412':'#183247')+';font-weight:700;font-size:12px;cursor:pointer">'+label+'</button>';}
 async function findInvoice(){
- const el=numberInput(),num=String(selectedInvoiceNumber||el?.value||'').trim();
+ const el=numberInput();
+ const activeId=(typeof _invActiveId!=='undefined'&&_invActiveId)?String(_invActiveId):'';
+ const id=selectedInvoiceId||activeId;
+ const num=String(selectedInvoiceNumber||el?.value||'').trim();
+ if(id){
+  const byId=await client().from('invoices').select('id,invoice_number,client_name,status,issuance_state,invoice_type,total_due,currency,amount_paid,withholding_tax_amount,voided_at,submitted_for_issue_at').eq('id',id).maybeSingle();
+  if(byId.error)throw byId.error;
+  if(byId.data){selectedInvoiceId=byId.data.id;return {num:byId.data.invoice_number,row:byId.data};}
+  if(selectedInvoiceId)selectedInvoiceId='';
+ }
  if(!num)return {num:'',row:null};
- const c=client(),q=await c.from('invoices').select('id,invoice_number,client_name,status,issuance_state,invoice_type,total_due,currency,amount_paid,withholding_tax_amount,voided_at,submitted_for_issue_at').eq('invoice_number',num).maybeSingle();
+ const q=await client().from('invoices').select('id,invoice_number,client_name,status,issuance_state,invoice_type,total_due,currency,amount_paid,withholding_tax_amount,voided_at,submitted_for_issue_at').eq('invoice_number',num).maybeSingle();
  if(q.error)throw q.error;
+ if(q.data)selectedInvoiceId=q.data.id;
  return {num,row:q.data||null};
 }
 async function render(){
@@ -123,10 +133,10 @@ function captureSavedInvoiceSelection(e){
  for(let depth=0;node&&node!==p&&depth<7;depth++,node=node.parentElement){
   const txt=String(node.innerText||node.textContent||'');
   const match=txt.match(new RegExp('MOL/INV/[A-Z0-9]+(/[A-Z0-9]+){2,}','i'));
-  if(match){selectedInvoiceNumber=match[0].trim();setTimeout(()=>{if(page())render();},80);return;}
+  if(match){selectedInvoiceNumber=match[0].trim();selectedInvoiceId='';setTimeout(()=>{if(page())render();},80);return;}
  }
  const label=String(target.innerText||target.textContent||'').trim();
- if(/^(new invoice|create invoice|clear form)$/i.test(label)){selectedInvoiceNumber='';setTimeout(()=>{if(page())render();},80);}
+ if(/^(new invoice|create invoice|clear form)$/i.test(label)||target.closest('#invBtnNew,[data-action="new-invoice"]')){selectedInvoiceNumber='';selectedInvoiceId='';setTimeout(()=>{if(page())render();},80);}
 }
 function boot(){
  const p=page();if(!p)return;
@@ -134,7 +144,7 @@ function boot(){
  if(!bar.dataset.bound){bar.dataset.bound='1';bar.addEventListener('click',e=>{const b=e.target.closest('[data-iwf7]');if(b)act(b.dataset.iwf7,b);});}
  if(!p.dataset.iwf7SelectionBound){p.dataset.iwf7SelectionBound='1';p.addEventListener('click',captureSavedInvoiceSelection,true);}
  render();
- const el=numberInput();if(el&&!el.dataset.iwf7Bound){el.dataset.iwf7Bound='1';el.addEventListener('change',()=>render());el.addEventListener('input',()=>{clearTimeout(el._iwf7Timer);el._iwf7Timer=setTimeout(render,350);});}
+ const el=numberInput();if(el&&!el.dataset.iwf7Bound){el.dataset.iwf7Bound='1';el.addEventListener('change',()=>{selectedInvoiceId='';selectedInvoiceNumber=String(el.value||'').trim();render();});el.addEventListener('input',()=>{selectedInvoiceId='';selectedInvoiceNumber=String(el.value||'').trim();clearTimeout(el._iwf7Timer);el._iwf7Timer=setTimeout(render,350);});}
 }
 
 /* Integrate the original invoice-form Issue button with the same protected RPC
