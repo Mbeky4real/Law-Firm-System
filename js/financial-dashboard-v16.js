@@ -526,9 +526,26 @@
   }
   let snapshotRepairQueued=false;
   function enforceExecutiveSnapshot(){
-    if(executiveSnapshotIsCorrect()||snapshotRepairQueued)return;
+    if(snapshotRepairQueued)return;
+    const host=q('fdKpiRow');if(!host)return;
+    if(executiveSnapshotIsCorrect())return;
     snapshotRepairQueued=true;
-    queueMicrotask(()=>{snapshotRepairQueued=false;try{render()}catch(e){console.error('[MOLMS KPI snapshot repair]',e)}});
+    queueMicrotask(()=>{
+      snapshotRepairQueued=false;
+      try{
+        render();
+        if(executiveSnapshotIsCorrect())return;
+        // If a legacy renderer repaints the old five-card snapshot after V16,
+        // rebuild the executive row directly from the same authoritative audit.
+        const a=window.MOLMSFinanceV16&&window.MOLMSFinanceV16.audit?window.MOLMSFinanceV16.audit():metrics();
+        host.innerHTML=[
+          card('TOTAL REVENUE',a.revenue||{TZS:0},'#16803d','Recognised invoice and manual revenue · '+(typeof fdPeriodLabel==='function'?fdPeriodLabel():'Selected period'),'revenue'),
+          card('TOTAL EXPENSES',a.expenses||{TZS:0},'#b42318','Approved manual Other Expenditure and Partner Drawings only · '+(typeof fdPeriodLabel==='function'?fdPeriodLabel():'Selected period'),'expenses'),
+          card('CASH AVAILABLE',a.cashAvailable||{TZS:0},num(a.cashAvailable?.TZS)>=0?'#167244':'#b42318','Cash receipts less approved manual expenditure and drawings · '+(typeof fdPeriodLabel==='function'?fdPeriodLabel():'Selected period'),'cash')
+        ].join('');
+        host.setAttribute('data-molms-approved-kpi-snapshot','3-card-v1');
+      }catch(e){console.error('[MOLMS KPI snapshot repair]',e)}
+    });
   }
   let lastDataSignature='';
   setInterval(()=>{
