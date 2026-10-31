@@ -122,7 +122,7 @@ function captureSavedInvoiceSelection(e){
  let node=target;
  for(let depth=0;node&&node!==p&&depth<7;depth++,node=node.parentElement){
   const txt=String(node.innerText||node.textContent||'');
-  const match=txt.match(/MOL\\/INV\\/[A-Z0-9]+(?:\\/[A-Z0-9]+){2,}/i);
+  const match=txt.match(new RegExp('MOL/INV/[A-Z0-9]+(/[A-Z0-9]+){2,}','i'));
   if(match){selectedInvoiceNumber=match[0].trim();setTimeout(()=>{if(page())render();},80);return;}
  }
  const label=String(target.innerText||target.textContent||'').trim();
