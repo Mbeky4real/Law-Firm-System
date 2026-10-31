@@ -337,9 +337,18 @@
     const enforceKpiOrder = () => {
       const row=document.querySelector('#page-findash #fdKpiRow');
       if(!row)return;
-      const rank=el=>{const t=String(el.textContent||'').toUpperCase();if(t.includes('TOTAL REVENUE'))return 0;if(t.includes('TOTAL EXPENSES'))return 1;if(t.includes('CASH AVAILABLE'))return 2;return 9};
-      const current=Array.from(row.children),sorted=current.slice().sort((a,b)=>rank(a)-rank(b));
-      if(sorted.every((el,i)=>el===current[i]))return;
+      const expected=['TOTAL REVENUE','TOTAL EXPENSES','CASH AVAILABLE'];
+      const cards=Array.from(row.children);
+      const rank=el=>{const t=String(el.textContent||'').toUpperCase();return expected.findIndex(label=>t.includes(label))};
+      const hasExactlyThree=cards.length===3&&expected.every(label=>cards.some(el=>String(el.textContent||'').toUpperCase().includes(label)));
+      if(!hasExactlyThree){
+        if(window.MOLMSFinanceV16&&typeof window.MOLMSFinanceV16.render==='function'){
+          window.MOLMSFinanceV16.render();
+        }
+        return;
+      }
+      const sorted=cards.slice().sort((a,b)=>rank(a)-rank(b));
+      if(sorted.every((el,i)=>el===cards[i]))return;
       sorted.forEach(el=>row.appendChild(el));
     };
     const renderSnapshot = () => {
