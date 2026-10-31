@@ -173,21 +173,25 @@
       .filter(x=>x.integrity.needsReconciliation);
   }
 
-  // Period expenses include approved manual outflows, partner drawings, and
-  // finalized payroll net salaries. Cancelled/draft payroll runs are excluded.
-  // Payroll rows already entered as a manual expenditure are not counted twice
-  // when the date and amount match a finalized payroll salary line.
+  // Authoritative expense policy: ONLY approved Manual Financial Transactions
+  // classified as expenditure or drawing feed the Expenses KPI and reduce
+  // dashboard cash. Payroll and the separate Expenses Module are operational
+  // source records; they never post automatically to dashboard expenses/cash.
+  // If a payment is intended to affect the dashboard, it must be manually
+  // recorded once in Manual Financial Transactions.
   function periodExpenseBreakdown(){
-    const {start,end}=bounds(),{manual,payroll}=data();
+    const {start,end}=bounds(),{manual}=data();
     const out={manual:{TZS:0},register:{TZS:0},payroll:{TZS:0}};
-    const eligibleManual=manual.filter(t=>approved(t)&&date(t.date)>=start&&date(t.date)<=end&&String(t.status||'').toLowerCase()!=='cancelled'&&['expenditure','drawing'].includes(String(t.tx_type||'').toLowerCase()));
-    eligibleManual.forEach(t=>add(out.manual,t.currency,t.amount));
-    expenseRegisterRows.filter(e=>date(e.date)>=start&&date(e.date)<=end&&String(e.register_status||'').toLowerCase()==='closed'&&String(e.status||'approved').toLowerCase()!=='cancelled').forEach(e=>{const amount=num(e.amount),d=date(e.date);const mirrored=eligibleManual.some(t=>date(t.date)===d&&(t.currency||'TZS')==='TZS'&&Math.abs(num(t.amount)-amount)<.01&&(/expense|register/i.test(String(t.description||t.category||''))||/expense|register/i.test(String(e.description||e.category||''))));if(!mirrored)add(out.register,'TZS',amount)});
-    authoritativePayrollRuns.filter(p=>String(p.payroll_month||'')===start.slice(0,7)&&String(p.status||'').toLowerCase()==='locked'&&!p.deleted_at).forEach(p=>{const salary=num(p.total_net);const mirrored=eligibleManual.some(t=>(t.currency||'TZS')==='TZS'&&Math.abs(num(t.amount)-salary)<.01&&/salary|payroll/i.test(String(t.description||t.category||'')));if(salary>0&&!mirrored)add(out.payroll,'TZS',salary)});
-    payroll.filter(p=>{const st=String(p.status||p.run_status||'').toLowerCase(),d=date(p.payment_date||p.pay_date||p.date||p.payroll_date||p.period_date),salary=num(p.net_salary||p.net_salary_paid||p.net_pay);return ['locked','paid','approved','finalized','completed'].includes(st)&&d>=start&&d<=end&&salary>0}).forEach(p=>{const d=date(p.payment_date||p.pay_date||p.date||p.payroll_date||p.period_date),cur=p.currency||'TZS',salary=num(p.net_salary||p.net_salary_paid||p.net_pay);const duplicate=eligibleManual.some(t=>date(t.date)===d&&(t.currency||'TZS')===cur&&Math.abs(num(t.amount)-salary)<.01&&/salary|payroll/i.test(String(t.description||t.category||'')));if(!duplicate)add(out.payroll,cur,salary)});
+    manual.filter(t=>approved(t)&&date(t.date)>=start&&date(t.date)<=end&&String(t.status||'').toLowerCase()!=='cancelled'&&['expenditure','drawing'].includes(String(t.tx_type||'').toLowerCase()))
+      .forEach(t=>add(out.manual,t.currency,t.amount));
+    // Kept as zero-valued compatibility buckets for existing detail consumers.
+    // No expense-register or payroll source is read into this calculation.
     return out;
   }
-  function periodExpenses(){const parts=periodExpenseBreakdown(),out={TZS:0};Object.keys(parts).forEach(k=>Object.keys(parts[k]).forEach(cur=>add(out,cur,parts[k][cur])));return out;}
+  function periodExpenses(){
+    const manual=periodExpenseBreakdown().manual;
+    return {...manual};
+  }
 
   function cashPosition(){
     const {start,end}=bounds(),{manual}=data();
@@ -207,11 +211,9 @@
     return {openingByCur:through(prior),closingByCur:through(end),start,end,openingBalanceConfigured:false};
   }
 
-
-  // Policy: Cash Available is selected-period cash received minus expenses.
-  // Expenses include approved manual expenditure, partner drawings and finalized
-  // payroll net salaries. Payroll is only included for final/paid runs; cancelled
-  // and draft runs are excluded.
+  // Cash Available = selected-period cash collections + approved manual cash
+  // inflows (where applicable) - approved manual expenditure and drawings.
+  // Payroll and Expenses Module entries are deliberately excluded.
   function periodCashAvailable(collected,expenses){
     const out={TZS:0};
     const currencies=new Set([...Object.keys(collected||{}),...Object.keys(expenses||{}),'TZS']);
@@ -245,10 +247,10 @@
       {label:'Cash recorded in selected period',value:collected},{label:'Outstanding on selected-period revenue',value:periodReceivables},{label:'Current total client receivables',value:currentReceivables}
     ]);
     else if(which==='expenses')content=detailRows('Expense calculation',[
-      {label:'Approved manual expenses and partner drawings',value:parts.manual},{label:'Closed office expense-register entries (non-duplicates)',value:parts.register},{label:'Finalised / locked payroll (non-duplicates)',value:parts.payroll},{label:'TOTAL EXPENSES',value:m.expenses}
+      {label:'Approved manual Other Expenditure',value:parts.manual},{label:'Approved manual Partner Drawings (included in expenses KPI)',value:parts.manual},{label:'TOTAL EXPENSES — MANUAL TRANSACTIONS ONLY',value:m.expenses}
     ]);
     else content=detailRows('Cash available calculation',[
-      {label:'Cash recorded in selected period',value:collected},{label:'Less: approved manual expenses and drawings',value:negateTotals(parts.manual)},{label:'Less: closed expense-register entries',value:negateTotals(parts.register)},{label:'Less: finalised / locked payroll',value:negateTotals(parts.payroll)},{label:'CASH AVAILABLE',value:m.cashAvailable}
+      {label:'Cash received from invoice payment ledger',value:collected},{label:'Less: approved manual Other Expenditure and Partner Drawings',value:negateTotals(parts.manual)},{label:'CASH AVAILABLE',value:m.cashAvailable}
     ]);
     panel.dataset.kind=which;
     panel.style.cssText='grid-column:1/-1;min-width:0;width:100%;box-sizing:border-box;padding:14px;background:#fff;border:1px solid #d0d5dd;border-radius:12px;box-shadow:0 4px 14px rgba(16,24,40,.06);margin-top:2px';
@@ -535,6 +537,6 @@
   window.MOLMSFinanceV16={metrics,periodClientRows,allReceivables,render,refresh,showDetails,
     setPaymentRowsForTest(rows){paymentRows=Array.isArray(rows)?rows:[];paymentLedgerLoadError=false},
     paymentIntegrity,
-    audit:()=>{const m=metrics();return {version:18,period:bounds(),revenue:m.revenue,collected:m.collected,withholdingTax:periodWithholdingTax(),reconciliationIssues:reconciliationIssues().length,newReceivables:m.newReceivables,totalReceivables:m.totalReceivables,cash:m.cash.closingByCur,expenses:m.expenses,cashAvailable:m.cashAvailable,cashAvailablePolicy:'period cash received minus approved manual expenditure, partner drawings and finalized payroll net salaries',vat:vatPosition(),paymentLedgerRows:paymentRows.length}}
+    audit:()=>{const m=metrics();return {version:18,period:bounds(),revenue:m.revenue,collected:m.collected,withholdingTax:periodWithholdingTax(),reconciliationIssues:reconciliationIssues().length,newReceivables:m.newReceivables,totalReceivables:m.totalReceivables,cash:m.cash.closingByCur,expenses:m.expenses,cashAvailable:m.cashAvailable,cashAvailablePolicy:'period cash received minus approved manual Other Expenditure and Partner Drawings; payroll and Expenses Module records excluded',vat:vatPosition(),paymentLedgerRows:paymentRows.length}}
   };
 })();
