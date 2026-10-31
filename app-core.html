@@ -16361,26 +16361,33 @@ async function fdRender(force=false){
   finally{_fdLoading=false;if(btn){btn.disabled=false;btn.textContent='↻';btn.style.opacity='1';}}
 }
 function fdRenderKpi(){
-  const el=$('fdKpiRow');if(!el)return;const m=fdMetrics(), label=fdPeriodLabel();
-  // TZS is always shown; other currencies (USD) appear only when nonzero
-  // for that specific metric -- keeps the card compact on an ordinary
-  // TZS-only month, per the "USD is occasional" rule.
-  const cards=[
-    ['SELECTED PERIOD REVENUE',m.revenueByCur,'#16a34a'],
-    ['SELECTED PERIOD EXPENSES',m.expensesByCur,'#dc2626'],
-    ['SELECTED PERIOD BALANCE',m.balanceByCur,null],
-    ['COLLECTIONS RECEIVED',m.collectedByCur,'#065f46'],
-    ['OUTSTANDING',m.outstandingByCur,'#d97706'],
-    ['AVAILABLE CASH',m.cashByCur,null],
+  const el=$('fdKpiRow');if(!el)return;
+  const m=fdMetrics(),label=fdPeriodLabel();
+  let audit=null;
+  try{if(window.MOLMSFinanceV16&&typeof window.MOLMSFinanceV16.audit==='function')audit=window.MOLMSFinanceV16.audit();}catch(e){console.warn('[fdRenderKpi] V16 audit not ready',e);}
+  const rows=[
+    ['TOTAL REVENUE',audit?.revenue||m.revenueByCur,'#16803a','Revenue recognised from issued invoices and approved manual revenue','revenue'],
+    ['TOTAL EXPENSES',audit?.expenses||m.expensesByCur,'#b42318','Approved manual Other Expenditure and Partner Drawings only','expenses'],
+    ['CASH AVAILABLE',audit?.cashAvailable||m.cashByCur,'#167244','Invoice cash receipts less approved manual expenditure and drawings','cash']
   ];
-  el.innerHTML=cards.map(([title,byCur,fixedCol])=>{
-    const lines=fdCurrencyLines(byCur,true);
-    const rows=lines.map((l,i)=>{
-      const col=fixedCol||(l.value>=0?(title.includes('EXPENSES')?'#dc2626':'#16a34a'):'#dc2626');
-      return `<div style="font-size:${i===0?'16px':'12px'};font-weight:900;line-height:1.2;color:${col}">${l.text}</div>`;
+  const moneyRows=values=>{
+    const source=values&&typeof values==='object'?values:{TZS:Number(values||0)};
+    const keys=['TZS',...Object.keys(source).filter(k=>k!=='TZS').sort()];
+    const unique=[...new Set(keys)].filter(k=>k==='TZS'||Number(source[k]||0)!==0);
+    return (unique.length?unique:['TZS']).map((currency,index)=>{
+      const amount=Number(source[currency]||0);
+      const compact=Math.abs(amount)>=1e9?(amount/1e9).toFixed(1).replace(/\.0$/,'')+'B':Math.abs(amount)>=1e6?(amount/1e6).toFixed(1).replace(/\.0$/,'')+'M':Math.abs(amount)>=1e3?(amount/1e3).toFixed(1).replace(/\.0$/,'')+'K':amount.toLocaleString('en-US');
+      return '<div style="font-size:'+(index?'13px':'25px')+';font-weight:900;line-height:1.25;color:inherit">'+currency+' '+compact+'</div>';
     }).join('');
-    return `<div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:8px 10px"><div style="font-size:9px;font-weight:700;color:var(--muted);margin-bottom:3px">${title}</div>${rows}<div style="font-size:9px;color:var(--muted);margin-top:2px">${label}</div></div>`;
-  }).join('');
+  };
+  el.innerHTML=rows.map(([title,values,color,note,key])=>
+    '<div role="button" tabindex="0" data-finance-detail="'+key+'" aria-label="View '+title.toLowerCase()+' breakdown" onclick="window.MOLMSFinanceV16&&window.MOLMSFinanceV16.showDetails&&window.MOLMSFinanceV16.showDetails(\''+key+'\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();this.click()}" style="display:block;min-width:0;background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px;box-sizing:border-box;cursor:pointer;color:'+color+'">'+
+      '<div style="font-size:11px;font-weight:800;color:var(--muted);margin-bottom:6px;letter-spacing:.25px">'+title+'</div>'+
+      moneyRows(values)+
+      '<div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.4">'+note+' · '+label+'</div>'+
+      '<div style="font-size:11px;font-weight:750;color:#1d4ed8;margin-top:8px">View breakdown ↗</div></div>'
+  ).join('');
+  el.setAttribute('data-molms-approved-kpi-snapshot','source-renderer-v1');
 }
 function fdUpdateStatusIndicator(){const h=fdHealth(),styles={Healthy:['🟢','#f0fdf4','#bbf7d0','#16a34a'],Stable:['🟡','#fefce8','#fde68a','#92400e'],Warning:['🟠','#fff7ed','#fed7aa','#c2410c'],Critical:['🔴','#fef2f2','#fecaca','#dc2626'],'No Activity':['⚪','#f8fafc','#e2e8f0','#64748b']}[h.level],c=$('fdStatusIndicator');if(!c)return;$('fdStatusDot').textContent=styles[0];$('fdStatusText').textContent=`Financial Status: ${h.level} · ${fdPeriodLabel()}`;c.style.background=styles[1];c.style.borderColor=styles[2];c.style.color=styles[3];const intel=$('fdIntelligence');if(intel)intel.innerHTML=h.level==='No Activity'?`<span style="color:var(--muted)">${esc(h.reasons[0])}</span>`:`<b>${h.level}:</b> ${h.reasons.join(' ')}<br><b>Recommended action:</b> ${h.action}`;}
 
