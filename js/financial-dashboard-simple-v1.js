@@ -4,9 +4,9 @@
  */
 (function () {
   'use strict';
-  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 25) return;
+  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 27) return;
   window.MOLMSFinancialDashboardSimpleV1 = {
-    version: 26, applied: false,
+    version: 27, applied: false,
     showDetails(targetId) {
       const page=document.getElementById('page-findash');
       if(!page)return;
@@ -349,8 +349,16 @@
         if(api&&typeof api.audit==='function')audit=api.audit();
       }catch(e){console.error('[MOLMS KPI enforcement]',e)}
       const current=Array.from(row.children);
-      const isExact=current.length===3&&expected.every(x=>current.some(el=>String(el.textContent||'').toUpperCase().includes(x.label)));
+      const isExact=current.length===3&&expected.every(x=>current.some(el=>{
+        if(!String(el.textContent||'').toUpperCase().includes(x.label))return false;
+        const css=window.getComputedStyle(el),rect=el.getBoundingClientRect();
+        return !el.hidden&&css.display!=='none'&&css.visibility!=='hidden'&&rect.width>0&&rect.height>0;
+      }));
       if(isExact){
+        row.style.setProperty('display','grid','important');
+        row.style.setProperty('grid-template-columns','repeat(3,minmax(0,1fr))','important');
+        row.style.setProperty('align-items','stretch','important');
+        current.forEach(el=>{el.style.setProperty('display','block','important');el.style.setProperty('visibility','visible','important');el.style.setProperty('min-width','0','important');el.style.setProperty('width','auto','important');});
         const sorted=current.slice().sort((a,b)=>{
           const rank=el=>expected.findIndex(x=>String(el.textContent||'').toUpperCase().includes(x.label));
           return rank(a)-rank(b);
@@ -378,11 +386,20 @@
     renderSnapshot();
     setTimeout(renderSnapshot, 350);
     setTimeout(renderSnapshot, 1200);
-    const page = document.getElementById('page-findash');
-    if (!page || window.MOLMSFinancialDashboardSimpleV1.observer) return;
-    const observer = new MutationObserver(() => { apply(); enforceKpiOrder(); });
-    observer.observe(page, { childList:true, subtree:true });
-    window.MOLMSFinancialDashboardSimpleV1.observer = observer;
+    // Watch the document root because the app replaces the dashboard subtree.
+    if (!window.MOLMSFinancialDashboardSimpleV1.observer && document.documentElement) {
+      const observer = new MutationObserver(() => {
+        apply();
+        if (document.getElementById('page-findash')) renderSnapshot();
+      });
+      observer.observe(document.documentElement, { childList:true, subtree:true });
+      window.MOLMSFinancialDashboardSimpleV1.observer = observer;
+    }
+    if (!window.MOLMSFinancialDashboardSimpleV1.watchdog) {
+      window.MOLMSFinancialDashboardSimpleV1.watchdog = setInterval(() => {
+        if (document.getElementById('page-findash')) renderSnapshot();
+      }, 1200);
+    }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once:true });
   else start();
