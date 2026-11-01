@@ -106,8 +106,8 @@
         api.expanded=toggle.getAttribute('aria-expanded')!=='true';
         apply();
       };
+      // Use click only: pointerup and click both fire for a normal tap and would toggle twice.
       document.addEventListener('click',activate,true);
-      document.addEventListener('pointerup',activate,true);
     }
     if(page&&!api.observer){
       api.observer=new MutationObserver(()=>apply());
