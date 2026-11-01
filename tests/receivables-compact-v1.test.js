@@ -1,0 +1,19 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const compact=fs.readFileSync(path.join(__dirname,'..','js','receivables-compact-v1.js'),'utf8');
+const recovery=fs.readFileSync(path.join(__dirname,'..','js','receivables-recovery-v1.js'),'utf8');
+const index=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
+
+assert.match(compact,/\.rr-list:not\(\.rr-expanded\) \.rr-row:nth-child\(n\+4\)\{display:none!important\}/);
+assert.match(compact,/grid-template-columns','repeat\(2,minmax\(0,1fr\)\)'/);
+assert.match(compact,/@media\(max-width:760px\)/);
+assert.match(compact,/View more · /);
+assert.match(compact,/api\.expanded\? 'Show less'/);
+assert.match(compact,/including unpaid balances carried forward from previous months/);
+assert.match(compact,/Fully settled invoices are excluded from outstanding receivables/);
+assert.match(compact,/if\(button\.textContent!==buttonLabel\)button\.textContent=buttonLabel/);
+assert.match(recovery,/\.lte\('payment_date',end\)/);
+assert.match(recovery,/const receivableRows=rows\.filter\(r=>r\.status!=='Proforma Outstanding'\)/);
+assert.match(index,/receivables-compact-v1\.js\?v=20261101compact1/);
+console.log('Receivables compact layout + expandable historical open items: PASS');
