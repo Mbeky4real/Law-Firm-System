@@ -163,6 +163,8 @@ console.log('split cash + WHT-only ledger row regression: PASS');
  assert.match(v16Source, /#page-findash div:has\(> #fdKpiRow\).*width:100%/);
  assert.match(v16Source, /return cards\.every\(\(el,index\)=>String\(el\.textContent\|\|''\)\.toUpperCase\(\)\.includes\(approvedKpiLabels\[index\]\)\)/);
  assert.match(v16Source, /set\(parent,'flex','1 1 100%'\)/);
+ assert.match(v16Source, /set\(el,'grid-area','1 \/ '\+column\+' \/ 2 \/ '\+\(column\+1\)\)/);
+ assert.match(v16Source, /cards\.sort\(\(a,b\)=>/);
  assert.doesNotMatch(simpleSource, /enforceKpiOrder|renderSnapshot/);
  assert.doesNotMatch(simpleSource, /#fdKpiRow/);
  assert.doesNotMatch(shellSource, /KpiLockV1|KpiGuardV2/);
