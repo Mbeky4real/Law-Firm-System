@@ -68,7 +68,8 @@
       });
       list.insertAdjacentElement('afterend',button);
     }
-    button.textContent=api.expanded?'Show less':'View more · '+(rows.length-3)+' more items';
+    const buttonLabel=api.expanded?'Show less':'View more · '+(rows.length-3)+' more items';
+    if(button.textContent!==buttonLabel)button.textContent=buttonLabel;
     if(api.expanded){
       if(!note){
         note=document.createElement('div');note.className='rr-history-note-v1';
