@@ -279,11 +279,23 @@
       set(parent,'box-sizing','border-box');set(parent,'flex','1 1 100%');
       set(parent,'align-self','stretch');set(parent,'justify-self','stretch');
     }
-    Array.from(host.children).forEach(card=>{
-      set(card,'width','100%');set(card,'max-width','none');set(card,'min-width','0');
-      set(card,'height','100%');set(card,'box-sizing','border-box');
-      set(card,'display','block');set(card,'visibility','visible');
-      set(card,'margin','0');
+    // Sort actual DOM nodes and pin each KPI to its named grid column.
+    // This overrides legacy CSS ordering that can visually reorder grid items.
+    const expected=['TOTAL REVENUE','TOTAL EXPENSES','CASH AVAILABLE'];
+    const cards=Array.from(host.children);
+    const labelOf=el=>String(el.textContent||'').toUpperCase();
+    cards.sort((a,b)=>{
+      const rank=el=>{const label=labelOf(el);return expected.findIndex(x=>label.includes(x))};
+      return rank(a)-rank(b);
+    }).forEach(el=>host.appendChild(el));
+    Array.from(host.children).forEach((el,index)=>{
+      const column=index+1;
+      set(el,'width','100%');set(el,'max-width','none');set(el,'min-width','0');
+      set(el,'height','100%');set(el,'box-sizing','border-box');
+      set(el,'display','block');set(el,'visibility','visible');
+      set(el,'margin','0');set(el,'order',String(index));
+      set(el,'grid-column',String(column));set(el,'grid-row','1');
+      set(el,'grid-area','1 / '+column+' / 2 / '+(column+1));
     });
   }
 
