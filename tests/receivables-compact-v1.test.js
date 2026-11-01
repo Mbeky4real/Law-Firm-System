@@ -5,7 +5,7 @@ const compact=fs.readFileSync(path.join(__dirname,'..','js','receivables-compact
 const recovery=fs.readFileSync(path.join(__dirname,'..','js','receivables-recovery-v1.js'),'utf8');
 const index=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
 
-assert.match(compact,/\.rr-list \.rr-row\{display:none!important\}/);
+assert.match(compact,/\.rr-list \.rr-row:nth-child\(n\+4\)\{display:none!important\}/);
 assert.match(compact,/\.rr-expanded\) > \[data-receivables-recovery="v2"\] ~ div/);
 assert.match(compact,/const root=r\.querySelector\('\[data-receivables-recovery="v2"\]'\)/);
 assert.match(compact,/grid-template-columns','repeat\(2,minmax\(0,1fr\)\)'/);
@@ -18,5 +18,8 @@ assert.match(compact,/if\(button\.textContent!==buttonLabel\)button\.textContent
 assert.match(recovery,/\.lte\('payment_date',end\)/);
 assert.match(recovery,/const receivableRows=rows\.filter\(r=>r\.status!=='Proforma Outstanding'\)/);
 assert.match(recovery,/receivableRows\.length\+' open item'/);
-assert.match(index,/receivables-compact-v1\.js\?v=20261101compact2/);
+assert.match(recovery,/rows\.sort\(\(a,b\)=>String\(b\.date\|\|'\'\)\.localeCompare\(String\(a\.date\|\|'\'\)\)/);
+assert.match(recovery,/date:i\.invoice_date\|\|''/);
+assert.match(recovery,/date:t\.date\|\|''/);
+assert.match(index,/receivables-compact-v1\.js\?v=20261101compact3/);
 console.log('Receivables compact layout + expandable historical open items: PASS');
