@@ -18,7 +18,7 @@ assert.match(compact,/rr-toggle-icon/);
 assert.ok(compact.includes("api.expanded?'Show less'"));
 assert.match(compact,/including unpaid balances carried forward from previous months/);
 assert.match(compact,/Fully settled invoices are excluded from outstanding receivables/);
-assert.match(compact,/if\(button\.textContent!==buttonLabel\)button\.textContent=buttonLabel/);
+assert.match(compact,/if\(button\.innerHTML!==buttonHtml\)button\.innerHTML=buttonHtml/);
 assert.match(recovery,/\.lte\('payment_date',end\)/);
 assert.match(recovery,/const receivableRows=rows\.filter\(r=>r\.status!=='Proforma Outstanding'\)/);
 assert.match(recovery,/receivableRows\.length\+' open item'/);
