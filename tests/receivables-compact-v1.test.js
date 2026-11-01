@@ -5,10 +5,12 @@ const compact=fs.readFileSync(path.join(__dirname,'..','js','receivables-compact
 const recovery=fs.readFileSync(path.join(__dirname,'..','js','receivables-recovery-v1.js'),'utf8');
 const index=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
 
-assert.match(compact,/\.rr-list:not\(\.rr-expanded\) \.rr-row:nth-child\(n\+4\)\{display:none!important\}/);
+assert.match(compact,/\.rr-list \.rr-row\{display:none!important\}/);
+assert.match(compact,/\.rr-expanded\) > \[data-receivables-recovery="v2"\] ~ div/);
+assert.match(compact,/const root=r\.querySelector\('\[data-receivables-recovery="v2"\]'\)/);
 assert.match(compact,/grid-template-columns','repeat\(2,minmax\(0,1fr\)\)'/);
 assert.match(compact,/@media\(max-width:760px\)/);
-assert.match(compact,/View more · /);
+assert.match(compact,/View more · '\+rows\.length\+' open items/);
 assert.ok(compact.includes("api.expanded?'Show less'"));
 assert.match(compact,/including unpaid balances carried forward from previous months/);
 assert.match(compact,/Fully settled invoices are excluded from outstanding receivables/);
