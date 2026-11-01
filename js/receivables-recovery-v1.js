@@ -36,7 +36,7 @@
       const end=today();
       const [invRes,payRes,manRes]=await Promise.all([
         sb.from('invoices').select('id,invoice_number,invoice_type,status,client_name,currency,invoice_date,total_due,amount_paid,withholding_tax_amount,matter_ref,matter_title').lte('invoice_date',end),
-        sb.from('invoice_payments').select('invoice_id,payment_date,cash_amount,withholding_tax_amount'),
+        sb.from('invoice_payments').select('invoice_id,payment_date,cash_amount,withholding_tax_amount').lte('payment_date',end),
         sb.from('fd_manual_transactions').select('id,reference,tx_type,status,is_approved,approval_status,date,amount,currency,client_receivable,agreed_amount,outstanding_amount,receivable_client_name,counterparty,receivable_matter_ref,description').lte('date',end)
       ]);
       if(invRes.error)throw invRes.error;
