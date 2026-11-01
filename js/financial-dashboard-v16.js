@@ -262,24 +262,42 @@
     panel.querySelector('[data-close-finance-details]').onclick=()=>{panel.remove();host.querySelectorAll('[data-finance-detail]').forEach(el=>el.setAttribute('aria-expanded','false'))};
     panel.scrollIntoView({behavior:'smooth',block:'nearest'});
   }
+  function applyExecutiveSnapshotLayout(){
+    const host=q('fdKpiRow');if(!host)return;
+    const parent=host.parentElement;
+    const set=(el,name,value)=>{if(el&&el.style)el.style.setProperty(name,value,'important')};
+    // The legacy KPI wrapper was content-sized, so a full-width grid on the
+    // row alone still produced three narrow cards. Stretch both the row and
+    // its immediate layout wrapper across the dashboard content column.
+    ['width','max-width','min-width','box-sizing'].forEach((name,i)=>set(host,name,['100%','100%','0','border-box'][i]));
+    set(host,'display','grid');set(host,'grid-template-columns','repeat(3,minmax(0,1fr))');
+    set(host,'gap','12px');set(host,'align-items','stretch');
+    set(host,'justify-self','stretch');set(host,'align-self','stretch');
+    set(host,'grid-column','1 / -1');set(host,'flex','1 1 100%');
+    if(parent){
+      set(parent,'width','100%');set(parent,'max-width','100%');set(parent,'min-width','0');
+      set(parent,'box-sizing','border-box');set(parent,'flex','1 1 100%');
+      set(parent,'align-self','stretch');set(parent,'justify-self','stretch');
+    }
+    Array.from(host.children).forEach(card=>{
+      set(card,'width','100%');set(card,'max-width','none');set(card,'min-width','0');
+      set(card,'height','100%');set(card,'box-sizing','border-box');
+      set(card,'display','block');set(card,'visibility','visible');
+      set(card,'margin','0');
+    });
+  }
+
   function renderKpis(){
     const host=q('fdKpiRow');if(!host)return;
     const m=metrics(),label=typeof fdPeriodLabel==='function'?fdPeriodLabel():'Selected period';
-    const styleId='molms-financial-kpi-layout-v3';
-    if(!document.getElementById(styleId)){const style=document.createElement('style');style.id=styleId;style.textContent='#page-findash #fdKpiRow{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px!important;align-items:stretch!important;padding:14px 20px!important;box-sizing:border-box!important}#page-findash #fdKpiRow>*{display:block!important;visibility:visible!important;min-width:0!important;width:auto!important;max-width:none!important;margin:0!important;box-sizing:border-box!important}#page-findash #fdKpiRow>div:nth-child(3){display:block!important;visibility:visible!important;opacity:1!important}@media(max-width:1050px){#page-findash #fdKpiRow{grid-template-columns:repeat(3,minmax(0,1fr))!important}}@media(max-width:560px){#page-findash #fdKpiRow{grid-template-columns:repeat(3,minmax(0,1fr))!important}}';document.head.appendChild(style)}
+    const styleId='molms-financial-kpi-layout-v4';
+    if(!document.getElementById(styleId)){const style=document.createElement('style');style.id=styleId;style.textContent='#page-findash div:has(> #fdKpiRow){display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important;flex:1 1 100%!important;align-self:stretch!important;justify-self:stretch!important}#page-findash #fdKpiRow{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px!important;align-items:stretch!important;width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important;padding:14px 20px!important;margin:0!important;flex:1 1 100%!important;align-self:stretch!important;justify-self:stretch!important;grid-column:1/-1!important}#page-findash #fdKpiRow>*{display:block!important;visibility:visible!important;min-width:0!important;width:100%!important;max-width:none!important;height:100%!important;margin:0!important;box-sizing:border-box!important}#page-findash #fdKpiRow>div:nth-child(3){display:block!important;visibility:visible!important;opacity:1!important}';document.head.appendChild(style)}
     host.innerHTML=[
       card('TOTAL REVENUE',m.revenue,'#16803d',`Agreed and invoiced fees · ${label}`,'revenue'),
       card('TOTAL EXPENSES',m.expenses,'#b42318',`Recorded expenses · ${label}`,'expenses'),
       card('CASH AVAILABLE',m.cashAvailable||{TZS:0},num(m.cashAvailable?.TZS)>=0?'#167244':'#b42318',`Cash recorded less expenses · ${label}`,'cash')
     ].join('');
-    // Reassert the approved order after each render, regardless of stale DOM order.
-    const order=['TOTAL REVENUE','TOTAL EXPENSES','CASH AVAILABLE'];
-    const cards=Array.from(host.children);
-    cards.sort((a,b)=>{
-      const labelOf=el=>String(el.textContent||'').toUpperCase();
-      const rank=el=>{const t=labelOf(el);return order.findIndex(label=>t.includes(label))};
-      return rank(a)-rank(b);
-    }).forEach(el=>host.appendChild(el));
+    applyExecutiveSnapshotLayout();
   }
 
   function renderReceivables(){
@@ -522,13 +540,14 @@
   function executiveSnapshotIsCorrect(){
     const host=q('fdKpiRow');if(!host)return false;
     const cards=Array.from(host.children);
-    return cards.length===3&&approvedKpiLabels.every(label=>cards.some(el=>String(el.textContent||'').toUpperCase().includes(label)));
+    if(cards.length!==3)return false;
+    return cards.every((el,index)=>String(el.textContent||'').toUpperCase().includes(approvedKpiLabels[index]));
   }
   let snapshotRepairQueued=false;
   function enforceExecutiveSnapshot(){
     if(snapshotRepairQueued)return;
     const host=q('fdKpiRow');if(!host)return;
-    if(executiveSnapshotIsCorrect())return;
+    if(executiveSnapshotIsCorrect()){applyExecutiveSnapshotLayout();return;}
     snapshotRepairQueued=true;
     queueMicrotask(()=>{
       snapshotRepairQueued=false;
@@ -543,7 +562,8 @@
           card('TOTAL EXPENSES',a.expenses||{TZS:0},'#b42318','Approved manual Other Expenditure and Partner Drawings only · '+(typeof fdPeriodLabel==='function'?fdPeriodLabel():'Selected period'),'expenses'),
           card('CASH AVAILABLE',a.cashAvailable||{TZS:0},num(a.cashAvailable?.TZS)>=0?'#167244':'#b42318','Cash receipts less approved manual expenditure and drawings · '+(typeof fdPeriodLabel==='function'?fdPeriodLabel():'Selected period'),'cash')
         ].join('');
-        host.setAttribute('data-molms-approved-kpi-snapshot','3-card-v1');
+        host.setAttribute('data-molms-approved-kpi-snapshot','3-card-v2');
+        applyExecutiveSnapshotLayout();
       }catch(e){console.error('[MOLMS KPI snapshot repair]',e)}
     });
   }
