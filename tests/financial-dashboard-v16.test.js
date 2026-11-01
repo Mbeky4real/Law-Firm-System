@@ -134,6 +134,8 @@ global._fdAllInvoices.push({
   withholding_tax_amount:50
 });
 selectedPeriod={start:'2026-09-01',end:'2026-09-30',monthStr:'2026-09'};
+// Isolate this ledger-only test from manual receipts created by earlier fixtures.
+global._fdAllManual=[];
 global.MOLMSFinanceV16.setPaymentRowsForTest([
   {id:'split-wht-cash',invoice_id:'split-wht-test',payment_date:'2026-09-14',cash_amount:100,withholding_tax_amount:0,payment_date_is_estimated:false,entry_origin:'manual'},
   {id:'split-wht-tax',invoice_id:'split-wht-test',payment_date:'2026-09-14',cash_amount:0,withholding_tax_amount:50,payment_date_is_estimated:false,entry_origin:'manual'}
