@@ -282,7 +282,9 @@
     // Sort actual DOM nodes and pin each KPI to its named grid column.
     // This overrides legacy CSS ordering that can visually reorder grid items.
     const expected=['TOTAL REVENUE','TOTAL EXPENSES','CASH AVAILABLE'];
-    const cards=Array.from(host.children);
+    // The details panel is a legitimate fourth child of the KPI grid, not
+    // a KPI card. Keep ordering/layout scoped to the three interactive cards.
+    const cards=Array.from(host.children).filter(el=>el.matches('[data-finance-detail]'));
     const labelOf=el=>String(el.textContent||'').toUpperCase();
     const sortedCards=cards.slice().sort((a,b)=>{
       const rank=el=>{const label=labelOf(el);return expected.findIndex(x=>label.includes(x))};
@@ -292,9 +294,12 @@
     // the sequence is genuinely wrong; otherwise this would create an endless
     // observer/render loop on every dashboard refresh.
     if(sortedCards.some((el,index)=>el!==cards[index])){
-      sortedCards.forEach((el,index)=>{if(host.children[index]!==el)host.insertBefore(el,host.children[index]||null)});
+      sortedCards.forEach((el,index)=>{
+        const currentCards=Array.from(host.children).filter(node=>node.matches('[data-finance-detail]'));
+        if(currentCards[index]!==el)host.insertBefore(el,currentCards[index]||q('fdKpiDetailsPanel')||null);
+      });
     }
-    Array.from(host.children).forEach((el,index)=>{
+    Array.from(host.children).filter(el=>el.matches('[data-finance-detail]')).forEach((el,index)=>{
       const column=index+1;
       set(el,'width','100%');set(el,'max-width','none');set(el,'min-width','0');
       set(el,'height','100%');set(el,'box-sizing','border-box');
@@ -303,6 +308,14 @@
       set(el,'grid-column',String(column));set(el,'grid-row','1');
       set(el,'grid-area','1 / '+column+' / 2 / '+(column+1));
     });
+    const detailsPanel=q('fdKpiDetailsPanel');
+    if(detailsPanel){
+      set(detailsPanel,'grid-column','1 / -1');
+      set(detailsPanel,'grid-row','2');
+      set(detailsPanel,'width','100%');
+      set(detailsPanel,'min-width','0');
+      set(detailsPanel,'box-sizing','border-box');
+    }
   }
 
   function renderKpis(){
@@ -557,7 +570,9 @@
   const approvedKpiLabels=['TOTAL REVENUE','TOTAL EXPENSES','CASH AVAILABLE'];
   function executiveSnapshotIsCorrect(){
     const host=q('fdKpiRow');if(!host)return false;
-    const cards=Array.from(host.children);
+    // A visible breakdown panel is a valid extra grid child. Only count the
+    // three cards carrying the dedicated data-finance-detail marker.
+    const cards=Array.from(host.children).filter(el=>el.matches('[data-finance-detail]'));
     if(cards.length!==3)return false;
     return cards.every((el,index)=>String(el.textContent||'').toUpperCase().includes(approvedKpiLabels[index]));
   }
