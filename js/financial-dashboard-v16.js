@@ -301,8 +301,8 @@
       ];
       const classifyPractice=r=>{
         const matter=String(r.matter||r.matter_ref||r.matter_title||'').toUpperCase();
-        if(/^LIT:|MOL\\/LIT\\//.test(matter))return 'litigation';
-        if(/^NL:|MOL\\/NLT\\//.test(matter))return 'nonlitigation';
+        if(/^LIT:|MOL\/LIT\/.test(matter))return 'litigation';
+        if(/^NL:|MOL\/NLT\/.test(matter))return 'nonlitigation';
         return 'general';
       };
       const all=rows;
