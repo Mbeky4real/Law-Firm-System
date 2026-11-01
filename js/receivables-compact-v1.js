@@ -89,17 +89,19 @@
   function start(){
     installStyle();apply();
     const page=$('page-findash');
-    const r=host();
-    if(r&&!r.__rrToggleBound){
-      r.__rrToggleBound=true;
-      r.addEventListener('click',e=>{
-        const toggle=e.target.closest('.rr-view-more-v1');
-        if(!toggle||!r.contains(toggle))return;
+    if(!document.__molmsReceivablesToggleBound){
+      document.__molmsReceivablesToggleBound=true;
+      document.addEventListener('click',e=>{
+        const target=e.target;
+        const toggle=target&&target.closest?target.closest('#page-findash .rr-view-more-v1'):null;
+        if(!toggle)return;
+        const r=host();
+        if(!r||!r.contains(toggle))return;
         e.preventDefault();
         e.stopPropagation();
-        api.expanded=!api.expanded;
+        api.expanded=toggle.getAttribute('aria-expanded')!=='true';
         apply();
-      });
+      },true);
     }
     if(page&&!api.observer){
       api.observer=new MutationObserver(()=>apply());
