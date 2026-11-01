@@ -60,6 +60,10 @@
     const list=r.querySelector('.rr-list');
     if(!root||!list)return;
     const rows=list.querySelectorAll('.rr-row');
+    rows.forEach((row,index)=>{
+      row.hidden=!api.expanded&&index>=3;
+      row.style.removeProperty('display');
+    });
     let button=r.querySelector('.rr-view-more-v1');
     let note=r.querySelector('.rr-history-note-v1');
     r.classList.toggle('rr-expanded',api.expanded);
@@ -71,6 +75,12 @@
       button=document.createElement('button');
       button.type='button';button.className='rr-view-more-v1';
       button.setAttribute('aria-controls','fdReceivablesHistory');
+      button.addEventListener('click',e=>{
+        e.preventDefault();
+        e.stopPropagation();
+        api.expanded=!api.expanded;
+        apply();
+      });
       list.insertAdjacentElement('afterend',button);
     }
     button.setAttribute('aria-expanded',String(api.expanded));
@@ -89,20 +99,6 @@
   function start(){
     installStyle();apply();
     const page=$('page-findash');
-    if(!document.__molmsReceivablesToggleBound){
-      document.__molmsReceivablesToggleBound=true;
-      document.addEventListener('click',e=>{
-        const target=e.target;
-        const toggle=target&&target.closest?target.closest('#page-findash .rr-view-more-v1'):null;
-        if(!toggle)return;
-        const r=host();
-        if(!r||!r.contains(toggle))return;
-        e.preventDefault();
-        e.stopPropagation();
-        api.expanded=toggle.getAttribute('aria-expanded')!=='true';
-        apply();
-      },true);
-    }
     if(page&&!api.observer){
       api.observer=new MutationObserver(()=>apply());
       api.observer.observe(page,{childList:true,subtree:true});
