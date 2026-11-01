@@ -17,5 +17,6 @@ assert.match(compact,/Fully settled invoices are excluded from outstanding recei
 assert.match(compact,/if\(button\.textContent!==buttonLabel\)button\.textContent=buttonLabel/);
 assert.match(recovery,/\.lte\('payment_date',end\)/);
 assert.match(recovery,/const receivableRows=rows\.filter\(r=>r\.status!=='Proforma Outstanding'\)/);
+assert.match(recovery,/receivableRows\.length\+' open item'/);
 assert.match(index,/receivables-compact-v1\.js\?v=20261101compact2/);
 console.log('Receivables compact layout + expandable historical open items: PASS');
