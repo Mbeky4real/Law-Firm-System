@@ -75,12 +75,6 @@
       button=document.createElement('button');
       button.type='button';button.className='rr-view-more-v1';
       button.setAttribute('aria-controls','fdReceivablesHistory');
-      button.addEventListener('click',e=>{
-        e.preventDefault();
-        e.stopPropagation();
-        api.expanded=!api.expanded;
-        apply();
-      });
       list.insertAdjacentElement('afterend',button);
     }
     button.setAttribute('aria-expanded',String(api.expanded));
@@ -99,6 +93,22 @@
   function start(){
     installStyle();apply();
     const page=$('page-findash');
+    if(!document.__molmsReceivablesViewMoreV2){
+      document.__molmsReceivablesViewMoreV2=true;
+      const activate=e=>{
+        const target=e.target;
+        const toggle=target&&target.closest?target.closest('#page-findash .rr-view-more-v1'):null;
+        if(!toggle)return;
+        const r=host();
+        if(!r||!r.contains(toggle))return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        api.expanded=toggle.getAttribute('aria-expanded')!=='true';
+        apply();
+      };
+      document.addEventListener('click',activate,true);
+      document.addEventListener('pointerup',activate,true);
+    }
     if(page&&!api.observer){
       api.observer=new MutationObserver(()=>apply());
       api.observer.observe(page,{childList:true,subtree:true});
