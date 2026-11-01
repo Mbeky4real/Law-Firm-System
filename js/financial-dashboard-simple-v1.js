@@ -27,13 +27,6 @@
     const style = document.createElement('style');
     style.id = styleId;
     style.textContent = `
-      #page-findash #fdKpiRow { display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;align-items:stretch!important;gap:10px!important;padding:12px 20px!important;margin:0 0 12px!important; }
-      #page-findash #fdKpiRow>* { min-width:0!important;width:auto!important;max-width:none!important;margin:0!important;padding:14px 14px!important;box-sizing:border-box!important;border:1px solid #e4ddd2!important;border-radius:12px!important;box-shadow:0 2px 8px rgba(16,35,59,.045)!important;background:#fff!important; }
-      /* Override the legacy V15 rule that explicitly hid KPI card three. */
-      #page-findash #fdKpiRow>div:nth-child(3) { display:block!important;visibility:visible!important;opacity:1!important; }
-      #page-findash #fdKpiRow>div:nth-child(1) { background:#fff!important;border-color:#e4ddd2!important;box-shadow:0 2px 8px rgba(16,35,59,.045)!important; }
-      #page-findash #fdKpiRow>div:nth-child(2) { background:#fff!important;border-color:#e4ddd2!important;box-shadow:0 2px 8px rgba(16,35,59,.045)!important; }
-      #page-findash #fdKpiRow>div:nth-child(3) { border:1px solid #b8d8c5!important;background:#f3faf5!important;box-shadow:0 3px 10px rgba(28,110,65,.08)!important; }
       #page-findash>div[style*="overflow-y:auto"] { padding:16px 20px!important; }
       #page-findash .fd-simple-quick-actions { display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:12px; }
       #page-findash .fd-simple-quick-actions strong { font-size:11px;color:var(--navy);margin-right:4px; }
@@ -78,9 +71,6 @@
       #page-findash #fdPracticePerformance button { font-size:11px!important; }
       #page-findash .fd-compact-workspace { display:block!important;width:100%!important;max-width:100%!important;overflow:visible!important;margin:8px 0 14px!important; }
       #page-findash .fd-compact-workspace-card { display:block!important;min-width:0!important;width:100%!important;max-width:100%!important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;box-sizing:border-box!important;margin:0 0 14px!important;padding:14px!important;border:1px solid #e4ddd2!important;border-radius:14px!important;background:#fff!important;box-shadow:0 3px 12px rgba(16,35,59,.05)!important; }
-      @media(max-width:1250px){#page-findash #fdKpiRow{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
-      @media(max-width:760px){#page-findash #fdKpiRow{grid-template-columns:repeat(3,minmax(0,1fr))!important;padding:10px!important;gap:7px!important}#page-findash #fdKpiRow>*{padding:8px!important}#page-findash>div[style*="overflow-y:auto"]{padding:12px!important}}
-      @media(max-width:420px){#page-findash #fdKpiRow{grid-template-columns:repeat(3,minmax(0,1fr))!important}#page-findash #fdKpiRow>*{padding:6px!important}}
     `;
     document.head.appendChild(style);
   }
@@ -182,14 +172,6 @@
     if (!scroll) return;
 
     // Apply visual hierarchy without moving dashboard nodes; avoids mutation-observer loops.
-    const kpiRow = page.querySelector('#fdKpiRow');
-    if (kpiRow) {
-      kpiRow.style.setProperty('display', 'grid', 'important');
-      kpiRow.style.setProperty('grid-template-columns', 'repeat(3,minmax(0,1fr))', 'important');
-      kpiRow.style.setProperty('align-items', 'stretch', 'important');
-      kpiRow.setAttribute('aria-label', 'Financial key performance indicators');
-    }
-
     // The full Manual Financial Transactions card already provides these actions.
     // Do not create a second quick-action strip with a duplicate heading.
     page.querySelectorAll('.fd-simple-quick-actions').forEach(el => el.remove());
@@ -334,73 +316,13 @@
   }
 
   function start() {
+    // V16 is the sole owner of KPI rendering. This module only applies
+    // non-KPI presentation improvements to the dashboard.
     apply();
-    // Reconcile the intended three-card executive snapshot after legacy dashboard paints.
-    const enforceKpiOrder = () => {
-      const row=document.querySelector('#page-findash #fdKpiRow');
-      if(!row)return;
-      const expected=[
-        {label:'TOTAL REVENUE',key:'revenue',color:'#16803d',note:'Recognised invoice and manual revenue'},
-        {label:'TOTAL EXPENSES',key:'expenses',color:'#b42318',note:'Approved manual Other Expenditure and Partner Drawings only'},
-        {label:'CASH AVAILABLE',key:'cashAvailable',color:'#167244',note:'Cash receipts less approved manual expenditure and drawings'}
-      ];
-      const api=window.MOLMSFinanceV16;
-      let audit=null;
-      try{
-        if(api&&typeof api.render==='function')api.render();
-        if(api&&typeof api.audit==='function')audit=api.audit();
-      }catch(e){console.error('[MOLMS KPI enforcement]',e)}
-      const current=Array.from(row.children);
-      const isExact=current.length===3&&expected.every(x=>current.some(el=>{
-        if(!String(el.textContent||'').toUpperCase().includes(x.label))return false;
-        const css=window.getComputedStyle(el),rect=el.getBoundingClientRect();
-        return !el.hidden&&css.display!=='none'&&css.visibility!=='hidden'&&rect.width>0&&rect.height>0;
-      }));
-      if(isExact){
-        row.style.setProperty('display','grid','important');
-        row.style.setProperty('grid-template-columns','repeat(3,minmax(0,1fr))','important');
-        row.style.setProperty('align-items','stretch','important');
-        current.forEach(el=>{el.style.setProperty('display','block','important');el.style.setProperty('visibility','visible','important');el.style.setProperty('min-width','0','important');el.style.setProperty('width','auto','important');});
-        const sorted=current.slice().sort((a,b)=>{
-          const rank=el=>expected.findIndex(x=>String(el.textContent||'').toUpperCase().includes(x.label));
-          return rank(a)-rank(b);
-        });
-        if(!sorted.every((el,i)=>el===current[i]))sorted.forEach(el=>row.appendChild(el));
-        return;
-      }
-      if(!audit)return;
-      const fmt=(obj)=>{
-        const entries=Object.entries(obj||{}).filter(([,v])=>Number.isFinite(Number(v))&&Number(v)!==0);
-        if(!entries.length)return '<div style="font-size:25px;font-weight:900;line-height:1.25">TZS 0</div>';
-        return entries.map(([currency,value],i)=>'<div style="font-size:'+(i? '13px':'25px')+';font-weight:900;line-height:1.25;color:inherit">'+currency+' '+Number(value).toLocaleString('en-US',{maximumFractionDigits:2})+'</div>').join('');
-      };
-      row.innerHTML=expected.map(item=>{
-        const values=audit[item.key]||{TZS:0};
-        return '<div role="button" tabindex="0" data-finance-detail="'+item.key+'" aria-label="View '+item.label.toLowerCase()+' breakdown" onclick="window.MOLMSFinanceV16&&window.MOLMSFinanceV16.showDetails(\''+item.key+'\')" style="display:block!important;visibility:visible!important;min-width:0;background:#fff;border:1px solid #e4e7ec;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(16,24,40,.05);box-sizing:border-box;cursor:pointer;color:'+item.color+'"><div style="font-size:11px;font-weight:800;color:#667085;margin-bottom:5px;letter-spacing:.25px">'+item.label+'</div>'+fmt(values)+'<div style="font-size:11px;color:#667085;margin-top:6px;line-height:1.4">'+item.note+'</div><div style="font-size:11px;font-weight:750;color:#1d4ed8;margin-top:9px">View breakdown ↗</div></div>';
-      }).join('');
-    };
-    const renderSnapshot = () => {
-      try {
-        if (window.MOLMSFinanceV16 && typeof window.MOLMSFinanceV16.render === 'function') window.MOLMSFinanceV16.render();
-        enforceKpiOrder();
-      } catch (e) { console.warn('[MOLMS compact finance snapshot]', e); }
-    };
-    renderSnapshot();
-    setTimeout(renderSnapshot, 350);
-    setTimeout(renderSnapshot, 1200);
-    // Watch the document root because the app replaces the dashboard subtree.
     if (!window.MOLMSFinancialDashboardSimpleV1.observer && document.documentElement) {
-      const observer = new MutationObserver(() => {
-        apply();
-        if (document.getElementById('page-findash')) renderSnapshot();
-      });
+      const observer = new MutationObserver(() => apply());
       observer.observe(document.documentElement, { childList:true, subtree:true });
       window.MOLMSFinancialDashboardSimpleV1.observer = observer;
-    }
-    if (!window.MOLMSFinancialDashboardSimpleV1.watchdog) {
-      window.MOLMSFinancialDashboardSimpleV1.watchdog = setInterval(() => {
-        if (document.getElementById('page-findash')) renderSnapshot();
-      }, 1200);
     }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once:true });

@@ -2,6 +2,7 @@ name: Financial Dashboard Regression
 on:
   push:
     branches:
+      - fix/financial-dashboard-single-renderer-2026-11-01
       - financial-dashboard-perfection-from-2026-10-11
       - finance-dashboard-production-candidate-2026-10-14
       - fix/wht-payment-reconciliation-runtime

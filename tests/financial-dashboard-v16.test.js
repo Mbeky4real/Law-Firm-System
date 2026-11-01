@@ -1,4 +1,6 @@
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 
 global.window = global;
 global.addEventListener = ()=>{};
@@ -104,10 +106,10 @@ global._fdAllManual.push(
 global._fdAllManual[global._fdAllManual.length-1].status='cancelled';
 const expensePolicy=global.MOLMSFinanceV16.audit();
 assert.deepEqual(expensePolicy.expenses,{TZS:1300000}); // two approved October manual expenses; payroll duplicate is not counted twice
-assert.deepEqual(expensePolicy.cash,{TZS:-1016400}); // the same two expenses reduce cumulative verified cash movements once
+assert.deepEqual(expensePolicy.cash,{TZS:-1016400}); // approved manual expenditure reduces cash once; payroll and Expenses Module records are excluded
 assert.equal(expensePolicy.cash.TZS,283600-1100000-200000);
 assert.deepEqual(expensePolicy.cashAvailable,{TZS:-1299400}); // selected-period cash received (600) minus approved manual expenses, drawings and finalized salary
-assert.equal(expensePolicy.cashAvailablePolicy,'period cash received minus approved manual expenditure, partner drawings and finalized payroll net salaries');
+assert.equal(expensePolicy.cashAvailablePolicy,'period cash received minus approved manual Other Expenditure and Partner Drawings; payroll and Expenses Module records excluded');
 
 
 // An estimated payment date must not be counted as verified cash, but the
@@ -132,6 +134,8 @@ global._fdAllInvoices.push({
   withholding_tax_amount:50
 });
 selectedPeriod={start:'2026-09-01',end:'2026-09-30',monthStr:'2026-09'};
+// Isolate this ledger-only test from manual receipts created by earlier fixtures.
+global._fdAllManual=[];
 global.MOLMSFinanceV16.setPaymentRowsForTest([
   {id:'split-wht-cash',invoice_id:'split-wht-test',payment_date:'2026-09-14',cash_amount:100,withholding_tax_amount:0,payment_date_is_estimated:false,entry_origin:'manual'},
   {id:'split-wht-tax',invoice_id:'split-wht-test',payment_date:'2026-09-14',cash_amount:0,withholding_tax_amount:50,payment_date_is_estimated:false,entry_origin:'manual'}
@@ -143,3 +147,29 @@ const splitRow=global.MOLMSFinanceV16.periodClientRows().find(r=>r.client==='Spl
 assert.equal(splitRow.paid,150); // cash + WHT settles the invoice
 assert.equal(splitRow.outstanding,0);
 console.log('split cash + WHT-only ledger row regression: PASS');
+
+
+ // Executive snapshot renderer contract: V16 owns the only KPI render path.
+ const source = file => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
+ const v16Source = source('js/financial-dashboard-v16.js');
+ const simpleSource = source('js/financial-dashboard-simple-v1.js');
+ const shellSource = source('index.html');
+ assert.match(v16Source, /card\('TOTAL REVENUE'/);
+ assert.match(v16Source, /card\('TOTAL EXPENSES'/);
+ assert.match(v16Source, /card\('CASH AVAILABLE'/);
+ assert.match(v16Source, /grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+ assert.match(v16Source, /fdKpiRow>div:nth-child\(3\)\{display:block!important/);
+ assert.match(v16Source, /function applyExecutiveSnapshotLayout\(\)/);
+ assert.match(v16Source, /#page-findash div:has\(> #fdKpiRow\).*width:100%/);
+ assert.match(v16Source, /return cards\.every\(\(el,index\)=>String\(el\.textContent\|\|''\)\.toUpperCase\(\)\.includes\(approvedKpiLabels\[index\]\)\)/);
+ assert.match(v16Source, /set\(parent,'flex','1 1 100%'\)/);
+ assert.match(v16Source, /set\(el,'grid-area','1 \/ '\+column\+' \/ 2 \/ '\+\(column\+1\)\)/);
+ assert.match(v16Source, /sortedCards=cards\.slice\(\)\.sort\(\(a,b\)=>/);
+ // Breakdown details are an allowed fourth grid child, never a fourth KPI card.
+ assert.match(v16Source, /Array\.from\(host\.children\)\.filter\(el=>el\.matches\('\[data-finance-detail\]'\)\)/);
+ assert.match(v16Source, /const detailsPanel=q\('fdKpiDetailsPanel'\)/);
+ assert.match(v16Source, /set\(detailsPanel,'grid-column','1 \/ -1'\)/);
+ assert.doesNotMatch(simpleSource, /enforceKpiOrder|renderSnapshot/);
+ assert.doesNotMatch(simpleSource, /#fdKpiRow/);
+ assert.doesNotMatch(shellSource, /KpiLockV1|KpiGuardV2/);
+ console.log('single-owner three-card executive snapshot contract: PASS');
