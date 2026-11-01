@@ -284,10 +284,16 @@
     const expected=['TOTAL REVENUE','TOTAL EXPENSES','CASH AVAILABLE'];
     const cards=Array.from(host.children);
     const labelOf=el=>String(el.textContent||'').toUpperCase();
-    cards.sort((a,b)=>{
+    const sortedCards=cards.slice().sort((a,b)=>{
       const rank=el=>{const label=labelOf(el);return expected.findIndex(x=>label.includes(x))};
       return rank(a)-rank(b);
-    }).forEach(el=>host.appendChild(el));
+    });
+    // Reordering a node fires the host MutationObserver. Only move nodes when
+    // the sequence is genuinely wrong; otherwise this would create an endless
+    // observer/render loop on every dashboard refresh.
+    if(sortedCards.some((el,index)=>el!==cards[index])){
+      sortedCards.forEach((el,index)=>{if(host.children[index]!==el)host.insertBefore(el,host.children[index]||null)});
+    }
     Array.from(host.children).forEach((el,index)=>{
       const column=index+1;
       set(el,'width','100%');set(el,'max-width','none');set(el,'min-width','0');
