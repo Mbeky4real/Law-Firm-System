@@ -106,10 +106,10 @@ global._fdAllManual.push(
 global._fdAllManual[global._fdAllManual.length-1].status='cancelled';
 const expensePolicy=global.MOLMSFinanceV16.audit();
 assert.deepEqual(expensePolicy.expenses,{TZS:1300000}); // two approved October manual expenses; payroll duplicate is not counted twice
-assert.deepEqual(expensePolicy.cash,{TZS:-1016400}); // the same two expenses reduce cumulative verified cash movements once
+assert.deepEqual(expensePolicy.cash,{TZS:-1016400}); // approved manual expenditure reduces cash once; payroll and Expenses Module records are excluded
 assert.equal(expensePolicy.cash.TZS,283600-1100000-200000);
 assert.deepEqual(expensePolicy.cashAvailable,{TZS:-1299400}); // selected-period cash received (600) minus approved manual expenses, drawings and finalized salary
-assert.equal(expensePolicy.cashAvailablePolicy,'period cash received minus approved manual expenditure, partner drawings and finalized payroll net salaries');
+assert.equal(expensePolicy.cashAvailablePolicy,'period cash received minus approved manual Other Expenditure and Partner Drawings; payroll and Expenses Module records excluded');
 
 
 // An estimated payment date must not be counted as verified cash, but the
