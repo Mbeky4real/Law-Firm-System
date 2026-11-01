@@ -12,8 +12,8 @@
     if($(styleId))return;
     const s=document.createElement('style');s.id=styleId;
     s.textContent=`
-      #page-findash #fdReceivablesCardV1:not(.rr-expanded) .rr-list .rr-row,
-      #page-findash #fdReceivablesCardV2:not(.rr-expanded) .rr-list .rr-row{display:none!important}
+      #page-findash #fdReceivablesCardV1:not(.rr-expanded) .rr-list .rr-row:nth-child(n+4),
+      #page-findash #fdReceivablesCardV2:not(.rr-expanded) .rr-list .rr-row:nth-child(n+4){display:none!important}
       #page-findash #fdReceivablesCardV1:not(.rr-expanded) > [data-receivables-recovery="v2"] ~ div:not(.rr-list):not(.rr-view-more-v1):not(.rr-history-note-v1),
       #page-findash #fdReceivablesCardV2:not(.rr-expanded) > [data-receivables-recovery="v2"] ~ div:not(.rr-list):not(.rr-view-more-v1):not(.rr-history-note-v1){display:none!important}
       #page-findash .rr-view-more-v1{display:block;width:100%;margin-top:8px;padding:8px 12px;border:1px solid #d8dee8;border-radius:8px;background:#f8fafc;color:#1d4ed8;font-size:11px;font-weight:800;text-align:center;cursor:pointer}
