@@ -16,7 +16,10 @@
       #page-findash #fdReceivablesCardV2:not(.rr-expanded) .rr-list .rr-row:nth-child(n+4){display:none!important}
       #page-findash #fdReceivablesCardV1:not(.rr-expanded) > [data-receivables-recovery="v2"] ~ div:not(.rr-list):not(.rr-view-more-v1):not(.rr-history-note-v1),
       #page-findash #fdReceivablesCardV2:not(.rr-expanded) > [data-receivables-recovery="v2"] ~ div:not(.rr-list):not(.rr-view-more-v1):not(.rr-history-note-v1){display:none!important}
-      #page-findash .rr-view-more-v1{display:block;width:100%;margin-top:8px;padding:8px 12px;border:1px solid #d8dee8;border-radius:8px;background:#f8fafc;color:#1d4ed8;font-size:11px;font-weight:800;text-align:center;cursor:pointer}
+      #page-findash .rr-view-more-v1{display:flex;align-items:center;justify-content:center;gap:7px;position:relative;z-index:2;pointer-events:auto;touch-action:manipulation;-webkit-appearance:none;appearance:none;box-sizing:border-box;min-height:40px;width:100%;margin-top:8px;padding:9px 12px;border:1px solid #cbd5e1;border-radius:8px;background:#f8fafc;color:#1d4ed8;font:800 12px/1.25 inherit;text-align:center;cursor:pointer}
+      #page-findash .rr-view-more-v1:focus-visible{outline:3px solid #93c5fd;outline-offset:2px}
+      #page-findash .rr-view-more-v1 .rr-toggle-icon{display:inline-block;font-size:15px;line-height:1;transition:transform .15s ease}
+      #page-findash .rr-view-more-v1[aria-expanded="true"] .rr-toggle-icon{transform:rotate(180deg)}
       #page-findash .rr-history-note-v1{margin:7px 0 2px;color:var(--muted);font-size:10px;line-height:1.45}
       @media(max-width:760px){
         #page-findash [data-receivables-obligations-balanced="v1"]{grid-template-columns:minmax(0,1fr)!important}
@@ -67,14 +70,14 @@
     if(!button){
       button=document.createElement('button');
       button.type='button';button.className='rr-view-more-v1';
-      button.addEventListener('click',()=>{
-        api.expanded=!api.expanded;
-        apply();
-      });
+      button.setAttribute('aria-controls','fdReceivablesHistory');
       list.insertAdjacentElement('afterend',button);
     }
+    button.setAttribute('aria-expanded',String(api.expanded));
     const buttonLabel=api.expanded?'Show less':'View more · '+rows.length+' open items';
-    if(button.textContent!==buttonLabel)button.textContent=buttonLabel;
+    const buttonHtml='<span>'+buttonLabel+'</span><span class="rr-toggle-icon" aria-hidden="true">'+(api.expanded?'↑':'↓')+'</span>';
+    if(button.innerHTML!==buttonHtml)button.innerHTML=buttonHtml;
+    list.id='fdReceivablesHistory';
     if(api.expanded){
       if(!note){
         note=document.createElement('div');note.className='rr-history-note-v1';
@@ -86,6 +89,18 @@
   function start(){
     installStyle();apply();
     const page=$('page-findash');
+    const r=host();
+    if(r&&!r.__rrToggleBound){
+      r.__rrToggleBound=true;
+      r.addEventListener('click',e=>{
+        const toggle=e.target.closest('.rr-view-more-v1');
+        if(!toggle||!r.contains(toggle))return;
+        e.preventDefault();
+        e.stopPropagation();
+        api.expanded=!api.expanded;
+        apply();
+      });
+    }
     if(page&&!api.observer){
       api.observer=new MutationObserver(()=>apply());
       api.observer.observe(page,{childList:true,subtree:true});
