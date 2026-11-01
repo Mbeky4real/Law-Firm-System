@@ -12,8 +12,10 @@
     if($(styleId))return;
     const s=document.createElement('style');s.id=styleId;
     s.textContent=`
-      #page-findash [data-receivables-recovery="v3"]:not(.rr-expanded) .rr-list .rr-row{display:none!important}
-      #page-findash [data-receivables-recovery="v3"]:not(.rr-expanded) .rr-proforma-summary{display:none!important}
+      #page-findash #fdReceivablesCardV1:not(.rr-expanded) .rr-list .rr-row,
+      #page-findash #fdReceivablesCardV2:not(.rr-expanded) .rr-list .rr-row{display:none!important}
+      #page-findash #fdReceivablesCardV1:not(.rr-expanded) > [data-receivables-recovery="v2"] + .rr-list + div,
+      #page-findash #fdReceivablesCardV2:not(.rr-expanded) > [data-receivables-recovery="v2"] + .rr-list + div{display:none!important}
       #page-findash .rr-view-more-v1{display:block;width:100%;margin-top:8px;padding:8px 12px;border:1px solid #d8dee8;border-radius:8px;background:#f8fafc;color:#1d4ed8;font-size:11px;font-weight:800;text-align:center;cursor:pointer}
       #page-findash .rr-history-note-v1{margin:7px 0 2px;color:var(--muted);font-size:10px;line-height:1.45}
       @media(max-width:760px){
@@ -51,13 +53,13 @@
   function apply(){
     const r=host();if(!r)return;
     alignCards();
-    const root=r.querySelector('[data-receivables-recovery="v3"]');
-    const list=root?.querySelector('.rr-list');
+    const root=r.querySelector('[data-receivables-recovery="v2"]');
+    const list=r.querySelector('.rr-list');
     if(!root||!list)return;
     const rows=list.querySelectorAll('.rr-row');
-    let button=root.querySelector('.rr-view-more-v1');
-    let note=root.querySelector('.rr-history-note-v1');
-    root.classList.toggle('rr-expanded',api.expanded);
+    let button=r.querySelector('.rr-view-more-v1');
+    let note=r.querySelector('.rr-history-note-v1');
+    r.classList.toggle('rr-expanded',api.expanded);
     list.classList.toggle('rr-expanded',api.expanded);
     if(rows.length===0){
       button?.remove();note?.remove();return;
