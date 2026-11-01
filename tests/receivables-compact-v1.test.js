@@ -11,6 +11,10 @@ assert.match(compact,/const root=r\.querySelector\('\[data-receivables-recovery=
 assert.match(compact,/grid-template-columns','repeat\(2,minmax\(0,1fr\)\)'/);
 assert.match(compact,/@media\(max-width:760px\)/);
 assert.match(compact,/View more · '\+rows\.length\+' open items/);
+assert.match(compact,/touch-action:manipulation/);
+assert.match(compact,/aria-expanded/);
+assert.match(compact,/r\.addEventListener\('click'/);
+assert.match(compact,/rr-toggle-icon/);
 assert.ok(compact.includes("api.expanded?'Show less'"));
 assert.match(compact,/including unpaid balances carried forward from previous months/);
 assert.match(compact,/Fully settled invoices are excluded from outstanding receivables/);
@@ -21,5 +25,5 @@ assert.match(recovery,/receivableRows\.length\+' open item'/);
 assert.match(recovery,/rows\.sort\(\(a,b\)=>String\(b\.date\|\|'\'\)\.localeCompare\(String\(a\.date\|\|'\'\)\)/);
 assert.match(recovery,/date:i\.invoice_date\|\|''/);
 assert.match(recovery,/date:t\.date\|\|''/);
-assert.match(index,/receivables-compact-v1\.js\?v=20261101compact3/);
+assert.match(index,/receivables-compact-v1\.js\?v=20261101compact4/);
 console.log('Receivables compact layout + expandable historical open items: PASS');
