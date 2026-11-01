@@ -1,4 +1,6 @@
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 
 global.window = global;
 global.addEventListener = ()=>{};
@@ -143,3 +145,19 @@ const splitRow=global.MOLMSFinanceV16.periodClientRows().find(r=>r.client==='Spl
 assert.equal(splitRow.paid,150); // cash + WHT settles the invoice
 assert.equal(splitRow.outstanding,0);
 console.log('split cash + WHT-only ledger row regression: PASS');
+
+
+ // Executive snapshot renderer contract: V16 owns the only KPI render path.
+ const source = file => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
+ const v16Source = source('js/financial-dashboard-v16.js');
+ const simpleSource = source('js/financial-dashboard-simple-v1.js');
+ const shellSource = source('index.html');
+ assert.match(v16Source, /card\('TOTAL REVENUE'/);
+ assert.match(v16Source, /card\('TOTAL EXPENSES'/);
+ assert.match(v16Source, /card\('CASH AVAILABLE'/);
+ assert.match(v16Source, /grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+ assert.match(v16Source, /fdKpiRow>div:nth-child\(3\)\{display:block!important/);
+ assert.doesNotMatch(simpleSource, /enforceKpiOrder|renderSnapshot/);
+ assert.doesNotMatch(simpleSource, /#fdKpiRow/);
+ assert.doesNotMatch(shellSource, /KpiLockV1|KpiGuardV2/);
+ console.log('single-owner three-card executive snapshot contract: PASS');
