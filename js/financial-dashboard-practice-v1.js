@@ -81,35 +81,36 @@
         {key:'general',label:'Other / General',color:'#64748b'}
       ];
       const sum=(practice,currency)=>sourceRows.filter(r=>r.practice===practice&&String(r.currency||'TZS').toUpperCase()===currency).reduce((s,r)=>s+r.revenue,0);
+      const total=currency=>sourceRows.filter(r=>String(r.currency||'TZS').toUpperCase()===currency).reduce((s,r)=>s+r.revenue,0);
+      const share=(amount,currency)=>total(currency)>0?Math.round(amount/total(currency)*100):0;
       let style=q('molms-practice-two-currency-layout');
       if(!style){
         style=document.createElement('style');
         style.id='molms-practice-two-currency-layout';
         style.textContent=`
-          #page-findash #fdPracticePerformance{width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important}
+          #page-findash #fdPracticePerformance{width:100%!important;max-width:920px!important;min-width:0!important;box-sizing:border-box!important}
           #page-findash #fdRevByPractice{display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;overflow:visible!important}
-          #page-findash .fd-practice-currency-panels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;width:100%;min-width:0}
-          #page-findash .fd-practice-currency-panel{min-width:0;border:1px solid #e2ddd5;border-radius:10px;overflow:hidden;background:#fff;box-sizing:border-box}
-          #page-findash .fd-practice-currency-title{padding:11px 13px;background:#f7f5f0;border-bottom:1px solid #e2ddd5;font-size:11px;font-weight:800;letter-spacing:.025em;color:#19375d}
-          #page-findash .fd-practice-currency-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;padding:13px;border-bottom:1px solid #eee9e1;min-width:0}
+          #page-findash .fd-practice-currency-panels{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;width:100%;min-width:0}
+          #page-findash .fd-practice-currency-panel{min-width:0;border:1px solid #e2ddd5;border-radius:9px;overflow:hidden;background:#fff;box-sizing:border-box}
+          #page-findash .fd-practice-currency-title{padding:9px 10px;background:#f7f5f0;border-bottom:1px solid #e2ddd5;font-size:12px;font-weight:800;letter-spacing:.01em;color:#19375d}
+          #page-findash .fd-practice-currency-row{display:grid;grid-template-columns:minmax(0,1fr);gap:3px;padding:9px 10px;border-bottom:1px solid #eee9e1;min-width:0}
           #page-findash .fd-practice-currency-row:last-child{border-bottom:0}
-          #page-findash .fd-practice-area-name{font-size:12px;font-weight:800;min-width:0;overflow-wrap:anywhere}
-          #page-findash .fd-practice-area-amount{font-size:14px;font-weight:800;text-align:right;white-space:nowrap;color:#172f69}
-          #page-findash .fd-practice-currency-total{padding:9px 13px;background:#faf9f6;border-top:1px solid #e2ddd5;display:flex;justify-content:space-between;gap:8px;font-size:10px;color:#667085}
-          @media(max-width:700px){#page-findash .fd-practice-currency-panels{grid-template-columns:minmax(0,1fr)}#page-findash .fd-practice-currency-row{padding:11px}}
+          #page-findash .fd-practice-currency-label{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:10px;color:#667085}
+          #page-findash .fd-practice-area-amount{font-size:13px;font-weight:800;text-align:left;white-space:normal;overflow-wrap:anywhere;color:#172f69}
+          #page-findash .fd-practice-share{font-size:10px;color:#667085;white-space:nowrap}
+          #page-findash .fd-practice-currency-total{padding:7px 10px;background:#faf9f6;border-top:1px solid #e2ddd5;display:flex;justify-content:space-between;gap:6px;font-size:9px;color:#667085}
+          @media(max-width:760px){#page-findash #fdPracticePerformance{max-width:100%!important}#page-findash .fd-practice-currency-panels{grid-template-columns:repeat(2,minmax(0,1fr))}}
+          @media(max-width:440px){#page-findash .fd-practice-currency-panels{grid-template-columns:minmax(0,1fr)}}
         `;
         document.head.appendChild(style);
       }
-      const panel=(currency,title)=>'<section class="fd-practice-currency-panel">'+
-        '<div class="fd-practice-currency-title">'+title+'</div>'+
-        practices.map(p=>'<div class="fd-practice-currency-row">'+
-          '<div class="fd-practice-area-name" style="color:'+p.color+'">'+esc(p.label)+'</div>'+
-          '<div class="fd-practice-area-amount">'+currency+' '+esc(sum(p.key,currency).toLocaleString())+'</div>'+
-        '</div>').join('')+
-        '<div class="fd-practice-currency-total"><span>Total '+currency+' practice revenue</span><strong style="color:#172f69">'+currency+' '+esc(sourceRows.filter(r=>String(r.currency||'TZS').toUpperCase()===currency).reduce((s,r)=>s+r.revenue,0).toLocaleString())+'</strong></div>'+
+      const panel=p=>'<section class="fd-practice-currency-panel">'+
+        '<div class="fd-practice-currency-title" style="color:'+p.color+'">'+esc(p.label)+'</div>'+
+        '<div class="fd-practice-currency-row"><div class="fd-practice-currency-label"><span>TZS revenue</span><span class="fd-practice-share">'+share(sum(p.key,'TZS'),'TZS')+'% of total</span></div><div class="fd-practice-area-amount">TZS '+esc(sum(p.key,'TZS').toLocaleString())+'</div></div>'+
+        '<div class="fd-practice-currency-row"><div class="fd-practice-currency-label"><span>USD revenue</span><span class="fd-practice-share">'+share(sum(p.key,'USD'),'USD')+'% of total</span></div><div class="fd-practice-area-amount">USD '+esc(sum(p.key,'USD').toLocaleString())+'</div></div>'+
         '</section>';
-      host.innerHTML='<div class="fd-practice-currency-panels">'+panel('TZS','TZS PRACTICE REVENUE')+panel('USD','USD PRACTICE REVENUE')+'</div>'+
-        '<div style="font-size:9px;color:var(--muted);margin-top:6px">Selected reporting period · approved and recognised revenue only · TZS and USD reported separately</div>';
+      host.innerHTML='<div class="fd-practice-currency-panels">'+practices.map(panel).join('')+'</div>'+
+        '<div style="font-size:9px;color:var(--muted);margin-top:6px">Selected reporting period · approved and recognised revenue only · currencies reported separately</div>';
     }finally{rendering=false}
   }
 

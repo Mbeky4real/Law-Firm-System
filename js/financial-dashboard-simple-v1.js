@@ -6,7 +6,7 @@
   'use strict';
   if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 30) return;
   window.MOLMSFinancialDashboardSimpleV1 = {
-    version: 30, applied: false,
+    version: 31, applied: false,
     showDetails(targetId) {
       const page=document.getElementById('page-findash');
       if(!page)return;
@@ -281,8 +281,8 @@
         if(/border-radius:\\s*12px/i.test(outer.getAttribute('style')||'')&&/background:\\s*#fff/i.test(outer.getAttribute('style')||''))break;
         outer=outer.parentElement;
       }
-      outer.style.setProperty('width','100%','important');
-      outer.style.setProperty('max-width','100%','important');
+      outer.style.setProperty('width','min(100%, 920px)','important');
+      outer.style.setProperty('max-width','920px','important');
       outer.style.setProperty('min-width','0','important');
       outer.style.setProperty('box-sizing','border-box','important');
       outer.style.setProperty('justify-self','start','important');
@@ -292,7 +292,7 @@
       style.id='molms-phase2-practice-compact-css';
       style.textContent=`
         #page-findash #fdPracticePerformance{width:100%!important;max-width:100%!important;min-width:0!important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;box-sizing:border-box!important}
-        #page-findash div:has(> #fdPracticePerformance){width:100%!important;max-width:100%!important;min-width:0!important;justify-self:stretch!important;box-sizing:border-box!important}
+        #page-findash div:has(> #fdPracticePerformance){width:min(100%,920px)!important;max-width:920px!important;min-width:0!important;justify-self:start!important;box-sizing:border-box!important}
         #page-findash div:has(> #fdPracticePerformance) #fdRevByPractice{width:100%!important;max-width:100%!important;min-width:0!important}
         #page-findash #fdPracticePerformance *{box-sizing:border-box}
         #page-findash #fdRevByPractice{width:100%!important;max-width:100%!important;min-width:0!important;overflow-x:auto!important}
@@ -304,7 +304,7 @@
     if (practiceCard && practiceCard !== scroll) {
       practiceCard.classList.remove('fd-compact-workspace-card');
       practiceCard.style.setProperty('display','block','important');
-      practiceCard.style.setProperty('width','100%','important');
+      practiceCard.style.setProperty('width','min(100%, 920px)','important');
       practiceCard.style.setProperty('max-width','100%','important');
       practiceCard.style.setProperty('height','auto','important');
       practiceCard.style.setProperty('min-height','0','important');
