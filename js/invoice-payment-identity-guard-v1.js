@@ -16,7 +16,7 @@
     try{
       const ctx = typeof _invPaymentCtx !== 'undefined' ? _invPaymentCtx : null;
       if(!ctx) return original.apply(this, arguments);
-      const client = window.sb || window.supabaseClient;
+      const client = typeof sb !== 'undefined' ? sb : (window.sb || window.supabaseClient);
       if(!client) throw new Error('Payment database connection is unavailable. Refresh and try again.');
       const formNumber = String(document.getElementById('invNumber')?.value || '').trim();
       const requestedId = String(ctx.invoiceId || (typeof _invActiveId !== 'undefined' ? _invActiveId : '') || '').trim();
