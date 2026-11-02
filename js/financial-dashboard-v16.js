@@ -197,35 +197,37 @@
   }
 
   function cashPosition(){
-    const {start,end}=bounds(),{manual}=data();
+    const {start,end}=bounds(),{manual,invoices}=data();
     const previous=new Date(start+'T00:00:00');previous.setDate(previous.getDate()-1);
     const prior=previous.getFullYear()+'-'+String(previous.getMonth()+1).padStart(2,'0')+'-'+String(previous.getDate()).padStart(2,'0');
     const through=limit=>{
-      const totals={TZS:0};
-      data().invoices.filter(validTax).forEach(i=>receipts(i).filter(r=>!r.estimated&&r.date&&r.date<=limit).forEach(r=>add(totals,i.currency,r.cash)));
+      const totals={TZS:0},ledgerEvents=[];
+      invoices.filter(validTax).forEach(i=>receipts(i).filter(r=>!r.estimated&&r.date&&r.date<=limit).forEach(r=>{
+        add(totals,i.currency,r.cash);
+        if(r.cash>0)ledgerEvents.push({date:r.date,currency:i.currency||'TZS',amount:r.cash,client:String(i.client_name||'').trim().toLowerCase()});
+      }));
       manual.filter(t=>approved(t)&&date(t.date)&&date(t.date)<=limit&&String(t.status||'').toLowerCase()!=='cancelled').forEach(t=>{
-        const type=String(t.tx_type||'').toLowerCase();
-        if(type==='revenue'&&!t.client_receivable)add(totals,t.currency,t.amount);
-        if(type==='loan')add(totals,t.currency,t.amount);
-        if(type==='expenditure'||type==='drawing')add(totals,t.currency,-num(t.amount));
+        const type=String(t.tx_type||'').toLowerCase(),cur=t.currency||'TZS',d=date(t.date),amount=num(t.amount);
+        if(type==='revenue'){
+          const client=String(t.receivable_client_name||t.counterparty||'').trim().toLowerCase();
+          const duplicate=ledgerEvents.some(e=>e.date===d&&e.currency===cur&&Math.abs(e.amount-amount)<.01&&(!client||!e.client||e.client===client));
+          if(!duplicate)add(totals,cur,amount);
+        }
+        if(type==='loan')add(totals,cur,amount);
+        if(type==='expenditure'||type==='drawing')add(totals,cur,-amount);
       });
       return totals;
     };
-    return {openingByCur:through(prior),closingByCur:through(end),start,end,openingBalanceConfigured:false};
+    const openingByCur=through(prior),closingByCur=through(end),inflowsByCur=periodCollections(),outflowsByCur=periodExpenses();
+    manual.filter(t=>approved(t)&&String(t.tx_type||'').toLowerCase()==='loan'&&date(t.date)>=start&&date(t.date)<=end&&String(t.status||'').toLowerCase()!=='cancelled').forEach(t=>add(inflowsByCur,t.currency,t.amount));
+    return {openingByCur,closingByCur,inflowsByCur,outflowsByCur,start,end,openingBalanceConfigured:false};
   }
 
-  // Cash Available = selected-period cash collections + approved manual cash
-  // inflows (where applicable) - approved manual expenditure and drawings.
-  // Payroll and Expenses Module entries are deliberately excluded.
-  function periodCashAvailable(collected,expenses){
-    const out={TZS:0};
-    const currencies=new Set([...Object.keys(collected||{}),...Object.keys(expenses||{}),'TZS']);
-    currencies.forEach(c=>out[c]=num(collected?.[c])-num(expenses?.[c]));
-    return out;
-  }
-
+  // Cash Available is the cumulative closing cash balance, not merely this
+  // month's net movement. The previous closing balance carries forward.
+  // Payroll and the separate Expenses Module remain excluded by policy.
   function metrics(){
-    const rows=periodClientRows(),revenue=totals(rows,'revenue'),collected=periodCollections(),newReceivables=totals(rows,'outstanding'),expenses=periodExpenses(),cash=cashPosition(),cashAvailable=periodCashAvailable(collected,expenses);
+    const rows=periodClientRows(),revenue=totals(rows,'revenue'),collected=periodCollections(),newReceivables=totals(rows,'outstanding'),expenses=periodExpenses(),cash=cashPosition(),cashAvailable=cash.closingByCur;
     return {rows,revenue,collected,newReceivables,expenses,cash,cashAvailable,totalReceivables:totals(allReceivables(),'outstanding')};
   }
 
@@ -252,8 +254,11 @@
     else if(which==='expenses')content=detailRows('Expense calculation',[
       {label:'Approved manual Other Expenditure',value:parts.otherExpenditure},{label:'Approved manual Partner Drawings',value:parts.drawings},{label:'TOTAL EXPENSES — MANUAL TRANSACTIONS ONLY',value:m.expenses}
     ]);
-    else content=detailRows('Cash available calculation',[
-      {label:'Cash received from invoice payment ledger',value:collected},{label:'Less: approved manual Other Expenditure',value:negateTotals(parts.otherExpenditure)},{label:'Less: approved manual Partner Drawings',value:negateTotals(parts.drawings)},{label:'CASH AVAILABLE',value:m.cashAvailable}
+    else content=detailRows('Cash position',[
+      {label:'Opening cash carried forward',value:m.cash.openingByCur},
+      {label:'Money received this month',value:m.cash.inflowsByCur},
+      {label:'Money spent this month',value:negateTotals(m.cash.outflowsByCur)},
+      {label:'CASH AVAILABLE',value:m.cashAvailable}
     ]);
     panel.dataset.kind=which;
     panel.style.cssText='grid-column:1/-1;min-width:0;width:100%;box-sizing:border-box;padding:14px;background:#fff;border:1px solid #d0d5dd;border-radius:12px;box-shadow:0 4px 14px rgba(16,24,40,.06);margin-top:2px';
@@ -326,7 +331,7 @@
     host.innerHTML=[
       card('TOTAL REVENUE',m.revenue,'#16803d',`Agreed and invoiced fees · ${label}`,'revenue'),
       card('TOTAL EXPENSES',m.expenses,'#b42318',`Recorded expenses · ${label}`,'expenses'),
-      card('CASH AVAILABLE',m.cashAvailable||{TZS:0},num(m.cashAvailable?.TZS)>=0?'#167244':'#b42318',`Cash recorded less expenses · ${label}`,'cash')
+      card('CASH AVAILABLE',m.cashAvailable||{TZS:0},num(m.cashAvailable?.TZS)>=0?'#167244':'#b42318',`Includes previous months' closing balance · ${label}`,'cash')
     ].join('');
     applyExecutiveSnapshotLayout();
   }
@@ -509,7 +514,7 @@
       const cleanup=document.getElementById('molms-financial-status-dot-cleanup');
       if(cleanup)cleanup.remove();
     }
-    const intel=q('fdIntelligence');if(intel)intel.innerHTML=`<b>${level}:</b> ${Math.round(ratio*100)}% of TZS recognised revenue collected. ${cashVerified?`Calculated cash after expenses (zero monthly opening balance) is <b>${money('TZS',cash)}</b>. This is transaction-based and is not a bank-statement-verified balance.`:'Cash available after expenses is <b>pending calculation</b>.'}`;
+    const intel=q('fdIntelligence');if(intel)intel.innerHTML=`<b>${level}:</b> ${Math.round(ratio*100)}% of TZS recognised revenue collected. ${cashVerified?`Cash available after carrying forward previous months is <b>${money('TZS',cash)}</b>. This is based on recorded dashboard transactions, not a bank-statement verification.`:'Cash available after expenses is <b>pending calculation</b>.'}`;
   }
 
   function render(){
@@ -632,6 +637,6 @@
   window.MOLMSFinanceV16={metrics,periodClientRows,allReceivables,render,refresh,showDetails,
     setPaymentRowsForTest(rows){paymentRows=Array.isArray(rows)?rows:[];paymentLedgerLoadError=false},
     paymentIntegrity,
-    audit:()=>{const m=metrics();return {version:18,period:bounds(),revenue:m.revenue,collected:m.collected,withholdingTax:periodWithholdingTax(),reconciliationIssues:reconciliationIssues().length,newReceivables:m.newReceivables,totalReceivables:m.totalReceivables,cash:m.cash.closingByCur,expenses:m.expenses,cashAvailable:m.cashAvailable,cashAvailablePolicy:'period cash received minus approved manual Other Expenditure and Partner Drawings; payroll and Expenses Module records excluded',vat:vatPosition(),paymentLedgerRows:paymentRows.length}}
+    audit:()=>{const m=metrics();return {version:19,period:bounds(),revenue:m.revenue,collected:m.collected,withholdingTax:periodWithholdingTax(),reconciliationIssues:reconciliationIssues().length,newReceivables:m.newReceivables,totalReceivables:m.totalReceivables,cash:m.cash.closingByCur,expenses:m.expenses,cashAvailable:m.cashAvailable,cashAvailablePolicy:'cumulative closing cash: prior closing balance plus verified cash received and approved manual loans, less approved manual Other Expenditure and Partner Drawings; payroll and Expenses Module records excluded',vat:vatPosition(),paymentLedgerRows:paymentRows.length}}
   };
 })();
