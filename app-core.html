@@ -15024,7 +15024,7 @@ async function invRecordPayment(){
   const {data:inv}=await sb.from('invoices').select('amount_paid,withholding_tax_amount').eq('id',_invActiveId).maybeSingle();
   const currentCash=Number(inv?.amount_paid||0), currentWht=Number(inv?.withholding_tax_amount||0);
   const outstandingBefore=Math.max(0,total-currentCash-currentWht);
-  _invPaymentCtx={total,subtotal,currentCash,currentWht,outstandingBefore};
+  _invPaymentCtx={invoiceId:_invActiveId,total,subtotal,currentCash,currentWht,outstandingBefore};
   _invPaymentSubmitting=false;
 
   const cur=val('invCurrency')||'TZS';
