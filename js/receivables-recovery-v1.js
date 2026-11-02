@@ -19,6 +19,9 @@
       #page-findash .rr-summary{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px}
       #page-findash .rr-total{font-size:clamp(17px,2.5vw,23px);font-weight:900;line-height:1.3;color:#a16207;overflow-wrap:anywhere}
       #page-findash .rr-list{display:grid;gap:0}
+      #page-findash .rr-row[hidden]{display:none!important}
+      #page-findash .rr-view-more-v1{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;min-height:40px;margin:9px 0 2px;padding:9px 12px;border:1px solid #cbd5e1;border-radius:8px;background:#f8fafc;color:#1d4ed8;font:800 12px/1.25 inherit;cursor:pointer;touch-action:manipulation}
+      #page-findash .rr-view-more-v1:focus-visible{outline:3px solid #93c5fd;outline-offset:2px}
       #page-findash .rr-row{width:100%;min-width:0;display:grid;grid-template-columns:minmax(0,1fr) repeat(3,minmax(0,.72fr));gap:8px;align-items:start;border:0;border-top:1px solid var(--border);padding:10px 2px;background:transparent;text-align:left;cursor:pointer;color:var(--navy);white-space:normal;overflow-wrap:anywhere}
       #page-findash .rr-client{grid-column:1/-1;font-size:12px;font-weight:800;line-height:1.35;overflow-wrap:anywhere}
       #page-findash .rr-ref{display:block;color:var(--muted);font-size:10px;font-weight:400;margin-top:2px;overflow-wrap:anywhere}
@@ -36,7 +39,7 @@
       const end=today();
       const [invRes,payRes,manRes]=await Promise.all([
         sb.from('invoices').select('id,invoice_number,invoice_type,status,client_name,currency,invoice_date,total_due,amount_paid,withholding_tax_amount,matter_ref,matter_title').lte('invoice_date',end),
-        sb.from('invoice_payments').select('invoice_id,payment_date,cash_amount,withholding_tax_amount'),
+        sb.from('invoice_payments').select('invoice_id,payment_date,cash_amount,withholding_tax_amount').lte('payment_date',end),
         sb.from('fd_manual_transactions').select('id,reference,tx_type,status,is_approved,approval_status,date,amount,currency,client_receivable,agreed_amount,outstanding_amount,receivable_client_name,counterparty,receivable_matter_ref,description').lte('date',end)
       ]);
       if(invRes.error)throw invRes.error;
@@ -51,15 +54,15 @@
         const issuedProforma=type==='proforma'&&status==='issued';
         if(!activeTax&&!issuedProforma)return;
         const total=n(i.total_due),ledgerRows=(payRes.data||[]).filter(p=>p.invoice_id===i.id),p=ledgerRows.length?n(paid[i.id]):n(i.amount_paid)+n(i.withholding_tax_amount),due=Math.max(0,total-p);
-        if(due>.01)rows.push({kind:'invoice',id:i.id,client:i.client_name||'Unknown client',source:i.invoice_number||'—',currency:i.currency||'TZS',revenue:total,paid:p,outstanding:due,status:issuedProforma?'Proforma Outstanding':p>0?'Part Paid':'Unpaid'});
+        if(due>.01)rows.push({kind:'invoice',id:i.id,date:i.invoice_date||'',client:i.client_name||'Unknown client',source:i.invoice_number||'—',currency:i.currency||'TZS',revenue:total,paid:p,outstanding:due,status:issuedProforma?'Proforma Outstanding':p>0?'Part Paid':'Unpaid'});
       });
       (manRes.data||[]).forEach(t=>{
         const status=String(t.status||t.approval_status||(t.is_approved?'approved':'pending')).toLowerCase();
         if(status!=='approved'||!t.client_receivable)return;
         const due=Math.max(0,n(t.outstanding_amount));if(due<=.01)return;
-        rows.push({kind:'manual',id:t.id,client:t.receivable_client_name||t.counterparty||'Unknown client',source:t.reference||t.description||'Manual receivable',currency:t.currency||'TZS',revenue:n(t.agreed_amount||t.amount),paid:n(t.amount),outstanding:due,status:'Part Paid'});
+        rows.push({kind:'manual',id:t.id,date:t.date||'',client:t.receivable_client_name||t.counterparty||'Unknown client',source:t.reference||t.description||'Manual receivable',currency:t.currency||'TZS',revenue:n(t.agreed_amount||t.amount),paid:n(t.amount),outstanding:due,status:'Part Paid'});
       });
-      rows.sort((a,b)=>b.outstanding-a.outstanding);
+      rows.sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')) || String(b.id||'').localeCompare(String(a.id||'')));
       const receivableRows=rows.filter(r=>r.status!=='Proforma Outstanding');
       const proformaRows=rows.filter(r=>r.status==='Proforma Outstanding');
       const currencies=[...new Set(receivableRows.map(r=>r.currency||'TZS'))];
@@ -69,9 +72,9 @@
       h.innerHTML='<div data-receivables-recovery="v2" class="rr-summary"><div><div style="font-size:11px;font-weight:800;color:var(--navy)">TOTAL CLIENT RECEIVABLES</div>'+
         totals.map(t=>'<div class="rr-total">'+esc(money(t.currency,t.value))+'</div>').join('')+
         '<div style="font-size:10px;color:var(--muted);margin-top:3px">Open balances as at '+esc(end)+'</div></div>'+
-        '<div style="font-size:10px;color:var(--muted);text-align:right">'+rows.length+' open item'+(rows.length===1?'':'s')+'</div></div>'+
-        '<div class="rr-list">'+(receivableRows.map(r=>'<button class="rr-row" data-rr-kind="'+esc(r.kind)+'" data-rr-id="'+esc(r.id)+'"><span class="rr-client">'+esc(r.client)+'<small class="rr-ref">'+esc(r.source)+' · '+esc(r.status)+'</small></span><span class="rr-metric">Agreed<b>'+esc(money(r.currency,r.revenue))+'</b></span><span class="rr-metric" style="color:#16803c">Paid<b>'+esc(money(r.currency,r.paid))+'</b></span><span class="rr-metric" style="color:#b42318">Outstanding<b>'+esc(money(r.currency,r.outstanding))+'</b></span></button>').join('')||'<div style="font-size:11px;color:var(--muted);padding:8px 0">No open receivables recorded.</div>')+'</div>'+(proformaRows.length?'<div style="margin-top:12px;padding-top:9px;border-top:1px dashed var(--border)"><div style="font-size:11px;font-weight:800;color:var(--muted)">ISSUED PROFORMA COMMITMENTS — NOT INCLUDED IN RECEIVABLES</div>'+proformaTotals.map(t=>'<div style="font-size:12px;font-weight:800;color:#667085;margin:5px 0">'+esc(money(t.currency,t.value))+'</div>').join('')+proformaRows.map(r=>'<div style="font-size:10px;color:var(--muted);padding:5px 0">'+esc(r.client)+' · '+esc(money(r.currency,r.outstanding))+'</div>').join('')+'</div>':'');
-      h.onclick=e=>{const b=e.target.closest('[data-rr-kind]');if(!b)return;if(typeof fdOpenReceivableSourceV2==='function')fdOpenReceivableSourceV2(b.dataset.rrKind,b.dataset.rrId)};
+        '<div style="font-size:10px;color:var(--muted);text-align:right">'+receivableRows.length+' open item'+(receivableRows.length===1?'':'s')+'</div></div>'+
+        '<div class="rr-list">'+(receivableRows.map((r,index)=>'<button class="rr-row"'+(index>=3?' hidden':'')+' data-rr-kind="'+esc(r.kind)+'" data-rr-id="'+esc(r.id)+'"><span class="rr-client">'+esc(r.client)+'<small class="rr-ref">'+esc(r.date)+' · '+esc(r.source)+' · '+esc(r.status)+'</small></span><span class="rr-metric">Agreed<b>'+esc(money(r.currency,r.revenue))+'</b></span><span class="rr-metric" style="color:#16803c">Paid<b>'+esc(money(r.currency,r.paid))+'</b></span><span class="rr-metric" style="color:#b42318">Outstanding<b>'+esc(money(r.currency,r.outstanding))+'</b></span></button>').join('')||'<div style="font-size:11px;color:var(--muted);padding:8px 0">No open receivables recorded.</div>')+'</div>'+(receivableRows.length>3?'<button type="button" class="rr-view-more-v1" aria-expanded="false">View more · '+receivableRows.length+' open items <span aria-hidden="true">↓</span></button>':'')+(proformaRows.length?'<div style="margin-top:12px;padding-top:9px;border-top:1px dashed var(--border)"><div style="font-size:11px;font-weight:800;color:var(--muted)">ISSUED PROFORMA COMMITMENTS — NOT INCLUDED IN RECEIVABLES</div>'+proformaTotals.map(t=>'<div style="font-size:12px;font-weight:800;color:#667085;margin:5px 0">'+esc(money(t.currency,t.value))+'</div>').join('')+proformaRows.map(r=>'<div style="font-size:10px;color:var(--muted);padding:5px 0">'+esc(r.client)+' · '+esc(money(r.currency,r.outstanding))+'</div>').join('')+'</div>':'');
+      const moreButton=h.querySelector('.rr-view-more-v1');if(moreButton){moreButton.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const expanded=moreButton.getAttribute('aria-expanded')!=='true';h.classList.toggle('rr-expanded',expanded);h.querySelectorAll('.rr-list .rr-row').forEach((row,index)=>{row.hidden=!expanded&&index>=3});moreButton.setAttribute('aria-expanded',String(expanded));moreButton.innerHTML=expanded?'Show less <span aria-hidden="true">↑</span>':'View more · '+receivableRows.length+' open items <span aria-hidden="true">↓</span>';},{once:false});}h.onclick=e=>{const b=e.target.closest('[data-rr-kind]');if(!b)return;if(typeof fdOpenReceivableSourceV2==='function')fdOpenReceivableSourceV2(b.dataset.rrKind,b.dataset.rrId)};
       api.loaded=true;api.error=null;api.rows=rows;h.dataset.receivablesRecoveryVersion='2';
     }catch(e){
       api.error=String(e&&e.message||e);

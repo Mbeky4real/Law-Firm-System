@@ -12,7 +12,7 @@ assert.match(workflow, /page-invoice/,'Actions must remain inside the original i
 assert.match(workflow, /molms-invoice-actions-footer-v7/,'There must be one bottom action area.');
 assert.doesNotMatch(workflow, /Invoice Preparation & Issuance/,'Do not reintroduce the separate preparation card.');
 assert.match(workflow, /\.eq\('user_id',user\.id\)\.eq\('active',true\)/,'Identity must resolve from the active role row.');
-assert.match(workflow, /selectedInvoiceId\|\|activeId/,'Actions must prefer a stable invoice UUID.');
+assert.match(workflow, /const id=selectedInvoiceId\|\|\(selectedInvoiceNumber\?\x27\x27:activeId\)/,'Actions must prefer a stable invoice UUID while avoiding a stale active ID when an invoice number is selected.');
 assert.match(workflow, /rpc\('submit_invoice_for_issuance'/,'Office Manager submission must use its protected RPC.');
 assert.match(workflow, /rpc\('issue_submitted_invoice'/,'Issuance must use its protected RPC.');
 assert.match(workflow, /rpc\('return_invoice_for_correction'/,'Returns must use their protected RPC.');

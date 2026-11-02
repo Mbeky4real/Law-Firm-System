@@ -3,11 +3,15 @@ on:
   push:
     branches:
       - fix/financial-dashboard-single-renderer-2026-11-01
+      - phase-two-receivables-compact-view-2026-11-01
       - financial-dashboard-perfection-from-2026-10-11
       - finance-dashboard-production-candidate-2026-10-14
       - fix/wht-payment-reconciliation-runtime
     paths:
       - 'js/financial-dashboard-v16.js'
+      - 'js/receivables-compact-v1.js'
+      - 'js/receivables-recovery-v1.js'
+      - 'tests/receivables-compact-v1.test.js'
       - 'tests/financial-dashboard-v16.test.js'
       - 'index.html'
       - '.github/workflows/financial-dashboard-regression.yml'
@@ -22,3 +26,5 @@ jobs:
           node-version: '20'
       - name: Run Financial Dashboard V16 regression
         run: node tests/financial-dashboard-v16.test.js
+      - name: Run Receivables Compact View regression
+        run: node tests/receivables-compact-v1.test.js
