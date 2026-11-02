@@ -637,6 +637,6 @@
   window.MOLMSFinanceV16={metrics,periodClientRows,allReceivables,render,refresh,showDetails,
     setPaymentRowsForTest(rows){paymentRows=Array.isArray(rows)?rows:[];paymentLedgerLoadError=false},
     paymentIntegrity,
-    audit:()=>{const m=metrics();return {version:18,period:bounds(),revenue:m.revenue,collected:m.collected,withholdingTax:periodWithholdingTax(),reconciliationIssues:reconciliationIssues().length,newReceivables:m.newReceivables,totalReceivables:m.totalReceivables,cash:m.cash.closingByCur,expenses:m.expenses,cashAvailable:m.cashAvailable,cashAvailablePolicy:'period cash received minus approved manual Other Expenditure and Partner Drawings; payroll and Expenses Module records excluded',vat:vatPosition(),paymentLedgerRows:paymentRows.length}}
+    audit:()=>{const m=metrics();return {version:19,period:bounds(),revenue:m.revenue,collected:m.collected,withholdingTax:periodWithholdingTax(),reconciliationIssues:reconciliationIssues().length,newReceivables:m.newReceivables,totalReceivables:m.totalReceivables,cash:m.cash.closingByCur,expenses:m.expenses,cashAvailable:m.cashAvailable,cashAvailablePolicy:'cumulative closing cash: prior closing balance plus verified cash received and approved manual loans, less approved manual Other Expenditure and Partner Drawings; payroll and Expenses Module records excluded',vat:vatPosition(),paymentLedgerRows:paymentRows.length}}
   };
 })();
