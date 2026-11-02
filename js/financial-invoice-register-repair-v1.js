@@ -1,7 +1,7 @@
 /* MOLMS Receivables + Invoice Register V4 — persistent placement */
 (function(){
 'use strict';
-if(window.MOLMSInvoiceRegisterRepairV1&&window.MOLMSInvoiceRegisterRepairV1.version>=5)return;window.MOLMSInvoiceRegisterRepairV1={version:5,loaded:false};
+if(window.MOLMSInvoiceRegisterRepairV1&&window.MOLMSInvoiceRegisterRepairV1.version>=6)return;window.MOLMSInvoiceRegisterRepairV1={version:6,loaded:false};
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const norm=v=>String(v||'').trim().toLowerCase();
 const money=(v,c)=>((c||'TZS')==='USD'?'USD ':'TZS ')+Number(v||0).toLocaleString('en-US',{maximumFractionDigits:2});
@@ -16,7 +16,7 @@ function periodOf(y,mo,current){let start=y+'-'+String(mo).padStart(2,'0')+'-01'
 function getScroll(){let p=document.getElementById('page-findash');return p&&([...p.children].find(x=>/overflow-y:\s*auto/i.test(x.getAttribute('style')||''))||p);}
 function getCard(){let p=document.getElementById('page-findash');if(!p)return null;return [...p.querySelectorAll('div,section,article')].filter(e=>e.children.length<8&&norm(e.textContent).includes('total client receivables')&&norm(e.textContent).length<500).sort((a,b)=>a.textContent.length-b.textContent.length)[0]||null;}
 function ensure(id,style){let p=document.getElementById('page-findash'),el=p&&p.querySelector('#'+id);if(el)return el;el=document.createElement('section');el.id=id;el.style.cssText=style;return el;}
-function placeRegister(h){const scroll=getScroll();if(!scroll)return;scroll.appendChild(h);h.style.display='block';h.style.visibility='visible';h.style.opacity='1';}
+function placeRegister(h){const scroll=getScroll();if(!scroll)return;const manualBody=document.getElementById('fdManualBody');let manualCard=manualBody;while(manualCard&&manualCard.parentElement!==scroll)manualCard=manualCard.parentElement;if(manualCard&&manualCard.parentElement===scroll){manualCard.insertAdjacentElement('afterend',h);}else{scroll.appendChild(h);}h.style.display='block';h.style.visibility='visible';h.style.opacity='1';}
 function paintReceivables(rows,asof){
  const card=getCard();if(!card)return;
  const sums={};rows.forEach(r=>{let c=r.currency||'TZS';sums[c]=(sums[c]||0)+r.outstanding;});
