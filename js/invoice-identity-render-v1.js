@@ -43,7 +43,13 @@ function install(){
  if(typeof window.invRenderPreview!=='function'||window.invRenderPreview.__identityV1)return false;
  const base=window.invRenderPreview;
  const wrap=function(){const r=base.apply(this,arguments);apply().catch(e=>console.warn('[MOLMS invoice identity]',e));return r;};
- wrap.__identityV1=true;window.invRenderPreview=wrap;return true;
+ wrap.__identityV1=true;window.invRenderPreview=wrap;
+ if(typeof window.invSaveDraft==='function'&&!window.invSaveDraft.__identityV1){
+  const save=window.invSaveDraft;
+  const wrappedSave=async function(){const r=await save.apply(this,arguments);await apply();return r;};
+  wrappedSave.__identityV1=true;window.invSaveDraft=wrappedSave;
+ }
+ return true;
 }
 let count=0;const timer=setInterval(()=>{if(install()||++count>80)clearInterval(timer)},250);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
