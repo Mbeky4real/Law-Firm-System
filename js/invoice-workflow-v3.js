@@ -120,7 +120,15 @@ async function act(action,button){
    const reason=window.prompt('Enter the reason for voiding '+row.invoice_number+':');if(reason===null)return;if(!reason.trim())throw new Error('A reason is required.');
    if(!window.confirm('Void this invoice? It will be excluded from firm revenue and retained in the audit trail.'))return;
    const r=await c.rpc('void_issued_invoice',{p_invoice_id:row.id,p_reason:reason.trim()});if(r.error)throw r.error;
-   await render();const m=message();if(m)m.textContent='Invoice voided. It remains in the audit trail and is excluded from revenue.';return;
+   /* Never treat an RPC response alone as proof of a completed void. Re-read the persisted row. */
+   const verify=await c.from('invoices').select('id,invoice_number,status,voided_at,voided_by,void_reason').eq('id',row.id).maybeSingle();
+   if(verify.error)throw new Error('The void request returned, but MOLMS could not verify the invoice status. Refresh and check the invoice before retrying. Details: '+verify.error.message);
+   if(!verify.data||verify.data.status!=='void'||!verify.data.voided_at||!verify.data.voided_by||!String(verify.data.void_reason||'').trim()){
+    await render();
+    throw new Error('VOID NOT CONFIRMED: the database still does not show this invoice as fully voided. No success has been recorded in MOLMS. Please refresh and contact the system administrator if it remains issued.');
+   }
+   selectedInvoiceId=verify.data.id;selectedInvoiceNumber=verify.data.invoice_number||row.invoice_number;
+   await render();const m=message();if(m)m.textContent='Verified: invoice status is VOID. The reason and actor are recorded in the audit trail; the invoice is excluded from revenue.';return;
   }
  }catch(e){const m=message();if(m)m.textContent=e.message||String(e);else alert(e.message||String(e));}
  finally{busy=false;if(button)button.disabled=false;}
