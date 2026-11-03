@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 const workflow = readFileSync('js/invoice-workflow-v3.js','utf8');
 const identity = readFileSync('js/invoice-identity-render-v1.js','utf8');
 const index = readFileSync('index.html','utf8');
+const voidVisibility = readFileSync('js/invoice-void-visibility-v1.js','utf8');
 assert.match(workflow,/rpc\('void_issued_invoice'/,'void must use protected database RPC');
 assert.match(workflow,/status!=='void'/,'void success must verify persisted status');
 assert.match(workflow,/voided_at/,'void success must verify timestamp');
@@ -18,3 +19,10 @@ assert.match(identity,/Office Manager/,'Office Manager designation must be suppo
 assert.match(identity,/Partner/,'Partner designation must be preserved');
 assert.match(index,/invoice-identity-render-v1\.js/,'identity renderer must be loaded in the app runtime');
 console.log('Invoice workflow regression checks passed (12 assertions).');
+
+assert.match(workflow,/MOLMSInvoiceVoidVisibility\.refresh/,'void must require the visible status renderer');
+assert.match(workflow,/MOLMSInvoiceVoidVisibility\.paint/,'void status must be reapplied after preview rendering');
+assert.match(voidVisibility,/molms-invoice-void-banner/,'void status must be visible on the original invoice preview');
+assert.match(voidVisibility,/data-molms-void-badge/,'void status must be visible on the saved-invoice row');
+assert.match(voidVisibility,/status!=='void'/,'visible status renderer must verify persisted VOID status');
+assert.match(index,/invoice-void-visibility-v1\.js/,'visible void status renderer must be loaded by the app runtime');
