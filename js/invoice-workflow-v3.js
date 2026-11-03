@@ -204,6 +204,58 @@ window.invIssueInvoice=async function(){
  }
 };
 
+
+/* Restore the original invoice-form Void button, but route it through the
+   protected database RPC. The legacy handler used a direct table UPDATE,
+   which is no longer permitted by invoice governance/RLS. */
+window.invVoidInvoice=async function(){
+ const button=document.getElementById('invBtnVoid');
+ if(button&&button.disabled)return;
+ try{
+  if(!identity.id)await loadIdentity();
+  if(!isPartner())throw new Error('Only an active Partner or Admin may void an invoice.');
+  const activeId=(typeof _invActiveId!=='undefined'&&_invActiveId)?String(_invActiveId):'';
+  if(!activeId)throw new Error('No saved invoice is selected. Select the issued invoice from the saved-invoices list first.');
+  const lookup=await client().from('invoices')
+   .select('id,invoice_number,status,voided_at')
+   .eq('id',activeId).maybeSingle();
+  if(lookup.error)throw lookup.error;
+  const row=lookup.data;
+  if(!row)throw new Error('The selected invoice could not be found. Refresh the saved-invoices list and try again.');
+  if(row.status!=='issued'||row.voided_at)throw new Error('Only an active issued invoice can be voided.');
+  const reason=window.prompt('Enter the reason for voiding '+row.invoice_number+':');
+  if(reason===null)return;
+  if(!reason.trim())throw new Error('A reason is required to void an invoice.');
+  if(!window.confirm('Void '+row.invoice_number+'? This action cannot be undone.'))return;
+  if(button){button.disabled=true;button.textContent='Voiding…';}
+  const result=await client().rpc('void_issued_invoice',{p_invoice_id:row.id,p_reason:reason.trim()});
+  if(result.error)throw result.error;
+  const verify=await client().from('invoices')
+   .select('id,invoice_number,status,voided_at,voided_by,void_reason')
+   .eq('id',row.id).maybeSingle();
+  if(verify.error)throw verify.error;
+  if(!verify.data||verify.data.status!=='void'||!verify.data.voided_at||!verify.data.voided_by||!String(verify.data.void_reason||'').trim())
+   throw new Error('The database did not confirm the void. Do not retry until the invoice status has been checked.');
+  selectedInvoiceId=verify.data.id;
+  selectedInvoiceNumber=verify.data.invoice_number||row.invoice_number;
+  if(typeof invLoadSavedList==='function')await invLoadSavedList();
+  if(typeof invRenderKpi==='function')await invRenderKpi();
+  if(typeof invRenderPreview==='function')invRenderPreview();
+  if(typeof invLockForm==='function')invLockForm();
+  if(window.MOLMSInvoiceVoidVisibility){
+   try{const visible=await window.MOLMSInvoiceVoidVisibility.refresh(verify.data.id,verify.data.invoice_number);window.MOLMSInvoiceVoidVisibility.paint(visible);}
+   catch(visibilityError){console.error('[MOLMS invoice void visibility]',visibilityError);}
+  }
+  await render();
+  if(typeof notice==='function')notice('Invoice voided. The saved invoice list and outstanding KPIs have been refreshed.');
+ }catch(error){
+  const message='Void failed: '+(error.message||String(error));
+  if(typeof notice==='function')notice(message,'err');else window.alert(message);
+ }finally{
+  if(button){button.disabled=false;button.textContent='Void Invoice';}
+ }
+};
+
 let attempts=0;const timer=setInterval(()=>{if(page()){boot();if(++attempts>20)clearInterval(timer);}else if(++attempts>120)clearInterval(timer);},500);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 const observer=new MutationObserver(()=>{if(page()&&!$('molms-invoice-actions-footer-v7'))boot();});
