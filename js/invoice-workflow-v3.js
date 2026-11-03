@@ -128,7 +128,15 @@ async function act(action,button){
     throw new Error('VOID NOT CONFIRMED: the database still does not show this invoice as fully voided. No success has been recorded in MOLMS. Please refresh and contact the system administrator if it remains issued.');
    }
    selectedInvoiceId=verify.data.id;selectedInvoiceNumber=verify.data.invoice_number||row.invoice_number;
-   await render();const m=message();if(m)m.textContent='Verified: invoice status is VOID. The reason and actor are recorded in the audit trail; the invoice is excluded from revenue.';return;
+   /* Refresh the original invoice workspace as well as the action footer.
+      The database row is authoritative; the old list/preview may otherwise
+      continue showing the pre-void issued state until the user reloads. */
+   if(typeof invLoadSavedList==='function')await invLoadSavedList();
+   if(typeof invRenderKpi==='function')await invRenderKpi();
+   if(typeof invRenderPreview==='function')await invRenderPreview();
+   if(typeof invLockForm==='function')invLockForm();
+   await render();
+   const m=message();if(m)m.textContent='Verified: this invoice is VOID. The saved invoice list and preview have been refreshed; the reason and Partner are recorded in the audit trail.';return;
   }
  }catch(e){const m=message();if(m)m.textContent=e.message||String(e);else alert(e.message||String(e));}
  finally{busy=false;if(button)button.disabled=false;}

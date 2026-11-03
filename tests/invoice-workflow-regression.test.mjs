@@ -8,6 +8,9 @@ assert.match(workflow,/status!=='void'/,'void success must verify persisted stat
 assert.match(workflow,/voided_at/,'void success must verify timestamp');
 assert.match(workflow,/voided_by/,'void success must verify actor');
 assert.match(workflow,/void_reason/,'void success must verify reason');
+assert.match(workflow,/invLoadSavedList==='function'\)await invLoadSavedList\(\)/,'void success must refresh the existing saved-invoice list');
+assert.match(workflow,/invRenderPreview==='function'\)await invRenderPreview\(\)/,'void success must refresh the existing invoice preview');
+assert.match(workflow,/invRenderKpi==='function'\)await invRenderKpi\(\)/,'void success must refresh invoice KPIs');
 assert.match(identity,/select\('status,created_by,issued_by'\)/,'identity must be resolved from saved invoice ownership');
 assert.match(identity,/inv\.issued_by\|\|inv\.created_by/,'issued invoices must use actual issuer');
 assert.match(identity,/inv\.created_by\|\|inv\.issued_by/,'draft invoices must use preparer');
