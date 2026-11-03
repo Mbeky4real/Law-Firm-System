@@ -128,15 +128,19 @@ async function act(action,button){
     throw new Error('VOID NOT CONFIRMED: the database still does not show this invoice as fully voided. No success has been recorded in MOLMS. Please refresh and contact the system administrator if it remains issued.');
    }
    selectedInvoiceId=verify.data.id;selectedInvoiceNumber=verify.data.invoice_number||row.invoice_number;
-   /* Refresh the original invoice workspace as well as the action footer.
-      The database row is authoritative; the old list/preview may otherwise
-      continue showing the pre-void issued state until the user reloads. */
+   /* Persisted status is authoritative. Require the visible status renderer
+      to paint the original preview and saved-list entry before reporting success. */
+   if(!window.MOLMSInvoiceVoidVisibility||typeof window.MOLMSInvoiceVoidVisibility.refresh!=='function')
+    throw new Error('The invoice is void in the database, but the visible status renderer is not loaded. Refresh MOLMS and contact the administrator; do not void it again.');
+   const visibleRow=await window.MOLMSInvoiceVoidVisibility.refresh(verify.data.id,verify.data.invoice_number||row.invoice_number);
    if(typeof invLoadSavedList==='function')await invLoadSavedList();
    if(typeof invRenderKpi==='function')await invRenderKpi();
    if(typeof invRenderPreview==='function')await invRenderPreview();
    if(typeof invLockForm==='function')invLockForm();
+   /* Reapply after the original preview renderer so its markup cannot erase VOID. */
+   window.MOLMSInvoiceVoidVisibility.paint(visibleRow);
    await render();
-   const m=message();if(m)m.textContent='Verified: this invoice is VOID. The saved invoice list and preview have been refreshed; the reason and Partner are recorded in the audit trail.';return;
+   const m=message();if(m)m.textContent='Verified: invoice status is VOID. VOID is displayed on the invoice preview and saved-invoice row; the reason and Partner remain in the audit trail.';return;
   }
  }catch(e){const m=message();if(m)m.textContent=e.message||String(e);else alert(e.message||String(e));}
  finally{busy=false;if(button)button.disabled=false;}
