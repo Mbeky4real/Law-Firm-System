@@ -27,3 +27,5 @@ jobs:
           node-version: 22
       - run: node tests/invoice-module-contract.test.mjs
       - run: node tests/invoice-workflow-regression.test.mjs
+      - run: node --check js/invoice-workflow-v3.js
+      - run: node --check js/invoice-identity-render-v1.js
