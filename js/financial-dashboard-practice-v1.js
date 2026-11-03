@@ -5,6 +5,7 @@
  */
 (function financialDashboardPracticeV5(){
   'use strict';
+  if(window.MOLMSPracticeV5 && window.MOLMSPracticeV5.version>=6)return;
 
   const q=id=>document.getElementById(id);
   const num=v=>Number(v||0);
@@ -114,12 +115,17 @@
     }finally{rendering=false}
   }
 
-  async function refresh(){await loadRows();render()}
+  async function refresh(){const ok=await loadRows();if(ok)render();return ok}
+  // The financial client can initialise after the iframe's load event. Retry
+  // the first read for a bounded period instead of leaving the legacy layout.
+  let bootAttempts=0;
+  function boot(){refresh().then(ok=>{if(!ok&&bootAttempts++<30)setTimeout(boot,1000)}).catch(()=>{if(bootAttempts++<30)setTimeout(boot,1000)})}
 
   // Render once after the application has finished loading. Do not observe
   // mutations on this host: render() itself replaces host.innerHTML, which would
   // retrigger an observer attached to the same host and create an infinite loop.
-  window.addEventListener('load',()=>{setTimeout(refresh,900)},{once:true});
+  window.addEventListener('load',()=>{setTimeout(boot,900)},{once:true});
+  if(document.readyState==='complete')setTimeout(boot,900);
   // Refresh when the user changes a dashboard selector (including reporting period).
   document.addEventListener('change',event=>{
     const page=q('page-findash');
@@ -130,5 +136,5 @@
   });
 
 
-  window.MOLMSPracticeV5={classify,render,refresh,audit:()=>({period:bounds(),loaded,rows:sourceRows})};
+  window.MOLMSPracticeV5={version:6,classify,render,refresh,audit:()=>({period:bounds(),loaded,rows:sourceRows})};
 })();
