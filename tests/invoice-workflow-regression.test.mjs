@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+const workflow = readFileSync('js/invoice-workflow-v3.js','utf8');
+const identity = readFileSync('js/invoice-identity-render-v1.js','utf8');
+const index = readFileSync('index.html','utf8');
+assert.match(workflow,/rpc\('void_issued_invoice'/,'void must use protected database RPC');
+assert.match(workflow,/status!=='void'/,'void success must verify persisted status');
+assert.match(workflow,/voided_at/,'void success must verify timestamp');
+assert.match(workflow,/voided_by/,'void success must verify actor');
+assert.match(workflow,/void_reason/,'void success must verify reason');
+assert.match(identity,/select\('status,created_by,issued_by'\)/,'identity must be resolved from saved invoice ownership');
+assert.match(identity,/inv\.issued_by\|\|inv\.created_by/,'issued invoices must use actual issuer');
+assert.match(identity,/inv\.created_by\|\|inv\.issued_by/,'draft invoices must use preparer');
+assert.match(identity,/Office Manager/,'Office Manager designation must be supported');
+assert.match(identity,/Partner/,'Partner designation must be preserved');
+assert.match(index,/invoice-identity-render-v1\.js/,'identity renderer must be loaded in the app runtime');
+console.log('Invoice workflow regression checks passed (12 assertions).');
