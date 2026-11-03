@@ -172,7 +172,7 @@
     if(!canView()){ if(typeof notice==='function') notice('Only HR and Partners can view confidential employee details.','err'); return; }
     const c=client(); if(!c){notice('Supabase connection required.','err');return;}
     const {data:e,error}=await c.from('hr_employees')
-      .select('id,employee_number,full_name,position,department,employment_type,start_date,contract_end_date,phone,email,tin_number,nida_number,nssf_number,nhif_number,emergency_contact_name,emergency_contact_relation,emergency_contact_phone,status')
+      .select('id,employee_number,full_name,position,department,employment_type,start_date,contract_end_date,phone,email,bank_name,bank_account,bank_branch,tin_number,nida_number,nssf_number,nhif_number,emergency_contact_name,emergency_contact_relation,emergency_contact_phone,status')
       .eq('id',id).maybeSingle();
     if(error||!e){notice('Could not load employee details: '+(error?.message||'record not found'),'err');return;}
     const b=document.createElement('div'); b.className='hr-detail-backdrop';
@@ -192,6 +192,10 @@
           <div class="hr-detail-section-title">CONTACT</div>
           ${detailBox('Phone',e.phone)}
           ${detailBox('Email',e.email)}
+          <div class="hr-detail-section-title">BANK DETAILS</div>
+          ${detailBox('Bank Name',e.bank_name)}
+          ${detailBox('Account Number',e.bank_account)}
+          ${detailBox('Bank Branch',e.bank_branch)}
           <div class="hr-detail-section-title">IDENTIFICATION</div>
           ${detailBox('TIN Number',e.tin_number)}
           ${detailBox('NIDA / NIN Number',e.nida_number)}
