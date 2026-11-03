@@ -122,9 +122,19 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', schedule);
   else schedule();
-  const observer = new MutationObserver(schedule);
-  observer.observe(document.body, {childList:true, subtree:true});
-  window.addEventListener('focus', schedule);
-  window.addEventListener('load', schedule);
+  // Observe only direct children of the budget page. The previous body-wide
+  // subtree observer observed this script's own panel.innerHTML updates and
+  // immediately queued another database read, creating a continuous request loop.
+  let observedRoot = null;
+  function attachBudgetObserver() {
+    const root = budgetRoot();
+    if (!root || root === observedRoot) return;
+    observedRoot = root;
+    const observer = new MutationObserver(schedule);
+    observer.observe(root, {childList:true, subtree:false});
+  }
+  attachBudgetObserver();
+  window.addEventListener('focus', () => { attachBudgetObserver(); schedule(); });
+  window.addEventListener('load', () => { attachBudgetObserver(); schedule(); });
   window.MOLMSBudgetDashboardRepairV1 = {refresh};
 })();
