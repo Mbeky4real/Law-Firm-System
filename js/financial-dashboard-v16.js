@@ -181,11 +181,24 @@
   //   transactions plus the invoice payment ledger; no payroll/expense-register
   //   records are automatically double-counted.
   function classifyManualOutflow(t){
-    const type=String(t?.tx_type||'').toLowerCase();
-    const category=String(t?.category||'').toLowerCase().replace(/[’']/g,'');
-    const description=String(t?.description||'').toLowerCase();
-    if(type==='drawing'||category.includes('partner drawing')||category.includes('partner allowance')||category.includes('partners allowance'))return 'partnerDrawings';
-    if(category.includes('loan repayment')||category.includes('loan repaying')||description.includes('loan repayment')||description.includes('repayment of loan')||description.includes('payment of loan'))return 'loanRepayments';
+    const type=String(t?.tx_type||'').toLowerCase().trim();
+    // Normalise punctuation/possessives so "Partner's Allowance",
+    // "Partners allowance" and "Partner Drawings" share one classification.
+    const normalise=value=>String(value||'').toLowerCase()
+      .replace(/[’']/g,'')
+      .replace(/[^a-z0-9]+/g,' ')
+      .trim()
+      .replace(/\s+/g,' ');
+    const category=normalise(t?.category);
+    const description=normalise(t?.description);
+    const partnerCategory=/\bpartners?\s+(drawings?|allowances?)\b/.test(category);
+    if(type==='drawing'||partnerCategory)return 'partnerDrawings';
+    // Loan principal repayments may be entered under "Other" and described
+    // as "Loan monthly repayment", "Monthly loan repayment", etc.
+    const loanRepaymentText=text=>
+      /\bloan\b(?:\s+\w+){0,3}\s+\b(repayment|repayments|repaying|repay)\b/.test(text)||
+      /\b(repayment|repayments|repaying|repay)\b(?:\s+\w+){0,3}\s+\bloan\b/.test(text);
+    if(/\bloan\b/.test(category)&&loanRepaymentText(category)||loanRepaymentText(description))return 'loanRepayments';
     return type==='expenditure'?'operatingExpenditure':'other';
   }
   function periodExpenseBreakdown(){
@@ -610,7 +623,7 @@
         const a=window.MOLMSFinanceV16&&window.MOLMSFinanceV16.audit?window.MOLMSFinanceV16.audit():metrics();
         host.innerHTML=[
           card('TOTAL REVENUE',a.revenue||{TZS:0},'#16803d','Recognised invoice and manual revenue · '+(typeof fdPeriodLabel==='function'?fdPeriodLabel():'Selected period'),'revenue'),
-          card('TOTAL EXPENSES',a.expenses||{TZS:0},'#b42318','Approved manual Other Expenditure and Partner Drawings only · '+(typeof fdPeriodLabel==='function'?fdPeriodLabel():'Selected period'),'expenses'),
+          card('TOTAL EXPENSES',a.expenses||{TZS:0},'#b42318','Approved ordinary operating expenses; partner drawings and loan principal repayments excluded · '+(typeof fdPeriodLabel==='function'?fdPeriodLabel():'Selected period'),'expenses'),
           card('CASH AVAILABLE',a.cashAvailable||{TZS:0},num(a.cashAvailable?.TZS)>=0?'#167244':'#b42318','Cash receipts less approved manual expenditure and drawings · '+(typeof fdPeriodLabel==='function'?fdPeriodLabel():'Selected period'),'cash')
         ].join('');
         host.setAttribute('data-molms-approved-kpi-snapshot','3-card-v2');
@@ -650,6 +663,6 @@
   window.MOLMSFinanceV16={metrics,periodClientRows,allReceivables,render,refresh,showDetails,
     setPaymentRowsForTest(rows){paymentRows=Array.isArray(rows)?rows:[];paymentLedgerLoadError=false},
     paymentIntegrity,
-    audit:()=>{const m=metrics();return {version:19,period:bounds(),revenue:m.revenue,collected:m.collected,withholdingTax:periodWithholdingTax(),reconciliationIssues:reconciliationIssues().length,newReceivables:m.newReceivables,totalReceivables:m.totalReceivables,cash:m.cash.closingByCur,expenses:m.expenses,cashAvailable:m.cashAvailable,cashAvailablePolicy:'cumulative closing cash: prior closing balance plus verified cash received and approved manual loans, less approved manual Other Expenditure and Partner Drawings; payroll and Expenses Module records excluded',vat:vatPosition(),paymentLedgerRows:paymentRows.length}}
+    audit:()=>{const m=metrics();return {version:19,period:bounds(),revenue:m.revenue,collected:m.collected,withholdingTax:periodWithholdingTax(),reconciliationIssues:reconciliationIssues().length,newReceivables:m.newReceivables,totalReceivables:m.totalReceivables,cash:m.cash.closingByCur,expenses:m.expenses,cashAvailable:m.cashAvailable,cashAvailablePolicy:'cumulative closing cash: prior closing balance plus verified cash received and approved manual loans, less all approved manual expenditure and drawings; payroll and Expenses Module records excluded',vat:vatPosition(),paymentLedgerRows:paymentRows.length}}
   };
 })();
