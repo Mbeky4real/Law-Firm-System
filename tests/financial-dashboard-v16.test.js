@@ -46,7 +46,7 @@ const audit=global.MOLMSFinanceV16.audit();
 assert.deepEqual(audit.revenue,{TZS:17200000,USD:250});
 assert.deepEqual(audit.collected,{TZS:12130000}); // verified invoice cash plus four approved manual client receipts
 assert.deepEqual(audit.newReceivables,{TZS:6200000,USD:250});
-assert.deepEqual(audit.expenses,{TZS:10025000}); // approved manual expenditure plus partner drawings
+assert.deepEqual(audit.expenses,{TZS:25000}); // ordinary approved expenditure only; partner drawings are excluded from operating expenses
 assert.deepEqual(audit.totalReceivables,{TZS:11880000,USD:3790}); // includes the issued, unpaid proforma as a separately identified open commitment
 assert.equal(global.MOLMSFinanceV16.allReceivables().find(r=>r.client==='Test proforma client').outstanding,3540);
 assert.equal(global.MOLMSFinanceV16.allReceivables().find(r=>r.client==='Test proforma client').status,'Proforma Outstanding');
@@ -109,7 +109,7 @@ assert.deepEqual(expensePolicy.expenses,{TZS:1300000}); // two approved October 
 assert.deepEqual(expensePolicy.cash,{TZS:-1016400}); // approved manual expenditure reduces cash once; payroll and Expenses Module records are excluded
 assert.equal(expensePolicy.cash.TZS,283600-1100000-200000);
 assert.deepEqual(expensePolicy.cashAvailable,{TZS:-1299400}); // selected-period cash received (600) minus approved manual expenses, drawings and finalized salary
-assert.equal(expensePolicy.cashAvailablePolicy,'period cash received minus approved manual Other Expenditure and Partner Drawings; payroll and Expenses Module records excluded');
+assert.equal(expensePolicy.cashAvailablePolicy,'cumulative closing cash: prior closing balance plus verified cash received and approved manual loans, less all approved manual expenditure and drawings; payroll and Expenses Module records excluded');
 
 
 // An estimated payment date must not be counted as verified cash, but the
@@ -173,3 +173,22 @@ console.log('split cash + WHT-only ledger row regression: PASS');
  assert.doesNotMatch(simpleSource, /#fdKpiRow/);
  assert.doesNotMatch(shellSource, /KpiLockV1|KpiGuardV2/);
  console.log('single-owner three-card executive snapshot contract: PASS');
+
+
+// Regression: partner allowances and loan principal repayments entered under
+// Other must be excluded from operating expenses while still reducing cash.
+global._fdAllManual = [
+  {id:'ordinary-rent',status:'approved',tx_type:'expenditure',date:'2026-10-01',category:'Rent & Office Management',description:'October rent',amount:2000000,currency:'TZS'},
+  {id:'ordinary-salary',status:'approved',tx_type:'expenditure',date:'2026-10-02',category:'Other',description:'October salaries',amount:1050000,currency:'TZS'},
+  {id:'partner-allowance',status:'approved',tx_type:'expenditure',date:'2026-10-03',category:'Partner Allowances',description:'Monthly allowance',amount:200000,currency:'TZS'},
+  {id:'partner-drawings',status:'approved',tx_type:'drawing',date:'2026-10-04',category:'Partner Drawings',description:'Partner drawing',amount:5000000,currency:'TZS'},
+  {id:'loan-monthly',status:'approved',tx_type:'expenditure',date:'2026-10-05',category:'Other',description:'Loan monthly repayment',amount:700000,currency:'TZS'},
+  {id:'loan-reverse-order',status:'approved',tx_type:'expenditure',date:'2026-10-06',category:'Other',description:'Monthly loan repayment',amount:500000,currency:'TZS'},
+  {id:'usd-rent',status:'approved',tx_type:'expenditure',date:'2026-10-07',category:'Rent & Office Management',description:'Office rent',amount:1200,currency:'USD'},
+  {id:'usd-drawing',status:'approved',tx_type:'drawing',date:'2026-10-08',category:'Partner Drawings',description:'Partner allowance',amount:800,currency:'USD'}
+];
+selectedPeriod={start:'2026-10-01',end:'2026-10-31',monthStr:'2026-10'};
+const classified=global.MOLMSFinanceV16.audit();
+assert.deepEqual(classified.expenses,{TZS:3050000,USD:1200});
+assert.equal(classified.cash.TZS,-7700000); // all TZS outflows, including drawings and loan principal, remain cash outflows
+console.log('partner allowance + loan monthly repayment classification regression: PASS');
