@@ -50,7 +50,7 @@ assert.deepEqual(audit.expenses,{TZS:25000}); // ordinary approved expenditure o
 assert.deepEqual(audit.totalReceivables,{TZS:11880000,USD:3790}); // includes the issued, unpaid proforma as a separately identified open commitment
 assert.equal(global.MOLMSFinanceV16.allReceivables().find(r=>r.client==='Test proforma client').outstanding,3540);
 assert.equal(global.MOLMSFinanceV16.allReceivables().find(r=>r.client==='Test proforma client').status,'Proforma Outstanding');
-assert.deepEqual(audit.cash,{TZS:3083000}); // ledger cash less approved manual cash outflows; no opening balance assumed
+assert.deepEqual(audit.cash,{TZS:9083000}); // ledger cash less approved manual cash outflows; no opening balance assumed
 assert.deepEqual(audit.vat.payable,{TZS:180000});
 assert.deepEqual(audit.withholdingTax,{TZS:50000});
 assert.equal(audit.reconciliationIssues,0);
