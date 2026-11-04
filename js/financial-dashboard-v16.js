@@ -173,27 +173,36 @@
       .filter(x=>x.integrity.needsReconciliation);
   }
 
-  // Authoritative expense policy: ONLY approved Manual Financial Transactions
-  // classified as expenditure or drawing feed the Expenses KPI and reduce
-  // dashboard cash. Payroll and the separate Expenses Module are operational
-  // source records; they never post automatically to dashboard expenses/cash.
-  // If a payment is intended to affect the dashboard, it must be manually
-  // recorded once in Manual Financial Transactions.
+  // Financial classification policy:
+  // - Operating expenses feed TOTAL EXPENSES.
+  // - Partner drawings/allowances and loan principal repayments are excluded
+  //   from TOTAL EXPENSES, but remain cash outflows.
+  // - All dashboard cash activity is sourced only from approved manual
+  //   transactions plus the invoice payment ledger; no payroll/expense-register
+  //   records are automatically double-counted.
+  function classifyManualOutflow(t){
+    const type=String(t?.tx_type||'').toLowerCase();
+    const category=String(t?.category||'').toLowerCase().replace(/[’']/g,'');
+    const description=String(t?.description||'').toLowerCase();
+    if(type==='drawing'||category.includes('partner drawing')||category.includes('partner allowance')||category.includes('partners allowance'))return 'partnerDrawings';
+    if(category.includes('loan repayment')||category.includes('loan repaying')||/loan\\s+(monthly\\s+)?repayment|repayment\\s+of\\s+loan|payment\\s+of\\s+loan/.test(description))return 'loanRepayments';
+    return type==='expenditure'?'operatingExpenditure':'other';
+  }
   function periodExpenseBreakdown(){
     const {start,end}=bounds(),{manual}=data();
-    const out={manual:{TZS:0},otherExpenditure:{TZS:0},drawings:{TZS:0},register:{TZS:0},payroll:{TZS:0}};
+    const out={operatingExpenditure:{TZS:0},partnerDrawings:{TZS:0},loanRepayments:{TZS:0},other:{TZS:0}};
     manual.filter(t=>approved(t)&&date(t.date)>=start&&date(t.date)<=end&&String(t.status||'').toLowerCase()!=='cancelled'&&['expenditure','drawing'].includes(String(t.tx_type||'').toLowerCase()))
-      .forEach(t=>{
-        add(out.manual,t.currency,t.amount);
-        add(String(t.tx_type).toLowerCase()==='drawing'?out.drawings:out.otherExpenditure,t.currency,t.amount);
-      });
-    // Kept as zero-valued compatibility buckets for existing detail consumers.
-    // No expense-register or payroll source is read into this calculation.
+      .forEach(t=>add(out[classifyManualOutflow(t)],t.currency,t.amount));
     return out;
   }
   function periodExpenses(){
-    const manual=periodExpenseBreakdown().manual;
-    return {...manual};
+    return {...periodExpenseBreakdown().operatingExpenditure};
+  }
+  function periodCashOutflows(){
+    const {start,end}=bounds(),{manual}=data(),out={TZS:0};
+    manual.filter(t=>approved(t)&&date(t.date)>=start&&date(t.date)<=end&&String(t.status||'').toLowerCase()!=='cancelled'&&['expenditure','drawing'].includes(String(t.tx_type||'').toLowerCase()))
+      .forEach(t=>add(out,t.currency,t.amount));
+    return out;
   }
 
   function cashPosition(){
@@ -218,7 +227,7 @@
       });
       return totals;
     };
-    const openingByCur=through(prior),closingByCur=through(end),inflowsByCur=periodCollections(),outflowsByCur=periodExpenses();
+    const openingByCur=through(prior),closingByCur=through(end),inflowsByCur=periodCollections(),outflowsByCur=periodCashOutflows();
     manual.filter(t=>approved(t)&&String(t.tx_type||'').toLowerCase()==='loan'&&date(t.date)>=start&&date(t.date)<=end&&String(t.status||'').toLowerCase()!=='cancelled').forEach(t=>add(inflowsByCur,t.currency,t.amount));
     return {openingByCur,closingByCur,inflowsByCur,outflowsByCur,start,end,openingBalanceConfigured:false};
   }
@@ -251,8 +260,12 @@
     ])+detailRows('Cash and outstanding balances',[
       {label:'Cash recorded in selected period',value:collected},{label:'Outstanding on selected-period revenue',value:periodReceivables},{label:'Current total client receivables',value:currentReceivables}
     ]);
-    else if(which==='expenses')content=detailRows('Expense calculation',[
-      {label:'Approved manual Other Expenditure',value:parts.otherExpenditure},{label:'Approved manual Partner Drawings',value:parts.drawings},{label:'TOTAL EXPENSES — MANUAL TRANSACTIONS ONLY',value:m.expenses}
+    else if(which==='expenses')content=detailRows('Operating expense calculation',[
+      {label:'Ordinary office operating expenses and salaries',value:parts.operatingExpenditure},
+      {label:'TOTAL OPERATING EXPENSES',value:m.expenses}
+    ])+detailRows('Cash outflows excluded from operating expenses',[
+      {label:'Partner drawings and allowances (still deducted from cash)',value:parts.partnerDrawings},
+      {label:'Loan principal repayments (still deducted from cash)',value:parts.loanRepayments}
     ]);
     else content=detailRows('Cash position',[
       {label:'Opening cash carried forward',value:m.cash.openingByCur},
@@ -262,7 +275,7 @@
     ]);
     panel.dataset.kind=which;
     panel.style.cssText='grid-column:1/-1;min-width:0;width:100%;box-sizing:border-box;padding:14px;background:#fff;border:1px solid #d0d5dd;border-radius:12px;box-shadow:0 4px 14px rgba(16,24,40,.06);margin-top:2px';
-    panel.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px"><div><div style="font-size:14px;font-weight:800;color:#101828">${which==='revenue'?'Revenue details':which==='expenses'?'Expense details':'Cash available details'}</div><div style="font-size:11px;color:#667085;margin-top:3px">${esc(typeof fdPeriodLabel==='function'?fdPeriodLabel():'Selected period')} · figures grouped by currency</div></div><button type="button" data-close-finance-details style="border:1px solid #d0d5dd;background:#fff;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;color:#344054;cursor:pointer">Close ×</button></div><div class="fd-detail-grid" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">${content}</div><div style="font-size:10px;color:#667085;margin-top:10px">Figures use the selected-period financial rules. Currency totals remain separate; expense components follow the dashboard duplicate-suppression rules.</div><style>@media(max-width:650px){#fdKpiDetailsPanel .fd-detail-grid{grid-template-columns:1fr!important}}</style>`;
+    panel.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px"><div><div style="font-size:14px;font-weight:800;color:#101828">${which==='revenue'?'Revenue details':which==='expenses'?'Expense details':'Cash available details'}</div><div style="font-size:11px;color:#667085;margin-top:3px">${esc(typeof fdPeriodLabel==='function'?fdPeriodLabel():'Selected period')} · figures grouped by currency</div></div><button type="button" data-close-finance-details style="border:1px solid #d0d5dd;background:#fff;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;color:#344054;cursor:pointer">Close ×</button></div><div class="fd-detail-grid" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">${content}</div><div style="font-size:10px;color:#667085;margin-top:10px">Figures use the selected-period financial rules. Currency totals remain separate. Partner drawings, allowances and loan principal repayments reduce cash but are excluded from operating expenses.</div><style>@media(max-width:650px){#fdKpiDetailsPanel .fd-detail-grid{grid-template-columns:1fr!important}}</style>`;
     host.querySelectorAll('[data-finance-detail]').forEach(el=>el.setAttribute('aria-expanded',String(el.dataset.financeDetail===which)));
     panel.querySelector('[data-close-finance-details]').onclick=()=>{panel.remove();host.querySelectorAll('[data-finance-detail]').forEach(el=>el.setAttribute('aria-expanded','false'))};
     panel.scrollIntoView({behavior:'smooth',block:'nearest'});
