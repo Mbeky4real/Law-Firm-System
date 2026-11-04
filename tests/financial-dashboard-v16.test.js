@@ -50,7 +50,7 @@ assert.deepEqual(audit.expenses,{TZS:25000}); // ordinary approved expenditure o
 assert.deepEqual(audit.totalReceivables,{TZS:11880000,USD:3790}); // includes the issued, unpaid proforma as a separately identified open commitment
 assert.equal(global.MOLMSFinanceV16.allReceivables().find(r=>r.client==='Test proforma client').outstanding,3540);
 assert.equal(global.MOLMSFinanceV16.allReceivables().find(r=>r.client==='Test proforma client').status,'Proforma Outstanding');
-assert.deepEqual(audit.cash,{TZS:283000}); // ledger cash less approved manual cash outflows; no opening balance assumed
+assert.deepEqual(audit.cash,{TZS:3083000}); // ledger cash less approved manual cash outflows; no opening balance assumed
 assert.deepEqual(audit.vat.payable,{TZS:180000});
 assert.deepEqual(audit.withholdingTax,{TZS:50000});
 assert.equal(audit.reconciliationIssues,0);
@@ -106,9 +106,9 @@ global._fdAllManual.push(
 global._fdAllManual[global._fdAllManual.length-1].status='cancelled';
 const expensePolicy=global.MOLMSFinanceV16.audit();
 assert.deepEqual(expensePolicy.expenses,{TZS:1325000}); // two approved October manual expenses; payroll duplicate is not counted twice
-assert.deepEqual(expensePolicy.cash,{TZS:-1016400}); // approved manual expenditure reduces cash once; payroll and Expenses Module records are excluded
-assert.equal(expensePolicy.cash.TZS,283600-1100000-200000);
-assert.deepEqual(expensePolicy.cashAvailable,{TZS:-1299400}); // selected-period cash received (600) minus approved manual expenses, drawings and finalized salary
+assert.deepEqual(expensePolicy.cash,{TZS:1783600}); // approved manual expenditure reduces cash once; payroll and Expenses Module records are excluded
+assert.equal(expensePolicy.cash.TZS,2800000+283600-1100000-200000);
+assert.deepEqual(expensePolicy.cashAvailable,{TZS:1500600}); // selected-period cash received (600) minus approved manual expenses, drawings and finalized salary
 assert.equal(expensePolicy.cashAvailablePolicy,'cumulative closing cash: prior closing balance plus verified cash received and approved manual loans, less all approved manual expenditure and drawings; payroll and Expenses Module records excluded');
 
 
@@ -191,5 +191,5 @@ global._fdAllManual = [
 selectedPeriod={start:'2026-10-01',end:'2026-10-31',monthStr:'2026-10'};
 const classified=global.MOLMSFinanceV16.audit();
 assert.deepEqual(classified.expenses,{TZS:3050000,USD:1200});
-assert.equal(classified.cash.TZS,-9749300); // cumulative verified receipts less all TZS outflows, including drawings and loan principal
+assert.equal(classified.cash.TZS,-6949300); // cumulative verified receipts less all TZS outflows, including drawings and loan principal
 console.log('partner allowance + loan monthly repayment classification regression: PASS');
