@@ -2,6 +2,7 @@ name: Financial Dashboard Regression
 on:
   push:
     branches:
+      - main
       - fix/financial-dashboard-single-renderer-2026-11-01
       - phase-two-receivables-compact-view-2026-11-01
       - financial-dashboard-perfection-from-2026-10-11
