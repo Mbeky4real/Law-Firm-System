@@ -185,7 +185,7 @@
     const category=String(t?.category||'').toLowerCase().replace(/[’']/g,'');
     const description=String(t?.description||'').toLowerCase();
     if(type==='drawing'||category.includes('partner drawing')||category.includes('partner allowance')||category.includes('partners allowance'))return 'partnerDrawings';
-    if(category.includes('loan repayment')||category.includes('loan repaying')||/loan\\s+(monthly\\s+)?repayment|repayment\\s+of\\s+loan|payment\\s+of\\s+loan/.test(description))return 'loanRepayments';
+    if(category.includes('loan repayment')||category.includes('loan repaying')||description.includes('loan repayment')||description.includes('repayment of loan')||description.includes('payment of loan'))return 'loanRepayments';
     return type==='expenditure'?'operatingExpenditure':'other';
   }
   function periodExpenseBreakdown(){
