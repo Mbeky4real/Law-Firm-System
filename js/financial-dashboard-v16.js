@@ -343,7 +343,7 @@
     if(!document.getElementById(styleId)){const style=document.createElement('style');style.id=styleId;style.textContent='#page-findash div:has(> #fdKpiRow){display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important;flex:1 1 100%!important;align-self:stretch!important;justify-self:stretch!important}#page-findash #fdKpiRow{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px!important;align-items:stretch!important;width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important;padding:14px 20px!important;margin:0!important;flex:1 1 100%!important;align-self:stretch!important;justify-self:stretch!important;grid-column:1/-1!important}#page-findash #fdKpiRow>*{display:block!important;visibility:visible!important;min-width:0!important;width:100%!important;max-width:none!important;height:100%!important;margin:0!important;box-sizing:border-box!important}#page-findash #fdKpiRow>div:nth-child(3){display:block!important;visibility:visible!important;opacity:1!important}';document.head.appendChild(style)}
     host.innerHTML=[
       card('TOTAL REVENUE',m.revenue,'#16803d',`Agreed and invoiced fees · ${label}`,'revenue'),
-      card('TOTAL EXPENSES',m.expenses,'#b42318',`Recorded expenses · ${label}`,'expenses'),
+      card('TOTAL EXPENSES',m.expenses,'#b42318',`Recorded operating expenses · ${label}`,'expenses'),
       card('CASH AVAILABLE',m.cashAvailable||{TZS:0},num(m.cashAvailable?.TZS)>=0?'#167244':'#b42318',`Includes previous months' closing balance · ${label}`,'cash')
     ].join('');
     applyExecutiveSnapshotLayout();
