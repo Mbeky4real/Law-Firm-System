@@ -222,6 +222,9 @@
     const {start,end}=bounds(),{manual,invoices}=data();
     const previous=new Date(start+'T00:00:00');previous.setDate(previous.getDate()-1);
     const prior=previous.getFullYear()+'-'+String(previous.getMonth()+1).padStart(2,'0')+'-'+String(previous.getDate()).padStart(2,'0');
+    // Verified firm cash/bank opening balance as at 1 July 2026.
+    // This is a cash balance, not revenue, and must be added exactly once.
+    const openingDate='2026-07-01',openingCash={TZS:2800000};
     const through=limit=>{
       const totals={TZS:0},ledgerEvents=[];
       invoices.filter(validTax).forEach(i=>receipts(i).filter(r=>!r.estimated&&r.date&&r.date<=limit).forEach(r=>{
@@ -238,9 +241,12 @@
         if(type==='loan')add(totals,cur,amount);
         if(type==='expenditure'||type==='drawing')add(totals,cur,-amount);
       });
+      if(limit>=openingDate)add(totals,'TZS',openingCash.TZS);
       return totals;
     };
-    const openingByCur=through(prior),closingByCur=through(end),inflowsByCur=periodCollections(),outflowsByCur=periodCashOutflows();
+    const openingByCur=through(prior);
+    if(prior<openingDate&&end>=openingDate)add(openingByCur,'TZS',openingCash.TZS);
+    const closingByCur=through(end),inflowsByCur=periodCollections(),outflowsByCur=periodCashOutflows();
     manual.filter(t=>approved(t)&&String(t.tx_type||'').toLowerCase()==='loan'&&date(t.date)>=start&&date(t.date)<=end&&String(t.status||'').toLowerCase()!=='cancelled').forEach(t=>add(inflowsByCur,t.currency,t.amount));
     return {openingByCur,closingByCur,inflowsByCur,outflowsByCur,start,end,openingBalanceConfigured:false};
   }
