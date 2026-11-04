@@ -196,8 +196,8 @@
     // Loan principal repayments may be entered under "Other" and described
     // as "Loan monthly repayment", "Monthly loan repayment", etc.
     const loanRepaymentText=text=>
-      /\bloan\b(?:\s+\w+){0,3}\s+\b(repayment|repayments|repaying|repay)\b/.test(text)||
-      /\b(repayment|repayments|repaying|repay)\b(?:\s+\w+){0,3}\s+\bloan\b/.test(text);
+      /\bloan\b(?:\s+\w+){0,3}\s+\b(repayment|repayments|repaying|repay|payment|payments)\b/.test(text)||
+      /\b(repayment|repayments|repaying|repay|payment|payments)\b(?:\s+\w+){0,3}\s+\bloan\b/.test(text);
     if(/\bloan\b/.test(category)&&loanRepaymentText(category)||loanRepaymentText(description))return 'loanRepayments';
     return type==='expenditure'?'operatingExpenditure':'other';
   }
