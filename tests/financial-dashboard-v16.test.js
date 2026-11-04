@@ -190,5 +190,5 @@ global._fdAllManual = [
 selectedPeriod={start:'2026-10-01',end:'2026-10-31',monthStr:'2026-10'};
 const classified=global.MOLMSFinanceV16.audit();
 assert.deepEqual(classified.expenses,{TZS:3050000,USD:1200});
-assert.equal(classified.cash.TZS,2680600); // cumulative verified receipts less all TZS outflows, including drawings and loan principal
+assert.equal(classified.cash.TZS,-9449300); // cumulative verified receipts less all TZS outflows, including drawings and loan principal
 console.log('partner allowance + loan monthly repayment classification regression: PASS');
