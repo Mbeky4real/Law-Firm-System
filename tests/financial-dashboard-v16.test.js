@@ -184,11 +184,12 @@ global._fdAllManual = [
   {id:'partner-drawings',status:'approved',tx_type:'drawing',date:'2026-10-04',category:'Partner Drawings',description:'Partner drawing',amount:5000000,currency:'TZS'},
   {id:'loan-monthly',status:'approved',tx_type:'expenditure',date:'2026-10-05',category:'Other',description:'Loan monthly repayment',amount:700000,currency:'TZS'},
   {id:'loan-reverse-order',status:'approved',tx_type:'expenditure',date:'2026-10-06',category:'Other',description:'Monthly loan repayment',amount:500000,currency:'TZS'},
+  {id:'loan-payment-of',status:'approved',tx_type:'expenditure',date:'2026-10-06',category:'Other',description:'Payment of loan',amount:300000,currency:'TZS'},
   {id:'usd-rent',status:'approved',tx_type:'expenditure',date:'2026-10-07',category:'Rent & Office Management',description:'Office rent',amount:1200,currency:'USD'},
   {id:'usd-drawing',status:'approved',tx_type:'drawing',date:'2026-10-08',category:'Partner Drawings',description:'Partner allowance',amount:800,currency:'USD'}
 ];
 selectedPeriod={start:'2026-10-01',end:'2026-10-31',monthStr:'2026-10'};
 const classified=global.MOLMSFinanceV16.audit();
 assert.deepEqual(classified.expenses,{TZS:3050000,USD:1200});
-assert.equal(classified.cash.TZS,-9449300); // cumulative verified receipts less all TZS outflows, including drawings and loan principal
+assert.equal(classified.cash.TZS,-9749300); // cumulative verified receipts less all TZS outflows, including drawings and loan principal
 console.log('partner allowance + loan monthly repayment classification regression: PASS');
