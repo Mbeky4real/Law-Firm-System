@@ -20,10 +20,10 @@ function clientNameField(){
   if(!/^(client|client name|bill to|customer|customer name)\s*:?$/i.test((l.textContent||'').trim()))continue;
   const id=l.getAttribute('for');if(id&&$(id))return $(id);
   const parent=l.parentElement;
-  const field=parent?.querySelector('input:not([type=hidden]),textarea');
+  const field=parent?.querySelector('input:not([type=hidden]),textarea,select');
   if(field)return field;
  }
- return p.querySelector('#invClientName,input[name="client_name"],input[name="clientName"]');
+ return p.querySelector('#invClientName,#invClient,select[name="client_name"],select[name="clientName"],input[name="client_name"],input[name="clientName"]');
 }
 function ensureAddressField(){
  const p=page(),name=clientNameField();if(!p||!name)return null;
