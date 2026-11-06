@@ -57,10 +57,21 @@ async function loadAddress(){
 }
 async function saveAddress(){
  const id=activeId(),field=ensureAddressField();if(!id||!field)return;
+ const c=db();if(!c)throw new Error('Invoice database connection is unavailable.');
+ // Issuance calls the original save routine too. Once an Office Manager has
+ // submitted the invoice, its workflow state is pending while status remains
+ // draft; do not attempt an ordinary draft-only address write at that stage.
+ const current=await c.from('invoices').select('status,issuance_state,client_address').eq('id',id).maybeSingle();
+ if(current.error)throw current.error;
+ if(!current.data)throw new Error('The saved invoice could not be found while saving its client address.');
+ if(current.data.status!=='draft'||!['draft','returned'].includes(String(current.data.issuance_state||''))){
+  state.address=String(current.data.client_address||'');
+  return;
+ }
  const value=String(field.value||'').trim();
- const {data,error}=await db().from('invoices').update({client_address:value||null}).eq('id',id).eq('status','draft').select('id,client_address').maybeSingle();
+ const {data,error}=await c.from('invoices').update({client_address:value||null}).eq('id',id).eq('status','draft').in('issuance_state',['draft','returned']).select('id,client_address').maybeSingle();
  if(error)throw error;
- if(!data)throw new Error('Invoice address was not saved. The invoice may no longer be an editable draft. Refresh and verify its status.');
+ if(!data)throw new Error('Client address was not saved. The invoice workflow state changed; refresh and verify the saved address.');
  state.address=String(data.client_address||'');
 }
 function findClientNode(root,name){
