@@ -36,7 +36,7 @@ function ensureAddressField(){
  field.placeholder='Enter the client’s full billing address';
  field.style.cssText='display:block;width:100%;min-height:68px;box-sizing:border-box;border:1px solid #d6cabb;border-radius:7px;padding:9px 10px;font:inherit;font-size:13px;resize:vertical;background:#fff;color:#183247;';
  field.setAttribute('aria-label','Client billing address');
- field.addEventListener('input',()=>{state.address=field.value;});
+ field.addEventListener('input',()=>{state.address=field.value;renderPreview();});
  wrap.append(label,field);
  const host=name.closest('.form-group,.field,.mb-3,.grid,div')||name.parentElement;
  host.insertAdjacentElement('afterend',wrap);
@@ -69,17 +69,31 @@ function findClientNode(root,name){
  const candidates=[...root.querySelectorAll('div,span,p,strong,b,td')].filter(el=>el.children.length===0&&String(el.textContent||'').trim().toUpperCase()===target);
  return candidates.sort((a,b)=>a.parentElement?.children.length-b.parentElement?.children.length)[0]||null;
 }
+function selectedClientName(){
+ const p=page();if(!p)return '';
+ const field=clientNameField();
+ if(!field)return '';
+ if(field.tagName==='SELECT')return String(field.selectedOptions?.[0]?.textContent||'').trim();
+ return String(field.value||'').trim();
+}
 async function renderPreview(){
  const root=preview();if(!root||state.rendering)return;
- const id=activeId();if(!id)return;
  state.rendering=true;
  try{
-  const {data,error}=await db().from('invoices').select('client_name,client_address').eq('id',id).maybeSingle();
-  if(error)throw error;
-  if(!data)return;
+  let clientName=selectedClientName();
+  let address=String($('molms-invoice-client-address-v1')?.value||state.address||'').trim();
+  const id=activeId();
+  if(id){
+   const {data,error}=await db().from('invoices').select('client_name,client_address').eq('id',id).maybeSingle();
+   if(error)throw error;
+   if(data){
+    clientName=String(data.client_name||clientName);
+    address=String(data.client_address||address).trim();
+   }
+  }
   const old=$('molms-invoice-client-address-preview-v1');if(old)old.remove();
-  const address=String(data.client_address||'').trim();if(!address)return;
-  const name=findClientNode(root,data.client_name);
+  if(!address)return;
+  const name=findClientNode(root,clientName);
   if(!name)return;
   const block=document.createElement('div');block.id='molms-invoice-client-address-preview-v1';
   block.textContent=address;
