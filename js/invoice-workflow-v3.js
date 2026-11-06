@@ -170,34 +170,42 @@ function boot(){
 /* Integrate the original invoice-form Issue button with the same protected RPC
    used by the Partner action footer. Never update invoices.status directly here. */
 window.invIssueInvoice=async function(){
- if(typeof invCanIssue==='function'&&!invCanIssue()){
-  if(typeof notice==='function')notice('Only Partners can issue invoices.','err');
-  return;
- }
- const currency=typeof val==='function'?(val('invCurrency')||'TZS'):'TZS';
- if(typeof _invSelectedBank!=='undefined'&&(!_invSelectedBank||_invSelectedBank.currency!==currency)){
-  if(typeof notice==='function')notice('No active '+currency+' payment account is configured. An invoice cannot be issued without a compatible bank account.','err');
-  return;
- }
- if(typeof _invIssuing!=='undefined'&&_invIssuing)return;
- if(typeof _invIssuing!=='undefined')_invIssuing=true;
- const button=document.getElementById('invBtnIssue'),original=button?button.textContent:'';
- if(button){button.disabled=true;button.textContent='Issuing…';}
+ const button=document.getElementById('invBtnIssue');
+ const original=button?button.textContent:'';
  try{
+  if(!identity.id)await loadIdentity();
+  if(!isPartner())throw new Error('Only an active Partner or Admin may issue an invoice. Office Managers must submit the draft to a Partner.');
+  if(typeof _invIssuing!=='undefined'&&_invIssuing)return;
+  if(typeof _invIssuing!=='undefined')_invIssuing=true;
+  if(button){button.disabled=true;button.textContent='Issuing…';}
   if(typeof invSaveDraft!=='function')throw new Error('Invoice save function is unavailable. Refresh MOLMS and try again.');
   await invSaveDraft();
-  if(typeof _invActiveId==='undefined'||!_invActiveId)throw new Error('The invoice was not saved. Save it as a draft first.');
+  const activeId=(typeof _invActiveId!=='undefined'&&_invActiveId)?String(_invActiveId):'';
+  if(!activeId)throw new Error('The invoice was not saved. Save it as a draft first.');
   const c=db();if(!c)throw new Error('Database connection is unavailable.');
-  const result=await c.rpc('issue_submitted_invoice',{p_invoice_id:_invActiveId});
+  const before=await c.from('invoices').select('id,invoice_number,status,issuance_state').eq('id',activeId).maybeSingle();
+  if(before.error)throw before.error;
+  if(!before.data)throw new Error('The saved invoice could not be found. No issuance was attempted.');
+  if(before.data.status!=='draft'||!['draft','pending','returned'].includes(before.data.issuance_state))
+   throw new Error('This invoice is not in an issuable draft state. Current state: '+before.data.status+'/'+before.data.issuance_state+'.');
+  if(!window.confirm('Issue '+before.data.invoice_number+'? Your Partner/Admin account will be recorded as the issuing signatory.'))return;
+  const result=await c.rpc('issue_submitted_invoice',{p_invoice_id:activeId});
   if(result.error)throw result.error;
-  if(typeof invLockForm==='function')invLockForm();
+  const verify=await c.from('invoices').select('id,invoice_number,status,issuance_state,issued_by,issued_at').eq('id',activeId).maybeSingle();
+  if(verify.error)throw new Error('The issue request returned, but MOLMS could not verify the saved status. Refresh and check before retrying. '+verify.error.message);
+  if(!verify.data||verify.data.status!=='issued'||verify.data.issuance_state!=='issued'||!verify.data.issued_by||!verify.data.issued_at)
+   throw new Error('ISSUANCE NOT CONFIRMED: the database does not show a fully issued invoice. Do not treat it as issued.');
+  selectedInvoiceId=verify.data.id;selectedInvoiceNumber=verify.data.invoice_number;
+  if(typeof invLoadSavedList==='function')await invLoadSavedList();
   if(typeof invRenderKpi==='function')await invRenderKpi();
-  if(typeof notice==='function')notice('Invoice issued successfully through the authorised Partner workflow.');
-  if(typeof invRenderPreview==='function')invRenderPreview();
+  if(typeof invRenderPreview==='function')await invRenderPreview();
+  if(typeof invLockForm==='function')invLockForm();
   await render();
+  if(typeof notice==='function')notice('Verified: '+verify.data.invoice_number+' is issued and the Partner/Admin signatory is recorded.');
  }catch(error){
   if(typeof notice==='function')notice('Issue failed: '+(error.message||error),'err');
   else window.alert('Issue failed: '+(error.message||error));
+  console.error('[MOLMS invoice issue]',error);
  }finally{
   if(typeof _invIssuing!=='undefined')_invIssuing=false;
   if(button){button.disabled=false;button.textContent=original||'Issue Invoice';}
