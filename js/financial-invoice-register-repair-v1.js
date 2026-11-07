@@ -1,14 +1,15 @@
 /* MOLMS Receivables + Invoice Register V4 — persistent placement */
 (function(){
 'use strict';
-if(window.MOLMSInvoiceRegisterRepairV1&&window.MOLMSInvoiceRegisterRepairV1.version>=6)return;window.MOLMSInvoiceRegisterRepairV1={version:6,loaded:false};
+if(window.MOLMSInvoiceRegisterRepairV1&&window.MOLMSInvoiceRegisterRepairV1.version>=7)return;window.MOLMSInvoiceRegisterRepairV1={version:7,loaded:false};
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const norm=v=>String(v||'').trim().toLowerCase();
 function describeMatter(ref,title){
- const raw=String(ref||'').trim(), value=String(title||'').trim();
- const type=/^(LIT:|MOL\\/LIT\\/)/i.test(raw)?'Litigation matter':/^(NL:|MOL\\/NLT\\/)/i.test(raw)?'Non-litigation matter':raw?'Matter':'';
- const clean=value.replace(/^\\[(?:Lit|NL|Non-Litigation)\\]\\s*/i,'').trim();
- return [type,clean].filter(Boolean).join(' — ')||'Matter not specified';
+ const raw=String(ref||'').trim(), upper=raw.toUpperCase();
+ let value=String(title||'').trim();
+ const type=(upper.startsWith('LIT:')||upper.startsWith('MOL/LIT/'))?'Litigation matter':(upper.startsWith('NL:')||upper.startsWith('MOL/NLT/'))?'Non-litigation matter':raw?'Matter':'';
+ if(/^\\[(Lit|NL|Non-Litigation)\\]\\s*/i.test(value))value=value.replace(/^\\[(Lit|NL|Non-Litigation)\\]\\s*/i,'').trim();
+ return [type,value].filter(Boolean).join(' — ')||'Matter not specified';
 }
 const money=(v,c)=>((c||'TZS')==='USD'?'USD ':'TZS ')+Number(v||0).toLocaleString('en-US',{maximumFractionDigits:2});
 function getPeriod(){
