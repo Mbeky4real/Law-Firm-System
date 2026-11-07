@@ -1795,6 +1795,17 @@ body.mobile-menu-open{overflow:hidden}
     </div>
   </div>
 
+  <!-- Leave / ED application details -->
+  <div id="hrLeaveDetailsModal" class="hidden" style="position:fixed;inset:0;background:rgba(15,36,64,.58);z-index:220;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:24px 12px">
+    <div class="card" style="max-width:620px;width:100%;margin:0">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px">
+        <h3 style="margin:0;color:var(--navy);font-size:17px">Leave / ED Application Details</h3>
+        <button class="btn out small" onclick="hrCloseLeaveDetails()">✕ Close</button>
+      </div>
+      <div id="hrLeaveDetailsContent"><p class="muted small">Loading application details...</p></div>
+    </div>
+  </div>
+
   <!-- Decision comment — modal, used for Approve/Hold/Reject -->
   <div id="hrDecisionModal" class="hidden" style="position:fixed;inset:0;background:rgba(15,36,64,.55);z-index:210;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:30px 14px">
     <div class="card" style="max-width:480px;width:100%;margin:0">
@@ -9743,7 +9754,7 @@ async function hrRenderLeaveTable(){
   const isMgmt=_hrLeaveSubTab==='all';
   head.innerHTML=isMgmt
     ? `<th style="padding:6px 8px">Employee</th><th style="padding:6px 8px">Type</th><th style="padding:6px 8px">From</th><th style="padding:6px 8px">To</th><th style="padding:6px 8px">Days</th><th style="padding:6px 8px">Reason</th><th style="padding:6px 8px">Submitted</th><th style="padding:6px 8px">Status</th><th style="padding:6px 8px">Actions</th>`
-    : `<th style="padding:6px 8px">Type</th><th style="padding:6px 8px">From</th><th style="padding:6px 8px">To</th><th style="padding:6px 8px">Days</th><th style="padding:6px 8px">Submitted</th><th style="padding:6px 8px">Status</th><th style="padding:6px 8px">Decision / Comment</th>`;
+    : `<th style="padding:6px 8px">Type</th><th style="padding:6px 8px">From</th><th style="padding:6px 8px">To</th><th style="padding:6px 8px">Days</th><th style="padding:6px 8px">Submitted</th><th style="padding:6px 8px">Status</th><th style="padding:6px 8px">Decision / Comment</th><th style="padding:6px 8px">Details</th>`;
 
   body.innerHTML='<tr><td class="muted small" style="padding:14px">Loading...</td></tr>';
 
@@ -9786,11 +9797,13 @@ async function hrRenderLeaveTable(){
       const e=_hrEmployees.find(x=>x.id===r.employee_id);
       const canDecide=hrIsPartner()&&r.status==='pending';
       const canDelete=hrIsPartner()&&r.status==='rejected';
-      const actions=canDecide?`<button class="btn gold small" onclick="hrOpenDecisionModal('${r.id}','approved')">Approve</button>
+      const detailAction=`<button class="btn out small" onclick="hrOpenLeaveDetails('${r.id}','all')">View Details</button>`;
+      const decisionActions=canDecide?`<button class="btn gold small" onclick="hrOpenDecisionModal('${r.id}','approved')">Approve</button>
         <button class="btn out small" onclick="hrOpenDecisionModal('${r.id}','held')">Hold</button>
         <button class="btn red small" onclick="hrOpenDecisionModal('${r.id}','rejected')">Reject</button>`
         :canDelete?`<button class="btn out small" onclick="hrDeleteLeaveRequest('${r.id}')">Delete</button>`
         :(hrCanManage()&&!hrIsPartner()&&r.status==='pending'?'<span class="muted small">Awaiting Partner Decision</span>':'');
+      const actions=detailAction+(decisionActions?` <span style="display:inline-flex;gap:4px;flex-wrap:wrap">${decisionActions}</span>`:'');
       return `<tr style="border-bottom:1px solid #f0ece6">
         <td style="padding:6px 8px;font-weight:700">${esc(e?e.full_name:'—')}</td>
         <td style="padding:6px 8px">${esc(hrLeaveTypeLabel(r))}</td>
@@ -9811,7 +9824,7 @@ async function hrRenderLeaveTable(){
     if(error){ body.innerHTML='<tr><td class="muted small" style="padding:14px">Could not load your requests.</td></tr>'; return; }
     if(!_hrMyRequests.length){ body.innerHTML='<tr><td class="muted small" style="padding:14px">You have not submitted any Leave/ED requests yet.</td></tr>'; return; }
     body.innerHTML=_hrMyRequests.map(r=>{
-      const decision=r.decision_comment?esc(r.decision_comment):(r.status==='pending'?'—':'');
+      const decision=r.rejection_reason||r.decision_comment||'—';
       return `<tr style="border-bottom:1px solid #f0ece6">
         <td style="padding:6px 8px">${esc(hrLeaveTypeLabel(r))}</td>
         <td style="padding:6px 8px">${esc(r.start_date)}</td>
@@ -9819,7 +9832,8 @@ async function hrRenderLeaveTable(){
         <td style="padding:6px 8px">${esc(r.duration_days||'—')}</td>
         <td style="padding:6px 8px">${r.created_at?esc(new Date(r.created_at).toLocaleDateString()):'—'}</td>
         <td style="padding:6px 8px">${hrStatusPill(r.status)}</td>
-        <td style="padding:6px 8px;max-width:200px;white-space:normal">${decision}</td>
+        <td style="padding:6px 8px;max-width:200px;white-space:normal">${esc(decision)}</td>
+        <td style="padding:6px 8px"><button class="btn out small" onclick="hrOpenLeaveDetails('${r.id}','mine')">View Details</button></td>
       </tr>`;
     }).join('');
   }
@@ -9918,6 +9932,78 @@ async function hrSubmitLeaveRequest(){
   hrCloseLeaveModal();
   notice((isEd?'ED':'Leave')+' request submitted — awaiting Partner decision.');
   if(page==='hr'){ await hrLoad(); hrRenderKpis(); hrRenderLeaveTab(); }
+}
+
+function hrCloseLeaveDetails(){
+  const modal=$('hrLeaveDetailsModal');
+  if(modal) modal.classList.add('hidden');
+}
+function hrDetailValue(label,value){
+  return `<div style="padding:9px 0;border-bottom:1px solid #eee9e1">
+    <div class="muted small" style="font-weight:700;margin-bottom:3px">${esc(label)}</div>
+    <div style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(value===null||value===undefined||value===''?'—':String(value))}</div>
+  </div>`;
+}
+function hrDetailTime(value){
+  if(!value) return '—';
+  const d=new Date(value);
+  return Number.isNaN(d.getTime())?String(value):d.toLocaleString();
+}
+async function hrOpenLeaveDetails(requestId,scope){
+  if(!authUser||!sb||!requestId) return notice('Unable to open this application.','err');
+  const isMine=scope==='mine';
+  if(!isMine && !(hrCanManage()||hrIsPartner())) return notice('You are not authorised to view all applications.','err');
+  const content=$('hrLeaveDetailsContent'), modal=$('hrLeaveDetailsModal');
+  if(content) content.innerHTML='<p class="muted small">Loading application details...</p>';
+  if(modal) modal.classList.remove('hidden');
+  const {data:r,error}=await safe(sb.from('leave_requests').select('*').eq('id',requestId).is('deleted_at',null).maybeSingle());
+  if(error||!r){
+    if(content) content.innerHTML='<p class="muted small">Application details could not be loaded. Check your access or try again.</p>';
+    return;
+  }
+  if(isMine){
+    const ownEmployeeId=await prGetSelfEmployeeId();
+    if(!ownEmployeeId||r.employee_id!==ownEmployeeId){
+      hrCloseLeaveDetails();
+      return notice('You may only view your own applications.','err');
+    }
+  } else if(!(hrCanManage()||hrIsPartner())){
+    hrCloseLeaveDetails();
+    return notice('You are not authorised to view this application.','err');
+  }
+  const employee=_hrEmployees.find(e=>e.id===r.employee_id);
+  const reason=r.ed_reason||r.reason||r.handover_notes||'—';
+  const decisionReason=r.status==='rejected'?(r.rejection_reason||r.decision_comment):(r.status==='held'?(r.decision_comment||r.rejection_reason):r.decision_comment);
+  const decisionAt=r.rejected_at||r.held_at||r.approved_at||null;
+  let decisionBy=r.rejected_by||r.held_by||r.approved_by||null;
+  let auditHtml='';
+  const {data:audit}=await safe(sb.from('leave_request_audit').select('action,performed_by_name,performed_at').eq('leave_request_id',requestId).order('performed_at',{ascending:false}).limit(10));
+  if(audit&&audit.length){
+    const decisions=audit.filter(x=>['approved','held','rejected'].includes((x.action||'').toLowerCase()));
+    if(decisions.length){
+      auditHtml='<div style="margin-top:14px"><h4 style="margin:0 0 6px">Decision history</h4>'+decisions.map(x=>`<div style="padding:8px 0;border-bottom:1px solid #eee9e1"><strong>${esc((x.action||'').toUpperCase())}</strong><div class="muted small">${esc(x.performed_by_name||'Decision-maker not recorded')} · ${esc(hrDetailTime(x.performed_at))}</div></div>`).join('')+'</div>';
+    }
+    if(!decisionBy&&decisions.length) decisionBy=decisions[0].performed_by_name||null;
+  }
+  const timeRange=(r.start_time||r.end_time)?((r.start_time||'—')+' to '+(r.end_time||'—')):'Not specified';
+  if(content){
+    content.innerHTML=
+      hrDetailValue('Employee',employee?employee.full_name:'—')+
+      hrDetailValue('Request type',hrLeaveTypeLabel(r))+
+      hrDetailValue('From date',r.start_date)+
+      hrDetailValue('To date',r.end_date)+
+      hrDetailValue('Requested time',timeRange)+
+      hrDetailValue('Duration (days)',r.duration_days)+
+      hrDetailValue('Reason for application',reason)+
+      hrDetailValue('Handover notes',r.handover_notes)+
+      hrDetailValue('Submitted',hrDetailTime(r.created_at))+
+      hrDetailValue('Current status',(r.status||'').toUpperCase())+
+      (['rejected','held'].includes(r.status)?hrDetailValue(r.status==='rejected'?'Reason for rejection':'Reason for holding',decisionReason||'No explanation was recorded'): '')+
+      (decisionReason&&r.status==='approved'?hrDetailValue('Decision comment',decisionReason):'')+
+      hrDetailValue('Decision recorded',hrDetailTime(decisionAt))+
+      hrDetailValue('Decision made by',decisionBy||'Not recorded')+
+      auditHtml;
+  }
 }
 
 function hrOpenDecisionModal(requestId, action){
