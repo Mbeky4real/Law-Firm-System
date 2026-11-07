@@ -9994,6 +9994,20 @@ async function hrOpenLeaveDetails(requestId,scope){
       decisionBy=decisions[0].performed_by_name||decisionBy;
     }
   }
+  // Resolve the decision-maker UUID to the staff name stored in the firm directory.
+  if(decisionBy && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(decisionBy))){
+    const {data:actor}=await safe(sb.from('roles').select('full_name').eq('user_id',decisionBy).maybeSingle());
+    if(actor?.full_name) decisionBy=actor.full_name;
+    else {
+      const {data:profile}=await safe(sb.from('profiles').select('full_name').eq('id',decisionBy).maybeSingle());
+      if(profile?.full_name) decisionBy=profile.full_name;
+      else {
+        const {data:member}=await safe(sb.from('members').select('full_name').eq('user_id',decisionBy).maybeSingle());
+        if(member?.full_name) decisionBy=member.full_name;
+      }
+    }
+  }
+  if(typeof decisionBy==='string' && /^[0-9a-f-]{36}$/i.test(decisionBy)) decisionBy='Name not available';
   const timeRange=(r.start_time||r.end_time)?((r.start_time||'—')+' to '+(r.end_time||'—')):'Not specified';
   if(content){
     content.innerHTML=
