@@ -9982,8 +9982,8 @@ async function hrOpenLeaveDetails(requestId,scope){
     const decisions=audit.filter(x=>['approved','held','rejected'].includes((x.action||'').toLowerCase()));
     if(decisions.length){
       auditHtml='<div style="margin-top:14px"><h4 style="margin:0 0 6px">Decision history</h4>'+decisions.map(x=>`<div style="padding:8px 0;border-bottom:1px solid #eee9e1"><strong>${esc((x.action||'').toUpperCase())}</strong><div class="muted small">${esc(x.performed_by_name||'Decision-maker not recorded')} · ${esc(hrDetailTime(x.performed_at))}</div></div>`).join('')+'</div>';
+      decisionBy=decisions[0].performed_by_name||decisionBy;
     }
-    if(!decisionBy&&decisions.length) decisionBy=decisions[0].performed_by_name||null;
   }
   const timeRange=(r.start_time||r.end_time)?((r.start_time||'—')+' to '+(r.end_time||'—')):'Not specified';
   if(content){
