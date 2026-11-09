@@ -57,6 +57,15 @@ function recurringEvents(year){
     {holiday_date:year+'-09-26',name:'Mwombeki’s Birthday',scope:'molaw',kind:'personal'},
     {holiday_date:year+'-10-26',name:'Fatma’s Birthday',scope:'molaw',kind:'personal'}
   ];
+  // 2027 Islamic dates are planning estimates only; replace/confirm against the official Tanzanian moon-sighting announcement.
+  if(year===2027){
+    out.push(
+      {holiday_date:'2027-03-10',name:'Id-ul-Fitr (Eid al-Fitr) — Day 1 (estimated)',scope:'tanzania',kind:'public_holiday',is_tentative:true},
+      {holiday_date:'2027-03-11',name:'Id-ul-Fitr (Eid al-Fitr) — Day 2 (estimated)',scope:'tanzania',kind:'public_holiday',is_tentative:true},
+      {holiday_date:'2027-05-17',name:'Id-el-Haj (Eid al-Adha) (estimated)',scope:'tanzania',kind:'public_holiday',is_tentative:true},
+      {holiday_date:'2027-08-15',name:'Maulidi Day (estimated)',scope:'tanzania',kind:'public_holiday',is_tentative:true}
+    );
+  }
   const nthSunday=(month,n)=>{const d=new Date(year,month-1,1),shift=(7-d.getDay())%7;return new Date(year,month-1,1+shift+(n-1)*7)};
   const mothers=nthSunday(5,2),fathers=nthSunday(6,3);
   const fmt=d=>year+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
