@@ -2,7 +2,35 @@
 (function(){'use strict';
 let holidays=[],showTZ=true,showIntl=true;
 function recurringEvents(year){
+  // Tanzania's fixed-date public holidays recur every calendar year.
+  // Easter is calculated using the Gregorian computus; Eid/Maulid dates
+  // remain annually confirmed entries because the official dates depend
+  // on the lunar calendar and local moon-sighting announcements.
+  const easterSunday=(y)=>{
+    const a=y%19,b=Math.floor(y/100),cc=y%100,d=Math.floor(b/4),e=b%4;
+    const f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3);
+    const h=(19*a+b-d-g+15)%30,i=Math.floor(cc/4),k=cc%4;
+    const l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451);
+    const month=Math.floor((h+l-7*m+114)/31),day=((h+l-7*m+114)%31)+1;
+    return new Date(y,month-1,day);
+  };
+  const dateKey=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+  const easter=easterSunday(year), goodFriday=new Date(easter); goodFriday.setDate(easter.getDate()-2);
+  const easterMonday=new Date(easter); easterMonday.setDate(easter.getDate()+1);
   const out=[
+    {holiday_date:year+'-01-01',name:"New Year's Day",scope:'tanzania',kind:'public_holiday'},
+    {holiday_date:year+'-01-12',name:'Zanzibar Revolution Day',scope:'tanzania',kind:'public_holiday'},
+    {holiday_date:dateKey(goodFriday),name:'Good Friday',scope:'tanzania',kind:'public_holiday'},
+    {holiday_date:dateKey(easterMonday),name:'Easter Monday',scope:'tanzania',kind:'public_holiday'},
+    {holiday_date:year+'-04-07',name:'Karume Day',scope:'tanzania',kind:'public_holiday'},
+    {holiday_date:year+'-04-26',name:'Union Day',scope:'tanzania',kind:'public_holiday'},
+    {holiday_date:year+'-05-01',name:'International Workers’ Day (Labour Day)',scope:'tanzania',kind:'public_holiday'},
+    {holiday_date:year+'-07-07',name:'Saba Saba Day',scope:'tanzania',kind:'public_holiday'},
+    {holiday_date:year+'-08-08',name:'Peasants’ Day (Nane Nane)',scope:'tanzania',kind:'public_holiday'},
+    {holiday_date:year+'-10-14',name:'Mwalimu Nyerere Day',scope:'tanzania',kind:'public_holiday'},
+    {holiday_date:year+'-12-09',name:'Independence and Republic Day',scope:'tanzania',kind:'public_holiday'},
+    {holiday_date:year+'-12-25',name:'Christmas Day',scope:'tanzania',kind:'public_holiday'},
+    {holiday_date:year+'-12-26',name:'Boxing Day',scope:'tanzania',kind:'public_holiday'},
     {holiday_date:year+'-01-24',name:'International Day of Education',scope:'international',kind:'observance'},
     {holiday_date:year+'-02-20',name:'World Day of Social Justice',scope:'international',kind:'observance'},
     {holiday_date:year+'-03-08',name:'International Women’s Day',scope:'international',kind:'observance'},
@@ -121,10 +149,18 @@ function controls(){
 }
 
 function selectedEventsForDate(date){
-  return holidays.concat(recurringEvents(Number(date.slice(0,4)))).filter(h=>h.holiday_date===date&&(
-    h.scope==='tanzania'&&showTZ || h.scope==='international'&&showIntl ||
-    h.scope==='molaw' || h.scope==='family'
-  ));
+  const combined=holidays.concat(recurringEvents(Number(date.slice(0,4))));
+  // Prefer the maintained database row over a calculated fallback for the
+  // same scope/date, preserving its official name and tentative flag.
+  const seen=new Set();
+  return combined.filter(h=>{
+    if(h.holiday_date!==date)return false;
+    const key=h.scope+'|'+h.holiday_date;
+    if(seen.has(key))return false;
+    seen.add(key);
+    return h.scope==='tanzania'&&showTZ || h.scope==='international'&&showIntl ||
+      h.scope==='molaw' || h.scope==='family';
+  });
 }
 function ensureDayPanel(){
   const p=document.getElementById('page-diary'); if(!p)return null;
