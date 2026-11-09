@@ -21,6 +21,7 @@ function recurringEvents(year){
     {holiday_date:year+'-01-01',name:"New Year's Day",scope:'tanzania',kind:'public_holiday'},
     {holiday_date:year+'-01-12',name:'Zanzibar Revolution Day',scope:'tanzania',kind:'public_holiday'},
     {holiday_date:dateKey(goodFriday),name:'Good Friday',scope:'tanzania',kind:'public_holiday'},
+    {holiday_date:dateKey(easter),name:'Easter Sunday',scope:'tanzania',kind:'religious_observance'},
     {holiday_date:dateKey(easterMonday),name:'Easter Monday',scope:'tanzania',kind:'public_holiday'},
     {holiday_date:year+'-04-07',name:'Karume Day',scope:'tanzania',kind:'public_holiday'},
     {holiday_date:year+'-04-26',name:'Union Day',scope:'tanzania',kind:'public_holiday'},
@@ -182,7 +183,7 @@ function showSelectedDay(date){
   }
   panel.innerHTML='<div style="font-size:12px;font-weight:800">'+label+'</div><div style="margin-top:7px;display:flex;flex-direction:column;gap:5px">'+events.map(h=>{
     const icon=h.scope==='tanzania'?'🇹🇿':h.scope==='international'?'🌐':h.scope==='molaw'?'⚖️':'❤️';
-    const type=h.scope==='tanzania'?'Tanzania Public Holiday':h.scope==='international'?'International Observance':h.scope==='molaw'?'M&O Law Office':'Family Observance';
+    const type=h.scope==='tanzania'?(h.kind==='religious_observance'?'Christian Observance':'Tanzania Public Holiday'):h.scope==='international'?'International Observance':h.scope==='molaw'?'M&O Law Office':'Family Observance';
     return '<div style="display:flex;align-items:center;gap:7px;font-size:11px"><span>'+icon+'</span><b>'+escText(h.name)+'</b><span style="color:#7a8699">— '+type+(h.is_tentative?' (tentative)':'')+'</span></div>';
   }).join('')+'</div>';
 }
