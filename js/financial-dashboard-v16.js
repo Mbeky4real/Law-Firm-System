@@ -392,25 +392,23 @@
   }
 
   function renderStatus(){
+    const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const m=metrics(),cash=m.cashAvailable||{},cashByCur=cash.cashAvailableByCurrency||{};
     const {start,end}=bounds(),{manual}=data();
     const periodManual=manual.filter(t=>date(t.date)>=start&&date(t.date)<=end);
-    // The application treats status as the operational approval field.
-    // Flag, but never silently rewrite, contradictory approval metadata.
+    // Do not silently repair legacy approval metadata: surface conflicts for this month.
     const manualApprovalIssues=periodManual.filter(t=>{
-      const st=String(t.status||'').toLowerCase();
-      const ap=String(t.approval_status||'').toLowerCase();
-      const flag=(t.is_approved===true);
-      return (ap&&ap!==st)||((st==='approved')!==flag);
+      const st=String(t.status||'').toLowerCase(),ap=String(t.approval_status||'').toLowerCase();
+      return (ap&&ap!==st)||((st==='approved')!==(t.is_approved===true));
     });
-    const invoiceIssues=reconciliationIssues();
+    const invoiceIssues=reconciliationIssues().filter(x=>date(x.invoice.invoice_date)>=start&&date(x.invoice.invoice_date)<=end);
     const hasReconciliationIssue=invoiceIssues.length>0||manualApprovalIssues.length>0||paymentLedgerLoadError;
-    const activityValues=[m.revenue,m.collected,m.expenses,cashByCur].flatMap(x=>Object.values(x||{})).map(num);
-    const noActivity=activityValues.every(v=>v===0)&&!hasReconciliationIssue;
+    const nonzero=[m.revenue,m.collected,m.expenses,cashByCur].flatMap(x=>Object.values(x||{})).some(v=>num(v)!==0);
+    const noActivity=!nonzero&&!hasReconciliationIssue;
     const negativeCurrencies=Object.entries(cashByCur).filter(([,v])=>num(v)<0).map(([c])=>c);
-    let level=noActivity?'No Activity':hasReconciliationIssue?'Needs Reconciliation':negativeCurrencies.length?'Cashflow Deficit':'Healthy';
-    const colors={'Healthy':['#16a34a','#f0fdf4'],'No Activity':['#64748b','#f8fafc'],'Needs Reconciliation':['#b45309','#fffbeb'],'Cashflow Deficit':['#c2410c','#fff7ed']};
-    const [color,background]=colors[level];
+    const level=noActivity?'No Activity':hasReconciliationIssue?'Needs Reconciliation':negativeCurrencies.length?'Cashflow Deficit':'Healthy';
+    const palette={'Healthy':['#16a34a','#f0fdf4'],'No Activity':['#64748b','#f8fafc'],'Needs Reconciliation':['#b45309','#fffbeb'],'Cashflow Deficit':['#c2410c','#fff7ed']};
+    const [color,background]=palette[level];
     const label=q('fdStatusText');if(label)label.textContent=`Financial Status: ${level} · ${typeof fdPeriodLabel==='function'?fdPeriodLabel():'Selected period'}`;
     const box=q('fdStatusIndicator');if(box){box.style.color=color;box.style.background=background;box.style.borderColor=color;}
     let warning=q('fdPaymentReconciliationWarning');
@@ -422,15 +420,16 @@
     const details=[];
     if(paymentLedgerLoadError)details.push('Invoice payment ledger could not be loaded.');
     if(invoiceIssues.length)details.push(`${invoiceIssues.length} invoice payment-ledger record(s) need reconciliation.`);
-    if(manualApprovalIssues.length)details.push(`${manualApprovalIssues.length} manual transaction(s) have conflicting status, approval_status or is_approved fields. No approval history was changed.`);
-    if(warning)warning.innerHTML=details.length?`<div style="padding:10px 12px;margin:8px 0;border:1px solid #f59e0b;border-radius:8px;background:#fffbeb;color:#92400e;font-size:12px"><b>Reconciliation required:</b> ${details.map(esc).join(' ')}<div style="margin-top:5px;font-weight:700">${manualApprovalIssues.slice(0,6).map(x=>esc(x.reference||x.id)).join(', ')}${manualApprovalIssues.length>6?' and '+(manualApprovalIssues.length-6)+' more':''}${invoiceIssues.length?((manualApprovalIssues.length?', ':'')+invoiceIssues.slice(0,5).map(x=>esc(x.invoice.invoice_number||x.invoice.id)).join(', ')):''}</div></div>`:'';
+    if(manualApprovalIssues.length)details.push(`${manualApprovalIssues.length} manual transaction(s) have conflicting status, approval_status or is_approved fields. Approval history has not been changed.`);
+    const refs=manualApprovalIssues.slice(0,6).map(x=>safe(x.reference||x.id)).join(', ');
+    if(warning)warning.innerHTML=details.length?`<div style="padding:10px 12px;margin:8px 0;border:1px solid #f59e0b;border-radius:8px;background:#fffbeb;color:#92400e;font-size:12px"><b>Reconciliation required:</b> ${details.map(safe).join(' ')}<div style="margin-top:5px;font-weight:700">${refs}${manualApprovalIssues.length>6?' and '+(manualApprovalIssues.length-6)+' more':''}</div></div>`:'';
     const intel=q('fdIntelligence');
     if(intel){
-      let msg=level==='No Activity'?'No recorded financial activity in this selected period.':
+      const msg=level==='No Activity'?'No recorded financial activity in this selected period.':
         level==='Needs Reconciliation'?'Financial status cannot be confirmed until the listed data inconsistencies are reconciled.':
         level==='Cashflow Deficit'?`Recorded cash outflows exceeded recorded cash receipts in ${negativeCurrencies.join(', ')} for this period.`:
         'No identified reconciliation exceptions; recorded cash movement is non-negative.';
-      intel.innerHTML=`<b>${level}:</b> ${esc(msg)}<br><span style="font-size:10px;color:var(--muted)">This is a transaction-based monthly movement indicator, not a bank-statement-confirmed closing balance. Opening cash is not included.</span>`;
+      intel.innerHTML=`<b>${level}:</b> ${safe(msg)}<br><span style="font-size:10px;color:var(--muted)">This indicator measures recorded monthly cash movement, not a bank-statement-confirmed closing balance. Opening cash is excluded.</span>`;
     }
   }
 
