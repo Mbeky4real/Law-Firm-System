@@ -392,20 +392,46 @@
   }
 
   function renderStatus(){
-    const m=metrics(),ratio=num(m.revenue.TZS)?num(m.collected.TZS)/num(m.revenue.TZS):0,cashVerified=!!m.cashAvailable&&!m.cashAvailable.reconciliationPending&&Number.isFinite(Number(m.cashAvailable.TZS)),cash=cashVerified?num(m.cashAvailable.TZS):null,payrollPending=!(()=>{try{return fdMonthlyObligations().payrollGenerated}catch(e){return false}})();
-    let level='Healthy',color='#16a34a';if(cashVerified&&cash<0){level='Critical';color='#dc2626'}else if(!cashVerified||ratio<.8||payrollPending){level='Needs Reconciliation';color='#b45309'}
-    const issues=reconciliationIssues();
-    if(issues.length||paymentLedgerLoadError){level='Needs Reconciliation';color='#b45309'}
-    const text=q('fdStatusText');if(text)text.textContent=`Financial Status: ${level} · ${typeof fdPeriodLabel==='function'?fdPeriodLabel():'Selected period'}`;
+    const m=metrics(),cash=m.cashAvailable||{},cashByCur=cash.cashAvailableByCurrency||{};
+    const {start,end}=bounds(),{manual}=data();
+    const periodManual=manual.filter(t=>date(t.date)>=start&&date(t.date)<=end);
+    // The application treats status as the operational approval field.
+    // Flag, but never silently rewrite, contradictory approval metadata.
+    const manualApprovalIssues=periodManual.filter(t=>{
+      const st=String(t.status||'').toLowerCase();
+      const ap=String(t.approval_status||'').toLowerCase();
+      const flag=(t.is_approved===true);
+      return (ap&&ap!==st)||((st==='approved')!==flag);
+    });
+    const invoiceIssues=reconciliationIssues();
+    const hasReconciliationIssue=invoiceIssues.length>0||manualApprovalIssues.length>0||paymentLedgerLoadError;
+    const activityValues=[m.revenue,m.collected,m.expenses,cashByCur].flatMap(x=>Object.values(x||{})).map(num);
+    const noActivity=activityValues.every(v=>v===0)&&!hasReconciliationIssue;
+    const negativeCurrencies=Object.entries(cashByCur).filter(([,v])=>num(v)<0).map(([c])=>c);
+    let level=noActivity?'No Activity':hasReconciliationIssue?'Needs Reconciliation':negativeCurrencies.length?'Cashflow Deficit':'Healthy';
+    const colors={'Healthy':['#16a34a','#f0fdf4'],'No Activity':['#64748b','#f8fafc'],'Needs Reconciliation':['#b45309','#fffbeb'],'Cashflow Deficit':['#c2410c','#fff7ed']};
+    const [color,background]=colors[level];
+    const label=q('fdStatusText');if(label)label.textContent=`Financial Status: ${level} · ${typeof fdPeriodLabel==='function'?fdPeriodLabel():'Selected period'}`;
+    const box=q('fdStatusIndicator');if(box){box.style.color=color;box.style.background=background;box.style.borderColor=color;}
     let warning=q('fdPaymentReconciliationWarning');
     if(!warning&&typeof document.createElement==='function'){
       warning=document.createElement('div');warning.id='fdPaymentReconciliationWarning';
       const anchor=q('fdStatusIndicator')?.parentElement||q('fdKpiRow')?.parentElement;
       if(anchor)anchor.insertBefore(warning,anchor.firstChild);
     }
-    if(warning)warning.innerHTML=(issues.length||paymentLedgerLoadError)?`<div style="padding:10px 12px;margin:8px 0;border:1px solid #f59e0b;border-radius:8px;background:#fffbeb;color:#92400e;font-size:12px"><b>Payment reconciliation required:</b> ${paymentLedgerLoadError?'The Invoice Module payment ledger could not be loaded. ':''}${issues.length?`${issues.length} invoice(s) have missing, inconsistent or estimated payment-ledger records. Their payment dates are excluded from period cash totals until verified.`:''}<div style="margin-top:5px;font-weight:700">${issues.slice(0,5).map(x=>esc(x.invoice.invoice_number||x.invoice.id)).join(', ')}${issues.length>5?' and '+(issues.length-5)+' more':''}</div></div>`:'';
-    const box=q('fdStatusIndicator');if(box){box.style.color=color;box.style.background=level==='Healthy'?'#f0fdf4':level==='Critical'?'#fef2f2':'#fffbeb'}
-    const intel=q('fdIntelligence');if(intel)intel.innerHTML=`<b>${level}:</b> ${Math.round(ratio*100)}% of TZS recognised revenue collected. ${cashVerified?`Calculated cash after expenses (zero monthly opening balance) is <b>${money('TZS',cash)}</b>. This is transaction-based and is not a bank-statement-verified balance.`:'Cash available after expenses is <b>pending calculation</b>.'}${payrollPending?' Payroll obligations are pending calculation.':''}`;
+    const details=[];
+    if(paymentLedgerLoadError)details.push('Invoice payment ledger could not be loaded.');
+    if(invoiceIssues.length)details.push(`${invoiceIssues.length} invoice payment-ledger record(s) need reconciliation.`);
+    if(manualApprovalIssues.length)details.push(`${manualApprovalIssues.length} manual transaction(s) have conflicting status, approval_status or is_approved fields. No approval history was changed.`);
+    if(warning)warning.innerHTML=details.length?`<div style="padding:10px 12px;margin:8px 0;border:1px solid #f59e0b;border-radius:8px;background:#fffbeb;color:#92400e;font-size:12px"><b>Reconciliation required:</b> ${details.map(esc).join(' ')}<div style="margin-top:5px;font-weight:700">${manualApprovalIssues.slice(0,6).map(x=>esc(x.reference||x.id)).join(', ')}${manualApprovalIssues.length>6?' and '+(manualApprovalIssues.length-6)+' more':''}${invoiceIssues.length?((manualApprovalIssues.length?', ':'')+invoiceIssues.slice(0,5).map(x=>esc(x.invoice.invoice_number||x.invoice.id)).join(', ')):''}</div></div>`:'';
+    const intel=q('fdIntelligence');
+    if(intel){
+      let msg=level==='No Activity'?'No recorded financial activity in this selected period.':
+        level==='Needs Reconciliation'?'Financial status cannot be confirmed until the listed data inconsistencies are reconciled.':
+        level==='Cashflow Deficit'?`Recorded cash outflows exceeded recorded cash receipts in ${negativeCurrencies.join(', ')} for this period.`:
+        'No identified reconciliation exceptions; recorded cash movement is non-negative.';
+      intel.innerHTML=`<b>${level}:</b> ${esc(msg)}<br><span style="font-size:10px;color:var(--muted)">This is a transaction-based monthly movement indicator, not a bank-statement-confirmed closing balance. Opening cash is not included.</span>`;
+    }
   }
 
   function render(){
