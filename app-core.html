@@ -16122,7 +16122,19 @@ function fdOpenManualModal(txType){
   // Populate categories
   const cats=txType==='revenue'?[...FD_REVENUE_CATS,...FD_LIABILITY_CATS]:FD_EXPENSE_CATS;
   const sel=document.getElementById('fdManualCategory');
-  sel.innerHTML=cats.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  if(txType==='revenue'){
+    sel.innerHTML=cats.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  } else {
+    const expenseGroups=[
+      {label:'OFFICE PREMISES & UTILITIES',items:['Rent & Office Management','Electricity','Water','Internet & Telephone','Security Services','Cleaning & Hygiene','Repairs & Maintenance']},
+      {label:'OFFICE ADMINISTRATION',items:['Stationery & Office Supplies','Printing, Photocopying & Binding','Pantry Supplies','Computer, Software & IT','Office Equipment & Furniture','Postage & Courier']},
+      {label:'TRANSPORT & TRAVEL',items:['Transportation','Fuel & Vehicle Expenses','Vehicle Repairs & Maintenance','Local Travel','Accommodation & Meals']},
+      {label:'PROFESSIONAL & REGULATORY',items:['Court Filing & Registry Fees','Professional Fees & Consultants','Professional Subscriptions & Licences','Training & Professional Development','Legal Research & Publications']},
+      {label:'BUSINESS DEVELOPMENT & CLIENT RELATIONS',items:['Marketing & Advertising','Entertainment & Client Hospitality','Client Meetings & Events']},
+      {label:'GENERAL & OTHER',items:['Bank Charges','Insurance','Staff Welfare','Petty Cash','Taxes & Statutory Charges','Other']}
+    ];
+    sel.innerHTML=expenseGroups.map(g=>`<optgroup label="${esc(g.label)}">${g.items.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}</optgroup>`).join('');
+  }
   // Clear fields
   ['fdManualDesc','fdManualAmount','fdManualCounterparty','fdManualRemarks'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
