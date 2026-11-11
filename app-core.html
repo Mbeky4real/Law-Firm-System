@@ -16131,6 +16131,7 @@ function fdOpenManualModal(txType){
       {label:'TRANSPORT & TRAVEL',items:['Transportation','Fuel & Vehicle Expenses','Vehicle Repairs & Maintenance','Local Travel','Accommodation & Meals']},
       {label:'PROFESSIONAL & REGULATORY',items:['Court Filing & Registry Fees','Professional Fees & Consultants','Professional Subscriptions & Licences','Training & Professional Development','Legal Research & Publications']},
       {label:'BUSINESS DEVELOPMENT & CLIENT RELATIONS',items:['Marketing & Advertising','Entertainment & Client Hospitality','Client Meetings & Events']},
+      {label:'PARTNER & MANAGEMENT',items:['Partner Drawings / Allowances']},
       {label:'GENERAL & OTHER',items:['Bank Charges','Insurance','Staff Welfare','Petty Cash','Taxes & Statutory Charges','Other']}
     ];
     sel.innerHTML=expenseGroups.map(g=>`<optgroup label="${esc(g.label)}">${g.items.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}</optgroup>`).join('');
