@@ -26,7 +26,7 @@
   await save.apply(this,arguments);
   const fresh=(window._fdAllManual||[]).filter(t=>!before.has(t.id)&&Number(t.amount)===amount).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at))[0];
   if(!fresh){notice('Payment was saved, but its receivable link could not be confirmed. Contact an administrator before recording it again.','err');return;}
-  const {error}=await sb.from('fd_manual_transactions').update({client_receivable:true,agreed_amount:Number(parent.agreed_amount),outstanding_amount:0,receivable_client_name:parent.receivable_client_name||parent.counterparty,receivable_matter_ref:parent.receivable_matter_ref,receivable_parent_id:parent.id}).eq('id',fresh.id);
+  const {error}=await sb.from('fd_manual_transactions').update({client_receivable:false,agreed_amount:0,outstanding_amount:0,receivable_client_name:parent.receivable_client_name||parent.counterparty,receivable_matter_ref:parent.receivable_matter_ref,receivable_parent_id:parent.id}).eq('id',fresh.id);
   if(error){notice('Payment saved but linking failed: '+error.message,'err');return;}
   await fdRefresh();notice('Further payment linked to the existing receivable. The balance will reduce when the payment is approved.','ok');
  };
