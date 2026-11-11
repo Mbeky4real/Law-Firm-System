@@ -11,7 +11,7 @@
   amount.addEventListener('input',preview);
   return true;
  }
- function parents(){return (window._fdAllManual||[]).filter(t=>t.client_receivable&&!t.receivable_parent_id&&Number(t.outstanding_amount||0)>0&&String(t.status||'').toLowerCase()==='approved');}
+ function parents(){return (window._fdAllManual||[]).filter(t=>t.client_receivable&&!t.receivable_parent_id&&Number(t.outstanding_amount||0)>0);}
  function populate(){const sel=$('fdFollowUpParentV1');if(!sel)return;const list=parents();sel.innerHTML='<option value="">Choose client receivable…</option>'+list.map(t=>'<option value="'+esc(t.id)+'">'+esc(t.receivable_client_name||t.counterparty||'Client')+' · '+esc(t.receivable_matter_ref||t.reference)+' · Outstanding '+esc(t.currency||'TZS')+' '+Number(t.outstanding_amount).toLocaleString()+'</option>').join('');preview();}
  function preview(){const t=parents().find(x=>x.id===$('fdFollowUpParentV1')?.value);const n=Number($('fdManualAmount')?.value||0);if($('fdFollowUpInfoV1'))$('fdFollowUpInfoV1').textContent=t?'Current outstanding: '+(t.currency||'TZS')+' '+Number(t.outstanding_amount).toLocaleString()+' · New balance after approval: '+(t.currency||'TZS')+' '+Math.max(0,Number(t.outstanding_amount)-n).toLocaleString()+(n>Number(t.outstanding_amount)?' · Amount exceeds outstanding balance':''):'Select a receivable to see its balance.';}
  const open=window.fdOpenManualModal;
@@ -26,7 +26,7 @@
   await save.apply(this,arguments);
   const fresh=(window._fdAllManual||[]).filter(t=>!before.has(t.id)&&Number(t.amount)===amount).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at))[0];
   if(!fresh){notice('Payment was saved, but its receivable link could not be confirmed. Contact an administrator before recording it again.','err');return;}
-  const {error}=await sb.from('fd_manual_transactions').update({client_receivable:true,agreed_amount:Number(parent.agreed_amount),outstanding_amount:Math.max(0,Number(parent.outstanding_amount)-amount),receivable_client_name:parent.receivable_client_name||parent.counterparty,receivable_matter_ref:parent.receivable_matter_ref,receivable_parent_id:parent.id}).eq('id',fresh.id);
+  const {error}=await sb.from('fd_manual_transactions').update({client_receivable:true,agreed_amount:Number(parent.agreed_amount),outstanding_amount:0,receivable_client_name:parent.receivable_client_name||parent.counterparty,receivable_matter_ref:parent.receivable_matter_ref,receivable_parent_id:parent.id}).eq('id',fresh.id);
   if(error){notice('Payment saved but linking failed: '+error.message,'err');return;}
   await fdRefresh();notice('Further payment linked to the existing receivable. The balance will reduce when the payment is approved.','ok');
  };
