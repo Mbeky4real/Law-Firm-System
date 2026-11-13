@@ -659,7 +659,9 @@
     const kpi=q('fdKpiRow'),client=q('fdClientMatterRevenueV2');
     if(!kpi&&!client)return;
     const d=data();
-    const signature=[d.invoices.length,d.manual.length,d.entries.length,d.payroll.length,d.office.length,bounds().start,bounds().end].join('|');
+    // Include approval fields in the polling signature: approval updates do not change row counts.
+    const manualApprovalSignature=d.manual.map(t=>[t.id,t.status,t.is_approved,t.approval_status,t.amount,t.date].join(':')).join(';');
+    const signature=[d.invoices.length,d.manual.length,manualApprovalSignature,d.entries.length,d.payroll.length,d.office.length,bounds().start,bounds().end].join('|');
     enforceExecutiveSnapshot();
     if(signature!==lastDataSignature){lastDataSignature=signature;refresh()}
   },500);
