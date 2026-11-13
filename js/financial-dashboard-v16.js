@@ -491,30 +491,47 @@
 
   function renderStatus(){
     const m=metrics(),periodRows=periodClientRows(),periodRevenue=totals(periodRows,'revenue'),periodSettled=totals(periodRows,'paid'),ratio=num(periodRevenue.TZS)?num(periodSettled.TZS)/num(periodRevenue.TZS):0,cashVerified=!!m.cashAvailable&&!m.cashAvailable.reconciliationPending&&Number.isFinite(Number(m.cashAvailable.TZS)),cash=cashVerified?num(m.cashAvailable.TZS):null;
-    // Status priority: reconciliation exception > negative cash > collection quality.
-    // Poor collection is not itself a ledger integrity failure.
+    const {start,end}=bounds(),{manual}=data();
+    const activeManual=manual.filter(t=>{
+      const d=date(t.date),type=String(t.tx_type||'').toLowerCase();
+      return d>=start&&d<=end&&!['cancelled','void','rejected'].includes(String(t.status||'').toLowerCase())&&['revenue','expenditure','drawing','loan'].includes(type);
+    });
+    const isConsistentlyApproved=t=>String(t.status||'').toLowerCase()==='approved'&&t.is_approved===true&&String(t.approval_status||'').toLowerCase()==='approved';
+    const pendingManual=activeManual.filter(t=>!isConsistentlyApproved(t)&&!['rejected','cancelled','void'].includes(String(t.status||'').toLowerCase())&&!(String(t.status||'').toLowerCase()==='approved'||t.is_approved===true||String(t.approval_status||'').toLowerCase()==='approved'));
+    const approvalInconsistencies=activeManual.filter(t=>{
+      const anyApproved=String(t.status||'').toLowerCase()==='approved'||t.is_approved===true||String(t.approval_status||'').toLowerCase()==='approved';
+      return anyApproved&&!isConsistentlyApproved(t);
+    });
+    // Status priority: any ledger/approval exception > negative cash > collection quality.
+    // Pending manual transactions are visible as a notification, never included in approved cash totals.
     let level='Healthy',color='#16a34a',statusKey='healthy';
     const issues=reconciliationIssues();
-    if(issues.length||paymentLedgerLoadError){level='Needs Reconciliation';color='#b45309';statusKey='reconciliation'}
+    if(issues.length||paymentLedgerLoadError||pendingManual.length||approvalInconsistencies.length){level='Needs Reconciliation';color='#b45309';statusKey='reconciliation'}
     else if(!cashVerified){level='Needs Reconciliation';color='#b45309';statusKey='reconciliation'}
     else if(cash<0){level='Critical';color='#dc2626';statusKey='critical'}
     else if(num(m.revenue.TZS)>0&&ratio<0.6){level='Poor Collections';color='#ea580c';statusKey='poor'}
     else if(num(m.revenue.TZS)>0&&ratio<0.8){level='Watch';color='#ca8a04';statusKey='watch'}
-    const statusLabel=`Financial Status: ${level} · ${typeof fdPeriodLabel==='function'?fdPeriodLabel():'Selected period'}`;
+    const notices=[];
+    if(pendingManual.length)notices.push(`${pendingManual.length} manual transaction(s) awaiting approval`);
+    if(approvalInconsistencies.length)notices.push(`${approvalInconsistencies.length} approval record(s) inconsistent`);
+    if(issues.length)notices.push(`${issues.length} invoice payment issue(s)`);
+    if(paymentLedgerLoadError)notices.push('invoice payment ledger unavailable');
+    const statusLabel=`Financial Status: ${level} · ${typeof fdPeriodLabel==='function'?fdPeriodLabel():'Selected period'}${notices.length?' · '+notices.join(' · '):''}`;
     const text=q('fdStatusText');
     if(text)text.textContent=statusLabel;
-    let warning=q('fdPaymentReconciliationWarning');
-    if(!warning&&typeof document.createElement==='function'){
-      warning=document.createElement('div');warning.id='fdPaymentReconciliationWarning';
-      const anchor=q('fdStatusIndicator')?.parentElement||q('fdKpiRow')?.parentElement;
-      if(anchor)anchor.insertBefore(warning,anchor.firstChild);
-    }
-    if(warning)warning.innerHTML=(issues.length||paymentLedgerLoadError)?`<div style="padding:10px 12px;margin:8px 0;border:1px solid #f59e0b;border-radius:8px;background:#fffbeb;color:#92400e;font-size:12px"><b>Payment reconciliation required:</b> ${paymentLedgerLoadError?'The Invoice Module payment ledger could not be loaded. ':''}${issues.length?`${issues.length} invoice(s) have missing, inconsistent or estimated payment-ledger records. Their payment dates are excluded from period cash totals until verified.`:''}<div style="margin-top:5px;font-weight:700">${issues.slice(0,5).map(x=>esc(x.invoice.invoice_number||x.invoice.id)).join(', ')}${issues.length>5?' and '+(issues.length-5)+' more':''}</div></div>`:'';
+    // Keep reconciliation information in the existing financial-status notification.
+    // Do not create a separate card or panel.
+    const warning=q('fdPaymentReconciliationWarning');
+    if(warning){warning.textContent='';warning.style.display='none';}
     const box=q('fdStatusIndicator');if(box){
       box.style.color=color;
       box.style.background=statusKey==='healthy'?'#f0fdf4':statusKey==='critical'?'#fef2f2':statusKey==='poor'?'#fff7ed':statusKey==='watch'?'#fefce8':'#fffbeb';
       box.style.borderColor=statusKey==='healthy'?'#86efac':statusKey==='critical'?'#fca5a5':statusKey==='poor'?'#fdba74':statusKey==='watch'?'#fde047':'#fcd34d';
       box.setAttribute('data-financial-status',statusKey);
+      box.setAttribute('data-pending-manual-count',String(pendingManual.length));
+      box.setAttribute('data-approval-inconsistency-count',String(approvalInconsistencies.length));
+      const detail=[...pendingManual,...approvalInconsistencies].map(t=>`${t.reference||t.description||t.id}: ${t.currency||'TZS'} ${num(t.amount).toLocaleString()} (${t.tx_type||'transaction'})`);
+      box.title=detail.join(' | ')|| (issues.length?'Invoice payment records require review.':'');
       // Preserve all existing status-pill children: the legacy dashboard also
       // updates timestamp/label nodes here. Only recolour the existing dot(s).
       const markers=[];
@@ -546,7 +563,7 @@
       const cleanup=document.getElementById('molms-financial-status-dot-cleanup');
       if(cleanup)cleanup.remove();
     }
-    const intel=q('fdIntelligence');if(intel)intel.innerHTML=`<b>${level}:</b> ${Math.round(ratio*100)}% of TZS recognised revenue collected. ${cashVerified?`Cash available after carrying forward previous months is <b>${money('TZS',cash)}</b>. This is based on recorded dashboard transactions, not a bank-statement verification.`:'Cash available after expenses is <b>pending calculation</b>.'}`;
+    const intel=q('fdIntelligence');if(intel)intel.innerHTML=`<b>${level}:</b> ${Math.round(ratio*100)}% of TZS recognised revenue collected. ${cashVerified?`Cash available after carrying forward previous months is <b>${money('TZS',cash)}</b>. This is based on recorded dashboard transactions, not a bank-statement verification.`:'Cash available after expenses is <b>pending calculation</b>.'} ${notices.length?esc(notices.join('; '))+'.':''}`;
   }
 
   function render(){
