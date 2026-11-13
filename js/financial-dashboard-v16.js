@@ -532,36 +532,36 @@
       box.setAttribute('data-approval-inconsistency-count',String(approvalInconsistencies.length));
       const detail=[...pendingManual,...approvalInconsistencies].map(t=>`${t.reference||t.description||t.id}: ${t.currency||'TZS'} ${num(t.amount).toLocaleString()} (${t.tx_type||'transaction'})`);
       box.title=detail.join(' | ')|| (issues.length?'Invoice payment records require review.':'');
-      // Preserve all existing status-pill children: the legacy dashboard also
-      // updates timestamp/label nodes here. Only recolour the existing dot(s).
-      const markers=[];
+      // Enforce exactly one status marker. Legacy markup may contain a second
+      // marker or a pseudo-element; remove duplicate dot elements and suppress
+      // decorative pseudo-elements on the status pill.
+      let dotStyle=document.getElementById('molms-financial-status-single-dot-style');
+      if(!dotStyle){
+        dotStyle=document.createElement('style');
+        dotStyle.id='molms-financial-status-single-dot-style';
+        dotStyle.textContent='#fdStatusIndicator::before,#fdStatusIndicator::after{content:none!important;display:none!important}';
+        document.head.appendChild(dotStyle);
+      }
+      box.querySelectorAll('[data-molms-financial-status-dot],#molmsFinancialStatusDot').forEach(node=>node.remove());
+      const legacyMarkers=[];
       box.querySelectorAll('*').forEach(node=>{
-        if(node===box)return;
+        if(node===box||node.id==='fdStatusText')return;
         const cs=window.getComputedStyle?window.getComputedStyle(node):null;
         const w=node.offsetWidth||parseFloat(cs?.width)||0,h=node.offsetHeight||parseFloat(cs?.height)||0;
         const radius=cs?.borderRadius||'';
         const round=radius==='50%'||radius==='9999px'||radius==='999px';
-        const looksLikeDot=round&&w>=5&&h>=5&&w<=20&&h<=20&&node.children.length===0;
-        if(looksLikeDot)markers.push(node);
+        if(round&&w>=5&&h>=5&&w<=20&&h<=20&&node.children.length===0)legacyMarkers.push(node);
       });
-      let dot=markers.find(node=>node.id!=='fdStatusText'&&node.getAttribute('aria-hidden')==='true')||markers.find(node=>node.id!=='fdStatusText');
-      if(!dot){
-        dot=document.createElement('span');
-        dot.setAttribute('aria-hidden','true');
-        dot.style.cssText='display:inline-block!important;flex:0 0 10px!important;width:10px!important;height:10px!important;min-width:10px!important;border-radius:50%!important;margin:0 8px 0 0!important;box-shadow:none!important';
-        box.insertBefore(dot,box.firstChild);
-      }
+      legacyMarkers.forEach(node=>node.remove());
+      dot=document.createElement('span');
+      dot.id='molmsFinancialStatusDot';
+      dot.setAttribute('data-molms-financial-status-dot','true');
+      dot.setAttribute('aria-hidden','true');
+      dot.style.cssText='display:inline-block!important;flex:0 0 10px!important;width:10px!important;height:10px!important;min-width:10px!important;max-width:10px!important;border-radius:50%!important;margin:0 8px 0 0!important;padding:0!important;box-shadow:none!important;vertical-align:middle!important';
       dot.style.setProperty('background',color,'important');
       dot.style.setProperty('background-color',color,'important');
       dot.style.setProperty('border-color',color,'important');
-      dot.style.setProperty('display','inline-block','important');
-      dot.style.setProperty('width','10px','important');
-      dot.style.setProperty('height','10px','important');
-      markers.filter(node=>node!==dot).forEach(node=>node.style.setProperty('display','none','important'));
-      const oldDotStyle=document.getElementById('molms-financial-status-dot-style');
-      if(oldDotStyle)oldDotStyle.remove();
-      const cleanup=document.getElementById('molms-financial-status-dot-cleanup');
-      if(cleanup)cleanup.remove();
+      box.insertBefore(dot,box.firstChild);
     }
     const intel=q('fdIntelligence');if(intel)intel.innerHTML=`<b>${level}:</b> ${Math.round(ratio*100)}% of TZS recognised revenue collected. ${cashVerified?`Cash available after carrying forward previous months is <b>${money('TZS',cash)}</b>. This is based on recorded dashboard transactions, not a bank-statement verification.`:'Cash available after expenses is <b>pending calculation</b>.'} ${notices.length?esc(notices.join('; '))+'.':''}`;
   }
