@@ -137,39 +137,53 @@
     'Court Filing & Process Fees Recovered',
     'Client Disbursement Reimbursements',
     'Government & Regulatory Fees Recovered',
+    'Gift',
+    'Donation Received',
     'Interest Income',
+    'Insurance Claim Proceeds',
     'Rental Income',
     'Training & Seminar Fees',
     'Commission & Referral Income',
     'Recovery of Bad Debts',
-    'Sale of Office Assets',
+    'Sale / Disposal of Office Assets',
+    'Capital Contribution',
+    'Loan Received',
+    'Refunds / Reimbursements Received',
     'Other Operating Income',
     'Other Non-Operating Income',
     'Other / Unclassified Income'
   ];
-  function upgradeRevenueCategory(page) {
-    const labels = [...page.querySelectorAll('label')];
-    const label = labels.find(el => /revenue category/i.test(el.textContent || ''));
-    if (!label) return;
-    const id = label.htmlFor;
-    let select = id ? page.querySelector('#' + CSS.escape(id)) : null;
-    if (!select) {
-      const container = label.parentElement;
-      select = container && container.querySelector('select');
-    }
-    if (!select || select.dataset.molmsRevenueCategoriesV13 === '1') return;
 
-    const previous = String(select.value || '').trim();
-    const normal = value => value.toLowerCase().replace(/\\s+/g, ' ').trim();
+  function upgradeRevenueCategory(root) {
+    // The manual transaction modal is mounted at document level, outside
+    // #page-findash. Target its real select directly so opening the modal
+    // cannot restore the legacy FD_REVENUE_CATS list.
+    const select = document.getElementById('fdManualCategory') ||
+      (root && root.querySelector ? root.querySelector('#fdManualCategory') : null);
+    if (!select) return;
+
+    const normal = value => String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
     const legacyMap = {
       'cash client payment': 'Client Fee Payment — Manual Receipt',
       'legal fees — non-invoiced legal tasks': 'Legal Fees — Other / Non-Invoiced Work',
       'reimbursement of expenses': 'Client Disbursement Reimbursements',
-      'court attendance & filing fees recovered': 'Court Filing & Process Fees Recovered'
+      'court attendance & filing fees recovered': 'Court Filing & Process Fees Recovered',
+      'insurance claim': 'Insurance Claim Proceeds',
+      'asset sale': 'Sale / Disposal of Office Assets',
+      'refund': 'Refunds / Reimbursements Received',
+      'other': 'Other / Unclassified Income'
     };
-    const mapped = legacyMap[normal(previous)] || previous;
-    select.replaceChildren();
 
+    const previous = String(select.value || '').trim();
+    const mapped = legacyMap[normal(previous)] || previous;
+    const expected = [''].concat(revenueCategories);
+    const actual = Array.from(select.options).map(option => option.value);
+    const alreadyCurrent = select.dataset.molmsRevenueCategoriesV14 === '1' &&
+      actual.length === expected.length &&
+      actual.every((value, index) => value === expected[index]);
+    if (alreadyCurrent) return;
+
+    select.replaceChildren();
     const prompt = document.createElement('option');
     prompt.value = '';
     prompt.textContent = 'Select revenue category';
@@ -182,19 +196,11 @@
       select.appendChild(option);
     });
 
-    if (mapped && !revenueCategories.includes(mapped)) {
-      const legacy = document.createElement('option');
-      legacy.value = mapped;
-      legacy.textContent = 'Existing category — ' + mapped;
-      select.appendChild(legacy);
-    }
-    select.value = mapped && [...select.options].some(o => o.value === mapped)
-      ? mapped : '';
-    select.dataset.molmsRevenueCategoriesV13 = '1';
+    select.value = mapped && revenueCategories.includes(mapped) ? mapped : '';
+    select.dataset.molmsRevenueCategoriesV14 = '1';
   }
-
   function apply() {
-    upgradeRevenueCategory(document.getElementById('page-findash') || document);
+    upgradeRevenueCategory(document);
     const page = document.getElementById('page-findash');
     if (!page) return;
     installStyle();
