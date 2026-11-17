@@ -4,9 +4,9 @@
  */
 (function () {
   'use strict';
-  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 32) return;
+  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 34) return;
   window.MOLMSFinancialDashboardSimpleV1 = {
-    version: 33, applied: false,
+    version: 34, applied: false,
     showDetails(targetId) {
       const page=document.getElementById('page-findash');
       if(!page)return;
@@ -161,6 +161,12 @@
     const select = document.getElementById('fdManualCategory') ||
       (root && root.querySelector ? root.querySelector('#fdManualCategory') : null);
     if (!select) return;
+
+    // The modal is shared by revenue and expenditure. The core modal builder
+    // already supplies FD_EXPENSE_CATS for expenditure; never replace that
+    // list with the revenue taxonomy when the active transaction is OEX.
+    const activeType = String(document.getElementById('fdManualTxType')?.value || '').toLowerCase();
+    if (activeType === 'expenditure' || activeType === 'drawing') return;
 
     const normal = value => String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
     const legacyMap = {
