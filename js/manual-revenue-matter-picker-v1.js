@@ -173,7 +173,7 @@
           // The select keeps the original fdReceivableMatter ID. Dispatch
           // normal events so the existing save/edit workflow reads its value.
           select.dispatchEvent(new Event('input',{bubbles:true}));
-        },{once:true});
+        });
         select.dataset.molmsMatterPickerListenerV3='1';
       }
       return true;
