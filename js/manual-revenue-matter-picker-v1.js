@@ -1,145 +1,246 @@
-/* MOLMS MANUAL REVENUE MATTER PICKER V2
- * Uses the existing Cause List and Non-Litigation records.
- * Preserves the form's existing value field and stores the selected matter reference.
+/* MOLMS MANUAL REVENUE MATTER PICKER V3
+ * The revenue form is a document-level modal, not a child of #page-findash.
+ * Use the existing live Cause List and Non-Litigation tables and retain the
+ * selected matter reference in the exact field consumed by fdSaveManual.
  */
 (function(){
   'use strict';
-  if(window.MOLMSManualRevenueMatterPickerV2)return;
-  const getSb=()=>typeof sb!=='undefined'&&sb?sb:(window.supabaseClient||window.sb||null);
-  let matters=null,loading=null;
-  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const clean=s=>String(s??'').trim();
+  if(window.MOLMSManualRevenueMatterPickerV3)return;
 
-  async function loadMatters(){
-    if(matters)return matters;
+  const getSb=()=>typeof sb!=='undefined'&&sb?sb:(window.supabaseClient||window.sb||null);
+  const clean=value=>String(value??'').trim();
+  const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[ch]));
+  let matters=null;
+  let loading=null;
+
+  async function loadMatters(force){
+    if(matters&&!force)return matters;
     if(loading)return loading;
     loading=(async()=>{
       const client=getSb();
-      if(!client)throw new Error('Database client is not available in the Document frame.');
+      if(!client)throw new Error('MOLMS database client is not ready.');
+
       const [causeResult,nonlitResult]=await Promise.all([
         client.from('cause_list_v2')
           .select('id,matter_reference,case_number,title,client_name,status,deleted_at')
-          .is('deleted_at',null).order('title',{ascending:true}),
+          .is('deleted_at',null)
+          .order('title',{ascending:true}),
         client.from('non_litigations')
           .select('id,matter_reference,title,client,status,deleted_at')
-          .is('deleted_at',null).order('title',{ascending:true})
+          .is('deleted_at',null)
+          .order('title',{ascending:true})
       ]);
-      if(causeResult.error)console.warn('[MOLMS revenue matter picker] Cause List:',causeResult.error.message);
-      if(nonlitResult.error)console.warn('[MOLMS revenue matter picker] Non-Litigation:',nonlitResult.error.message);
-      if(causeResult.error&&nonlitResult.error)throw new Error(causeResult.error.message+'; '+nonlitResult.error.message);
 
-      const cause=(causeResult.data||[]).map(x=>({
-        source:'Cause List',id:x.id,ref:clean(x.matter_reference)||clean(x.case_number)||clean(x.title),
-        title:clean(x.title),client:clean(x.client_name),status:clean(x.status)
+      if(causeResult.error)console.error('[MOLMS matter picker] Cause List query failed:',causeResult.error);
+      if(nonlitResult.error)console.error('[MOLMS matter picker] Non-Litigation query failed:',nonlitResult.error);
+      if(causeResult.error&&nonlitResult.error){
+        throw new Error('Could not load matters from either register. '+causeResult.error.message+'; '+nonlitResult.error.message);
+      }
+
+      const cause=(causeResult.data||[]).map(row=>({
+        source:'Cause List',
+        id:row.id,
+        ref:clean(row.matter_reference)||clean(row.case_number),
+        title:clean(row.title),
+        client:clean(row.client_name),
+        status:clean(row.status)
       }));
-      const nonlit=(nonlitResult.data||[]).map(x=>({
-        source:'Non-Litigation',id:x.id,ref:clean(x.matter_reference)||clean(x.title),
-        title:clean(x.title),client:clean(x.client),status:clean(x.status)
+      const nonlit=(nonlitResult.data||[]).map(row=>({
+        source:'Non-Litigation',
+        id:row.id,
+        ref:clean(row.matter_reference),
+        title:clean(row.title),
+        client:clean(row.client),
+        status:clean(row.status)
       }));
-      matters=[...cause,...nonlit].filter(x=>x.ref||x.title);
+
+      matters=[...cause,...nonlit].filter(row=>row.ref||row.title);
       return matters;
-    })().catch(error=>{loading=null;throw error});
+    })().finally(()=>{loading=null;});
     return loading;
   }
 
-  function isMatterControl(el){
-    if(!el)return false;
-    const hint=[el.placeholder,el.getAttribute('aria-label'),el.name,el.id].filter(Boolean).join(' ');
-    if(/matter.*reference|reference.*matter/i.test(hint))return true;
-    if(el.tagName==='SELECT'){
-      return [...el.options].some(o=>/select matter.*reference|matter.*reference/i.test(clean(o.textContent)));
+  function optionLabel(row){
+    const parts=[];
+    if(row.ref)parts.push(row.ref);
+    if(row.title&&row.title!==row.ref)parts.push(row.title);
+    if(row.client)parts.push(row.client);
+    if(row.status)parts.push(row.status);
+    return parts.join(' — ')||row.source;
+  }
+
+  function targetField(){
+    // This is the actual field created by the client-receivable workflow.
+    // It is outside #page-findash because fdManualModal is mounted on body.
+    const exact=document.getElementById('fdReceivableMatter');
+    if(exact)return exact;
+
+    const modal=document.getElementById('fdManualModal')||document;
+    return Array.from(modal.querySelectorAll('input,select')).find(el=>{
+      const hint=[el.id,el.name,el.placeholder,el.getAttribute('aria-label')].filter(Boolean).join(' ');
+      return /matter.*reference|reference.*matter/i.test(hint);
+    })||null;
+  }
+
+  function addOption(select,value,label,attrs){
+    const option=document.createElement('option');
+    option.value=value;
+    option.textContent=label;
+    if(attrs){
+      if(attrs.source)option.dataset.source=attrs.source;
+      if(attrs.id)option.dataset.matterId=attrs.id;
     }
-    return false;
-  }
-
-  function findTarget(){
-    const page=document.getElementById('page-findash')||document;
-    const controls=[...page.querySelectorAll('input,select')].filter(isMatterControl);
-    return controls.find(el=>el.offsetParent!==null)||controls[0]||null;
-  }
-
-  function optionLabel(m){
-    const head=m.ref?m.ref+' — ':'';
-    const title=m.title&&m.title!==m.ref?m.title:'';
-    const client=m.client?' · '+m.client:'';
-    const status=m.status?' · '+m.status:'';
-    return head+title+client+status||m.source;
+    select.appendChild(option);
+    return option;
   }
 
   async function install(){
-    const control=findTarget();
-    if(!control||control.dataset.molmsMatterPickerV2==='1')return false;
-    const isSelect=control.tagName==='SELECT';
-    let select=control;
-    let backingInput=null;
+    const field=targetField();
+    if(!field)return false;
+    if(field.dataset.molmsMatterPickerV3==='1')return true;
 
-    if(!isSelect){
-      backingInput=control;
+    const current=clean(field.value);
+    let select=field;
+
+    if(field.tagName!=='SELECT'){
       select=document.createElement('select');
-      select.id='fdManualRevenueMatterPickerV2';
-      select.className=control.className||'';
-      select.style.cssText=control.style.cssText||'';
+      select.id=field.id||'fdReceivableMatter';
+      select.name=field.name||'receivable_matter_ref';
+      select.className=field.className||'search';
+      select.style.cssText=field.style.cssText||'';
       select.style.width='100%';
-      select.setAttribute('aria-label','Matter / Reference');
-      control.parentNode.insertBefore(select,control);
-      control.style.display='none';
+      select.setAttribute('aria-label','Matter / reference (optional)');
+      select.dataset.molmsMatterPickerV3='1';
+      field.replaceWith(select);
     }
 
-    const current=clean(isSelect?select.value:backingInput.value);
     select.disabled=true;
-    select.innerHTML='<option value="">Loading matters…</option>';
+    select.replaceChildren();
+    addOption(select,'', 'Loading matters…');
+    if(current)addOption(select,current,'Current reference — '+current,{source:'existing'});
+
     try{
       const rows=await loadMatters();
-      const cause=rows.filter(x=>x.source==='Cause List');
-      const nonlit=rows.filter(x=>x.source==='Non-Litigation');
-      let html='<option value="">Select matter / reference…</option>';
-      if(current&&!rows.some(x=>x.ref===current)){
-        html+='<option value="'+esc(current)+'">Existing reference — '+esc(current)+'</option>';
+      const cause=rows.filter(row=>row.source==='Cause List');
+      const nonlit=rows.filter(row=>row.source==='Non-Litigation');
+
+      select.replaceChildren();
+      addOption(select,'','Select matter / reference (optional)');
+      if(current&&!rows.some(row=>row.ref===current)){
+        addOption(select,current,'Existing reference — '+current,{source:'existing'});
       }
-      if(cause.length)html+='<optgroup label="Cause List">'+cause.map(m=>
-        '<option value="'+esc(m.ref)+'" data-source="cause" data-id="'+esc(m.id)+'">'+esc(optionLabel(m))+'</option>'
-      ).join('')+'</optgroup>';
-      if(nonlit.length)html+='<optgroup label="Non-Litigation">'+nonlit.map(m=>
-        '<option value="'+esc(m.ref)+'" data-source="nonlit" data-id="'+esc(m.id)+'">'+esc(optionLabel(m))+'</option>'
-      ).join('')+'</optgroup>';
-      if(!cause.length&&!nonlit.length)html+='<option value="" disabled>No active matters available</option>';
-      select.innerHTML=html;
+      if(cause.length){
+        const group=document.createElement('optgroup');
+        group.label='Cause List';
+        cause.forEach(row=>{
+          const option=document.createElement('option');
+          option.value=row.ref||row.title;
+          option.textContent=optionLabel(row);
+          option.dataset.source='cause';
+          option.dataset.matterId=row.id||'';
+          group.appendChild(option);
+        });
+        select.appendChild(group);
+      }
+      if(nonlit.length){
+        const group=document.createElement('optgroup');
+        group.label='Non-Litigation';
+        nonlit.forEach(row=>{
+          const option=document.createElement('option');
+          option.value=row.ref||row.title;
+          option.textContent=optionLabel(row);
+          option.dataset.source='nonlit';
+          option.dataset.matterId=row.id||'';
+          group.appendChild(option);
+        });
+        select.appendChild(group);
+      }
+      if(!cause.length&&!nonlit.length){
+        addOption(select,'','No matters found in either register');
+      }
+
       if(current)select.value=current;
       select.disabled=false;
-      const sync=()=>{
-        const chosen=select.options[select.selectedIndex];
-        if(backingInput){
-          backingInput.value=select.value;
-          backingInput.dispatchEvent(new Event('input',{bubbles:true}));
-          backingInput.dispatchEvent(new Event('change',{bubbles:true}));
-        }
-        select.dataset.matterSource=chosen?.dataset.source||'';
-        select.dataset.matterId=chosen?.dataset.id||'';
-        select.dispatchEvent(new CustomEvent('molms:matter-selected',{bubbles:true,detail:{
-          reference:select.value,source:select.dataset.matterSource,matterId:select.dataset.matterId
-        }}));
-      };
-      select.addEventListener('change',sync);
-      if(current)sync();
-      select.dataset.molmsMatterPickerV2='1';
-      if(backingInput)backingInput.dataset.molmsMatterPickerV2='1';
+      select.dataset.molmsMatterPickerV3='1';
+
+      if(!select.dataset.molmsMatterPickerListenerV3){
+        select.addEventListener('change',()=>{
+          const chosen=select.options[select.selectedIndex];
+          select.dataset.matterSource=chosen?.dataset.source||'';
+          select.dataset.matterId=chosen?.dataset.matterId||'';
+          // The select keeps the original fdReceivableMatter ID. Dispatch
+          // normal events so the existing save/edit workflow reads its value.
+          select.dispatchEvent(new Event('input',{bubbles:true}));
+          select.dispatchEvent(new Event('change',{bubbles:true}));
+        },{once:true});
+        select.dataset.molmsMatterPickerListenerV3='1';
+      }
       return true;
     }catch(error){
-      console.error('[MOLMS revenue matter picker]',error);
+      console.error('[MOLMS matter picker V3]',error);
       select.disabled=false;
-      select.innerHTML='<option value="">Unable to load matters — refresh and try again</option>';
+      select.replaceChildren();
+      addOption(select,current,current?'Existing reference — '+current:'','existing');
+      addOption(select,'','Could not load matters — refresh and try again');
+      select.dataset.molmsMatterPickerError='1';
       return false;
     }
+  }
+
+  function ensureCurrentReference(value){
+    const select=document.getElementById('fdReceivableMatter');
+    const reference=clean(value);
+    if(!select||select.tagName!=='SELECT'||!reference)return;
+    if(!Array.from(select.options).some(option=>option.value===reference)){
+      const option=document.createElement('option');
+      option.value=reference;
+      option.textContent='Existing reference — '+reference;
+      option.dataset.source='existing';
+      select.appendChild(option);
+    }
+    select.value=reference;
   }
 
   function boot(){
     install();
     const observer=new MutationObserver(()=>install());
     observer.observe(document.body,{childList:true,subtree:true});
+
+    // The edit workflow fills this field after loading the transaction.
+    const originalEdit=window.fdEditManual;
+    if(typeof originalEdit==='function'&&!originalEdit.__molmsMatterPickerV3){
+      const wrappedEdit=async function(id){
+        const result=await originalEdit.apply(this,arguments);
+        const transaction=(typeof _fdAllManual!=='undefined'&&Array.isArray(_fdAllManual))
+          ?_fdAllManual.find(row=>row.id===id):null;
+        if(transaction)ensureCurrentReference(transaction.receivable_matter_ref);
+        return result;
+      };
+      wrappedEdit.__molmsMatterPickerV3=true;
+      window.fdEditManual=wrappedEdit;
+    }
+
     let attempts=0;
-    const timer=setInterval(()=>{install();if(++attempts>=80)clearInterval(timer)},250);
+    const timer=setInterval(()=>{
+      install();
+      if(++attempts>=80)clearInterval(timer);
+    },250);
   }
-  window.MOLMSManualRevenueMatterPickerV2={loadMatters,install};
+
+  window.MOLMSManualRevenueMatterPickerV3={
+    loadMatters,
+    install,
+    audit:()=>({
+      fieldFound:!!document.getElementById('fdReceivableMatter'),
+      fieldTag:document.getElementById('fdReceivableMatter')?.tagName||null,
+      loadedMatters:matters?.length??null,
+      causeList:matters?.filter(row=>row.source==='Cause List').length??null,
+      nonLitigation:matters?.filter(row=>row.source==='Non-Litigation').length??null
+    })
+  };
+
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});
   else boot();
 })();
