@@ -35,11 +35,18 @@
 
       if(causeResult.error)console.error('[MOLMS matter picker] Cause List query failed:',causeResult.error);
       if(nonlitResult.error)console.error('[MOLMS matter picker] Non-Litigation query failed:',nonlitResult.error);
-      if(causeResult.error&&nonlitResult.error){
+
+      // The main MOLMS modules already maintain authenticated matter arrays.
+      // Use them as a fallback if a direct picker query is blocked or delayed.
+      const liveCause=(typeof cases!=='undefined'&&Array.isArray(cases))?cases:[];
+      const liveNonlit=(typeof nonlits!=='undefined'&&Array.isArray(nonlits))?nonlits:[];
+      const causeRows=causeResult.data||liveCause;
+      const nonlitRows=nonlitResult.data||liveNonlit;
+      if(!causeRows.length&&!nonlitRows.length&&causeResult.error&&nonlitResult.error){
         throw new Error('Could not load matters from either register. '+causeResult.error.message+'; '+nonlitResult.error.message);
       }
 
-      const cause=(causeResult.data||[]).map(row=>({
+      const cause=causeRows.map(row=>({
         source:'Cause List',
         id:row.id,
         ref:clean(row.matter_reference)||clean(row.case_number),
@@ -47,7 +54,7 @@
         client:clean(row.client_name),
         status:clean(row.status)
       }));
-      const nonlit=(nonlitResult.data||[]).map(row=>({
+      const nonlit=nonlitRows.map(row=>({
         source:'Non-Litigation',
         id:row.id,
         ref:clean(row.matter_reference),
