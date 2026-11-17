@@ -357,7 +357,22 @@
     window.MOLMSFinancialDashboardSimpleV1.applied = true;
   }
 
+  function installRevenueModalBridge() {
+    const original = window.fdOpenManualModal;
+    if (typeof original !== 'function' || original.__molmsRevenueCategoriesV14) return;
+    const wrapped = function(txType) {
+      const result = original.apply(this, arguments);
+      // fdOpenManualModal rebuilds fdManualCategory from the legacy constants.
+      // Reapply the current taxonomy synchronously before the user opens it.
+      upgradeRevenueCategory(document);
+      return result;
+    };
+    wrapped.__molmsRevenueCategoriesV14 = true;
+    window.fdOpenManualModal = wrapped;
+  }
+
   function start() {
+    installRevenueModalBridge();
     // V16 is the sole owner of KPI rendering. This module only applies
     // non-KPI presentation improvements to the dashboard.
     apply();
