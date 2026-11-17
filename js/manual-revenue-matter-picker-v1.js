@@ -202,7 +202,23 @@
     select.value=reference;
   }
 
+  function installModalBridge(){
+    const original=window.fdOpenManualModal;
+    if(typeof original!=='function'||original.__molmsMatterPickerV3)return;
+    const wrapped=function(){
+      const result=original.apply(this,arguments);
+      // The receivable field is added by the existing modal workflow on the
+      // next task; run after that insertion and once more as a safe fallback.
+      setTimeout(install,0);
+      setTimeout(install,80);
+      return result;
+    };
+    wrapped.__molmsMatterPickerV3=true;
+    window.fdOpenManualModal=wrapped;
+  }
+
   function boot(){
+    installModalBridge();
     install();
     const observer=new MutationObserver(()=>install());
     observer.observe(document.body,{childList:true,subtree:true});
