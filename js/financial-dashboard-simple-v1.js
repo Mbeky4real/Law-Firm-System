@@ -434,7 +434,7 @@
     const statusOf=tx=>typeof fdManualStatus==='function'?fdManualStatus(tx):
       String(tx.status||(tx.is_approved?'approved':'pending')).toLowerCase();
     const escape=typeof esc==='function'?esc:value=>String(value??'').replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
-    tbody.innerHTML=rows.length?rows.map(tx=>{
+    const ledgerHtml=rows.length?rows.map(tx=>{
       const status=statusOf(tx);
       const color={approved:'#16a34a',rejected:'#dc2626',cancelled:'#64748b',pending:'#d97706'}[status]||'#64748b';
       const id=String(tx.id||'').replace(/'/g,'\\\\\\\'');
@@ -447,6 +447,7 @@
         : `<button onclick="fdEditManual('${id}')" title="Edit — reopens for approval">✎</button>`;
       return `<tr><td style="padding:5px;font:10px monospace;color:#1e40af">${escape(tx.reference||'—')}</td><td>${String(tx.date||'').slice(0,10)}</td><td>${escape(tx.tx_type||'—')}</td><td>${escape(tx.category||'—')}</td><td>${escape(tx.description||'—')}</td><td style="text-align:right;font-weight:700">${escape(tx.currency||'TZS')} ${Number(tx.amount||0).toLocaleString()}</td><td>${escape(tx.counterparty||'—')}</td><td>${escape(tx.approved_by||'—')}</td><td><span style="color:${color};font-weight:700">${escape(status)}</span></td><td>${actions}</td></tr>`;
     }).join(''):`<tr><td colspan="10" style="padding:12px;text-align:center;color:var(--muted)">No manual transactions recorded between 1 June ${year} and ${dateLabel}.</td></tr>`;
+    if(tbody.innerHTML!==ledgerHtml)tbody.innerHTML=ledgerHtml;
 
     tbody.querySelectorAll('tr').forEach(row=>row.removeAttribute('data-fdv15-outside'));
     tbody.querySelectorAll('tr[data-fdv15-empty]').forEach(row=>row.remove());
