@@ -4,9 +4,9 @@
  */
 (function () {
   'use strict';
-  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 34) return;
+  if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 35) return;
   window.MOLMSFinancialDashboardSimpleV1 = {
-    version: 34, applied: false,
+    version: 35, applied: false,
     showDetails(targetId) {
       const page=document.getElementById('page-findash');
       if(!page)return;
@@ -363,6 +363,132 @@
     window.MOLMSFinancialDashboardSimpleV1.applied = true;
   }
 
+  // Restore the manual transactions ledger as a visible, full list.
+  // It is intentionally independent of the dashboard KPI period selector.
+  function restoreManualLedger() {
+    const page=document.getElementById('page-findash');
+    const tbody=document.getElementById('fdManualBody');
+    if(!page||!tbody)return;
+
+    // V10 previously placed both detailed registers and this ledger inside
+    // a collapsed disclosure. Keep the general register collapsible, but
+    // move the manual transactions card back into the visible dashboard.
+    const details=document.getElementById('fdV10Registers');
+    if(details){
+      const body=details.querySelector('.fdv10-body');
+      const manualChild=body&&Array.from(body.children).find(node=>node.contains(tbody));
+      if(manualChild){
+        details.insertAdjacentElement('afterend',manualChild);
+      }
+    }
+
+    let card=tbody.closest('.card');
+    if(!card){
+      let node=tbody.parentElement;
+      while(node&&node!==page){
+        const style=node.getAttribute('style')||'';
+        if(/border-radius:\\s*12px/i.test(style)&&/background:\\s*#fff/i.test(style)){card=node;break;}
+        node=node.parentElement;
+      }
+    }
+    if(card){
+      card.style.setProperty('display','block','important');
+      card.style.setProperty('visibility','visible','important');
+      card.style.setProperty('height','auto','important');
+      card.style.setProperty('max-height','none','important');
+      card.style.setProperty('overflow','visible','important');
+      card.style.setProperty('width','100%','important');
+      card.style.setProperty('max-width','100%','important');
+    }
+
+    // V15 used the dashboard period selector to hide ledger rows. The ledger
+    // instead has a fixed year-to-date window beginning 1 June.
+    const now=new Date();
+    const year=now.getFullYear();
+    const pad=n=>String(n).padStart(2,'0');
+    const start=year+'-06-01';
+    const end=year+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());
+    const dateLabel=now.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+    const heading=Array.from((card||page).querySelectorAll('span,div')).find(el=>
+      el.children.length===0&&/MANUAL FINANCIAL TRANSACTIONS/i.test(el.textContent||'')
+    );
+    if(heading){
+      let note=heading.parentElement.querySelector('.fd-manual-ledger-range');
+      if(!note){
+        note=document.createElement('span');
+        note.className='fd-manual-ledger-range';
+        note.style.cssText='display:block;font-size:10px;color:var(--muted);margin-top:3px';
+        heading.insertAdjacentElement('afterend',note);
+      }
+      note.textContent='Transactions recorded from 1 June '+year+' to '+dateLabel+' · independent of dashboard period';
+    }
+
+    const source=(typeof _fdAllManual!=='undefined'&&Array.isArray(_fdAllManual))?_fdAllManual:
+      ((typeof _fdManualTx!=='undefined'&&Array.isArray(_fdManualTx))?_fdManualTx:[]);
+    const rows=source.filter(tx=>{
+      const date=String(tx.date||'').slice(0,10);
+      return date>=start&&date<=end;
+    }).sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))||
+      String(b.created_at||'').localeCompare(String(a.created_at||'')));
+
+    const statusOf=tx=>typeof fdManualStatus==='function'?fdManualStatus(tx):
+      String(tx.status||(tx.is_approved?'approved':'pending')).toLowerCase();
+    const escape=typeof esc==='function'?esc:value=>String(value??'').replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+    tbody.innerHTML=rows.length?rows.map(tx=>{
+      const status=statusOf(tx);
+      const color={approved:'#16a34a',rejected:'#dc2626',cancelled:'#64748b',pending:'#d97706'}[status]||'#64748b';
+      const id=String(tx.id||'').replace(/'/g,'\\\\\\\'');
+      const actions=status==='pending'
+        ? `<button onclick="fdSetManualStatus('${id}','approved')" title="Approve">✓</button><button onclick="fdSetManualStatus('${id}','rejected')" title="Reject">✕</button><button onclick="fdSetManualStatus('${id}','cancelled')" title="Cancel">⊘</button><button onclick="fdEditManual('${id}')" title="Edit">✎</button>`
+        : status==='approved'
+        ? `<button onclick="fdEditManual('${id}')" title="Edit — reopens for approval">✎</button><button onclick="fdSetManualStatus('${id}','cancelled')" title="Cancel">⊘</button>`
+        : status==='cancelled'
+        ? `<button onclick="fdEditManual('${id}')" title="Edit & Resubmit">✎</button><button onclick="fdDeleteManual('${id}')" title="Delete">🗑</button>`
+        : `<button onclick="fdEditManual('${id}')" title="Edit — reopens for approval">✎</button>`;
+      return `<tr><td style="padding:5px;font:10px monospace;color:#1e40af">${escape(tx.reference||'—')}</td><td>${String(tx.date||'').slice(0,10)}</td><td>${escape(tx.tx_type||'—')}</td><td>${escape(tx.category||'—')}</td><td>${escape(tx.description||'—')}</td><td style="text-align:right;font-weight:700">${escape(tx.currency||'TZS')} ${Number(tx.amount||0).toLocaleString()}</td><td>${escape(tx.counterparty||'—')}</td><td>${escape(tx.approved_by||'—')}</td><td><span style="color:${color};font-weight:700">${escape(status)}</span></td><td>${actions}</td></tr>`;
+    }).join(''):`<tr><td colspan="10" style="padding:12px;text-align:center;color:var(--muted)">No manual transactions recorded between 1 June ${year} and ${dateLabel}.</td></tr>`;
+
+    tbody.querySelectorAll('tr').forEach(row=>row.removeAttribute('data-fdv15-outside'));
+    tbody.querySelectorAll('tr[data-fdv15-empty]').forEach(row=>row.remove());
+    const table=tbody.closest('table');
+    if(table){
+      let scroller=table.closest('.fd-manual-table-scroll');
+      if(!scroller){
+        scroller=document.createElement('div');
+        scroller.className='fd-manual-table-scroll';
+        scroller.setAttribute('role','region');
+        scroller.setAttribute('aria-label','Manual financial transactions from June to current date');
+        table.parentNode.insertBefore(scroller,table);
+        scroller.appendChild(table);
+      }
+    }
+  }
+
+  function installManualLedgerBridge() {
+    if(window.__molmsManualLedgerRestored)return;
+    window.__molmsManualLedgerRestored=true;
+    const base=window.fdRenderManual;
+    if(typeof base==='function'){
+      window.fdRenderManual=function(){
+        const result=base.apply(this,arguments);
+        restoreManualLedger();
+        return result;
+      };
+    }
+    const refresh=window.fdRefresh;
+    if(typeof refresh==='function'){
+      window.fdRefresh=async function(){
+        const result=await refresh.apply(this,arguments);
+        restoreManualLedger();
+        return result;
+      };
+    }
+    const observer=new MutationObserver(()=>requestAnimationFrame(restoreManualLedger));
+    observer.observe(document.documentElement,{childList:true,subtree:true});
+    window.MOLMSFinancialDashboardSimpleV1.manualLedgerObserver=observer;
+    [250,700,1400,2600].forEach(delay=>setTimeout(restoreManualLedger,delay));
+  }
+
   function installRevenueModalBridge() {
     const original = window.fdOpenManualModal;
     if (typeof original !== 'function' || original.__molmsRevenueCategoriesV14) return;
@@ -379,6 +505,7 @@
 
   function start() {
     installRevenueModalBridge();
+    installManualLedgerBridge();
     // V16 is the sole owner of KPI rendering. This module only applies
     // non-KPI presentation improvements to the dashboard.
     apply();
