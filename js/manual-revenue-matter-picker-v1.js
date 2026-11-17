@@ -71,7 +71,48 @@
     return parts.join(' — ')||row.source;
   }
 
+  function ensureReceivableFields(){
+    const modal=document.getElementById('fdManualModal');
+    const amount=document.getElementById('fdManualAmount');
+    if(!modal||!amount)return false;
+    let wrap=document.getElementById('fdClientReceivableWrap');
+    if(!wrap){
+      wrap=document.createElement('div');
+      wrap.id='fdClientReceivableWrap';
+      wrap.style.cssText='margin-top:10px;border:1px solid var(--border);border-radius:10px;padding:12px;background:#fafafa';
+      wrap.innerHTML=
+        '<label style="display:flex;gap:8px;align-items:center;font-size:12px;font-weight:700;color:var(--navy)"><input id="fdClientReceivable" type="checkbox" style="width:auto;margin:0"> This is a payment against an amount owed by a client</label>'+
+        '<div id="fdClientReceivableFields" style="display:none;margin-top:10px;grid-template-columns:1fr;gap:9px">'+
+          '<div><label for="fdReceivableClient">Client name *</label><input id="fdReceivableClient" class="search" placeholder="Client name" style="width:100%"></div>'+
+          '<div><label for="fdReceivableMatter">Matter / reference (optional)</label><select id="fdReceivableMatter" class="search" style="width:100%"><option value="">Loading matters…</option></select></div>'+
+          '<div><label for="fdAgreedAmount">Agreed amount *</label><input id="fdAgreedAmount" type="number" min="0" step="0.01" class="search" placeholder="Agreed amount" style="width:100%"></div>'+
+          '<div id="fdOutstandingPreview" style="padding:8px;font-size:12px;font-weight:700;color:var(--navy)">Outstanding: —</div>'+
+        '</div>';
+      const row=amount.closest('div[style*="grid-template-columns"]');
+      const modalContent=modal.children&&modal.children[0];
+      if(row&&modal.contains(row))row.insertAdjacentElement('afterend',wrap);
+      else if(modalContent)modalContent.appendChild(wrap);
+      else modal.appendChild(wrap);
+    }
+    const checkbox=document.getElementById('fdClientReceivable');
+    const fields=document.getElementById('fdClientReceivableFields');
+    if(checkbox&&!checkbox.dataset.molmsReceivableBound){
+      checkbox.addEventListener('change',()=>{
+        if(fields)fields.style.display=checkbox.checked?'grid':'none';
+        window.fdUpdateOutstandingPreview?.();
+      });
+      checkbox.dataset.molmsReceivableBound='1';
+    }
+    const agreed=document.getElementById('fdAgreedAmount');
+    if(agreed&&!agreed.dataset.molmsReceivableBound){
+      agreed.addEventListener('input',()=>window.fdUpdateOutstandingPreview?.());
+      agreed.dataset.molmsReceivableBound='1';
+    }
+    return !!document.getElementById('fdReceivableMatter');
+  }
+
   function targetField(){
+    ensureReceivableFields();
     // This is the actual field created by the client-receivable workflow.
     // It is outside #page-findash because fdManualModal is mounted on body.
     const exact=document.getElementById('fdReceivableMatter');
@@ -97,6 +138,7 @@
   }
 
   async function install(){
+    ensureReceivableFields();
     const field=targetField();
     if(!field)return false;
     if(field.dataset.molmsMatterPickerV3==='1')return true;
@@ -248,6 +290,7 @@
     loadMatters,
     install,
     audit:()=>({
+      receivableSectionFound:!!document.getElementById('fdClientReceivableWrap'),
       fieldFound:!!document.getElementById('fdReceivableMatter'),
       fieldTag:document.getElementById('fdReceivableMatter')?.tagName||null,
       loadedMatters:matters?.length??null,
