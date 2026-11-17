@@ -173,7 +173,6 @@
           // The select keeps the original fdReceivableMatter ID. Dispatch
           // normal events so the existing save/edit workflow reads its value.
           select.dispatchEvent(new Event('input',{bubbles:true}));
-          select.dispatchEvent(new Event('change',{bubbles:true}));
         },{once:true});
         select.dataset.molmsMatterPickerListenerV3='1';
       }
@@ -182,7 +181,7 @@
       console.error('[MOLMS matter picker V3]',error);
       select.disabled=false;
       select.replaceChildren();
-      addOption(select,current,current?'Existing reference — '+current:'','existing');
+      if(current)addOption(select,current,'Existing reference — '+current,{source:'existing'});
       addOption(select,'','Could not load matters — refresh and try again');
       select.dataset.molmsMatterPickerError='1';
       return false;
