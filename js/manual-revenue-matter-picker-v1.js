@@ -40,8 +40,23 @@
       // Use them as a fallback if a direct picker query is blocked or delayed.
       const liveCause=(typeof cases!=='undefined'&&Array.isArray(cases))?cases:[];
       const liveNonlit=(typeof nonlits!=='undefined'&&Array.isArray(nonlits))?nonlits:[];
-      const causeRows=causeResult.data||liveCause;
-      const nonlitRows=nonlitResult.data||liveNonlit;
+      // A successful PostgREST response can still be an empty array. Do not
+      // let [] suppress the already-loaded register data. Merge both sources
+      // and deduplicate by matter reference (falling back to row id).
+      const mergeRows=(databaseRows,liveRows,referenceKeys)=>{
+        const merged=[...(Array.isArray(databaseRows)?databaseRows:[]),...(Array.isArray(liveRows)?liveRows:[])];
+        const seen=new Set();
+        return merged.filter(row=>{
+          if(row.deleted_at)return false;
+          const ref=referenceKeys.map(key=>clean(row[key])).find(Boolean);
+          const key=ref||clean(row.id);
+          if(!key||seen.has(key))return false;
+          seen.add(key);
+          return true;
+        });
+      };
+      const causeRows=mergeRows(causeResult.data,liveCause,['matter_reference','case_number']);
+      const nonlitRows=mergeRows(nonlitResult.data,liveNonlit,['matter_reference']);
       if(!causeRows.length&&!nonlitRows.length&&causeResult.error&&nonlitResult.error){
         throw new Error('Could not load matters from either register. '+causeResult.error.message+'; '+nonlitResult.error.message);
       }
