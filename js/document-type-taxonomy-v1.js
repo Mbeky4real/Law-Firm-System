@@ -3,17 +3,25 @@
   'use strict';
 
   const TYPES = [
+    'Correspondence',
     'Pleadings',
     'Written Submissions',
-    'Contracts and Agreements',
+    'Court Applications',
+    'Court Orders & Judgments',
+    'Affidavits',
+    'Contracts & Agreements',
+    'Legal Opinions',
     'Internal Memoranda',
-    'Meeting Minutes',
-    'Receipts',
-    'Payment Records',
-    'Court Orders and Judgments',
-    'Case Laws and Legal Authorities',
+    'Meeting Minutes & Resolutions',
     'Due Diligence Reports',
-    'General'
+    'Case Laws & Legislation',
+    'Corporate Documents',
+    'Regulatory & Compliance Documents',
+    'Transaction Documents',
+    'Reports',
+    'Evidence & Supporting Documents',
+    'Receipts & Payment Records',
+    'General / Other Documents'
   ];
 
   function upgradeDocumentType() {
@@ -38,8 +46,8 @@
       select.appendChild(option);
     });
 
-    select.value = previous || 'General';
-    if (!select.value) select.value = 'General';
+    select.value = previous || 'General / Other Documents';
+    if (!select.value) select.value = 'General / Other Documents';
     select.dataset.molmsTaxonomyV1 = 'true';
   }
 
