@@ -6,7 +6,7 @@
   'use strict';
   if (window.MOLMSFinancialDashboardSimpleV1 && window.MOLMSFinancialDashboardSimpleV1.version >= 32) return;
   window.MOLMSFinancialDashboardSimpleV1 = {
-    version: 32, applied: false,
+    version: 33, applied: false,
     showDetails(targetId) {
       const page=document.getElementById('page-findash');
       if(!page)return;
@@ -125,21 +125,27 @@
   }
 
   const revenueCategories = [
-    'Legal Fees — Non-Invoiced Legal Tasks',
+    'Legal Fees — Litigation',
+    'Legal Fees — Non-Litigation',
+    'Legal Fees — Other / Non-Invoiced Work',
+    'Client Fee Payment — Manual Receipt',
     'Consultation Fees',
     'Retainer Fees — Direct Receipt',
     'Legal Opinion & Advisory Fees',
     'Drafting & Documentation Fees',
-    'Court Attendance & Filing Fees Recovered',
-    'Reimbursement of Expenses',
+    'Court Attendance Fees',
+    'Court Filing & Process Fees Recovered',
+    'Client Disbursement Reimbursements',
+    'Government & Regulatory Fees Recovered',
     'Interest Income',
     'Rental Income',
     'Training & Seminar Fees',
     'Commission & Referral Income',
     'Recovery of Bad Debts',
+    'Sale of Office Assets',
     'Other Operating Income',
     'Other Non-Operating Income',
-    'Other'
+    'Other / Unclassified Income'
   ];
   function upgradeRevenueCategory(page) {
     const labels = [...page.querySelectorAll('label')];
@@ -151,16 +157,40 @@
       const container = label.parentElement;
       select = container && container.querySelector('select');
     }
-    if (!select || select.dataset.molmsRevenueCategoriesV12 === '1') return;
-    const existing = new Set([...select.options].map(o => (o.textContent || '').trim().toLowerCase()));
+    if (!select || select.dataset.molmsRevenueCategoriesV13 === '1') return;
+
+    const previous = String(select.value || '').trim();
+    const normal = value => value.toLowerCase().replace(/\\s+/g, ' ').trim();
+    const legacyMap = {
+      'cash client payment': 'Client Fee Payment — Manual Receipt',
+      'legal fees — non-invoiced legal tasks': 'Legal Fees — Other / Non-Invoiced Work',
+      'reimbursement of expenses': 'Client Disbursement Reimbursements',
+      'court attendance & filing fees recovered': 'Court Filing & Process Fees Recovered'
+    };
+    const mapped = legacyMap[normal(previous)] || previous;
+    select.replaceChildren();
+
+    const prompt = document.createElement('option');
+    prompt.value = '';
+    prompt.textContent = 'Select revenue category';
+    select.appendChild(prompt);
+
     revenueCategories.forEach(name => {
-      if (existing.has(name.toLowerCase())) return;
       const option = document.createElement('option');
       option.value = name;
       option.textContent = name;
       select.appendChild(option);
     });
-    select.dataset.molmsRevenueCategoriesV12 = '1';
+
+    if (mapped && !revenueCategories.includes(mapped)) {
+      const legacy = document.createElement('option');
+      legacy.value = mapped;
+      legacy.textContent = 'Existing category — ' + mapped;
+      select.appendChild(legacy);
+    }
+    select.value = mapped && [...select.options].some(o => o.value === mapped)
+      ? mapped : '';
+    select.dataset.molmsRevenueCategoriesV13 = '1';
   }
 
   function apply() {
