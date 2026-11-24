@@ -48,7 +48,7 @@ async function render(){
   window.MOLMSInvoiceRegisterRepairV1.loaded=true;window.MOLMSInvoiceRegisterRepairV1.audit={period:p,allCount:all.length,openCount:open.length,open,month};
  }catch(e){console.error('[MOLMS receivables V3]',e);reg.innerHTML='<b>Invoice Register</b><p style="color:#b91c1c">Could not load invoice records: '+esc(e.message||e)+'</p>';}
 }
-let busy=false,last='';async function run(){if(busy)return;busy=true;try{await render();let p=getPeriod();last=p&&p.start+'|'+p.end||'';}finally{busy=false;}}
+let busy=false,last='';async function run(){if(busy)return;busy=true;try{await render();let p=getPeriod();last=p&&p.start+'|'+p.end||'';}finally{busy=false;}}\nwindow.MOLMSInvoiceRegisterRepairV1.refresh=run;
 function start(){setTimeout(run,500);if(!window.MOLMSInvoiceRegisterRepairV1.observer){const ob=new MutationObserver(()=>{const p=document.getElementById('page-findash');if(p&&p.offsetParent!==null){const reg=document.getElementById('molms-invoice-register-v1');if(!reg||!reg.isConnected||!getScroll()?.contains(reg)){if(!busy)run();}}});ob.observe(document.body,{childList:true,subtree:true});window.MOLMSInvoiceRegisterRepairV1.observer=ob;}}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 window.addEventListener('load',start);
