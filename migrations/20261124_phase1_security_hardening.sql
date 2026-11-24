@@ -70,6 +70,9 @@ begin
 end
 $$;
 
+-- Also pin the simple timestamp trigger's search path (advisor finding).
+alter function public.fn_set_updated_at() set search_path = pg_catalog, public;
+
 -- 4. Prevent a signed-in user from changing their own role.
 -- Other self-service profile updates remain available under users_update_own.
 create or replace function public.fn_prevent_self_role_escalation()
