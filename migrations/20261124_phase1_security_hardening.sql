@@ -359,7 +359,7 @@ begin
     where p.oid = 'public.audit_logs'::regclass
   loop
     v_catchall_to_text :=
-      substring(r.bound_expr from 'TO \\(''([^'']+)''\\)');
+      substring(r.bound_expr from 'TO \(''([^'']+)''\)');
     if v_catchall_to_text is null then
       continue;
     end if;
