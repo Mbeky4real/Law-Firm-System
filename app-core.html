@@ -9932,25 +9932,6 @@ function hrCloseDecisionModal(){
   if($('hrDecisionModal')) $('hrDecisionModal').classList.add('hidden');
   _hrDecisionRequestId=null; _hrDecisionAction=null;
 }
-async function hrDeleteLeaveRequest(id){
-  if(!hrIsPartner()) return notice('Only a partner may delete a Leave/ED request.','err');
-  if(!authUser||!sb) return;
-  const r=_hrAllRequests.find(x=>x.id===id);
-  if(!r||r.status!=='rejected') return notice('Only rejected requests can be deleted.','err');
-  const e=_hrEmployees.find(x=>x.id===r.employee_id);
-  if(!confirm(`Delete this rejected ${hrLeaveTypeLabel(r)} request for ${e?e.full_name:'this employee'}? This cannot be undone.`)) return;
-  // Routed through a SECURITY DEFINER RPC rather than a direct .update():
-  // leave_request_audit's FK to leave_requests triggers an internal
-  // referential-integrity re-check on UPDATE that runs under the SELECT
-  // RLS policy (deleted_at IS NULL) -- setting deleted_at as part of the
-  // same UPDATE makes the row briefly invisible to that internal check,
-  // producing a spurious permission error from a direct client update.
-  const {data,error}=await safe(sb.rpc('hr_delete_rejected_leave_request',{p_id:id}));
-  if(error){ notice('Delete failed: '+error.message,'err'); return; }
-  if(!data||!data.ok){ notice('Delete failed: '+(data?.error||'unknown error'),'err'); return; }
-  await hrRenderLeaveTab();
-  notice('Request deleted.');
-}
 async function hrSubmitDecision(){
   if(!hrIsPartner()) return notice('Only a partner may decide on Leave/ED requests.','err');
   if(!authUser||!sb) return;
