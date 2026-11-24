@@ -137,7 +137,7 @@ begin
   from public.users
   where id = auth.uid();
 
-  if v_actor_role not in ('administrator', 'partner') then
+  if v_actor_role is null or v_actor_role not in ('administrator', 'partner') then
     raise exception 'Only Partners and Administrators may archive a matter (actor role: %)',
       coalesce(v_actor_role, 'unknown');
   end if;
@@ -207,7 +207,7 @@ begin
   select created_by into v_matter_creator
   from public.matters where id = p_matter_id;
 
-  if not (
+  if v_actor_role is null or not (
     v_actor_role in ('administrator', 'partner')
     or (v_actor_role = 'member' and auth.uid() = v_matter_creator)
   ) then
