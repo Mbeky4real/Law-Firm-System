@@ -99,8 +99,11 @@
     if (!authSubscription) {
       const result = client.auth.onAuthStateChange((event, session) => {
         const id = session && session.user && session.user.id;
-        if (id) start(id).catch(e => console.warn('[MOLMS notifications] subscribe failed', e));
-        else stop();
+        // Defer Supabase calls until after the auth callback returns.
+        window.setTimeout(() => {
+          if (id) start(id).catch(e => console.warn('[MOLMS notifications] subscribe failed', e));
+          else stop();
+        }, 0);
       });
       authSubscription = result && result.data && result.data.subscription;
     }
