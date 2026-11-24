@@ -9710,7 +9710,7 @@ async function hrRenderLeaveTab(){
   const subEl=$('hrLeaveSubTabs');
   if(subEl){
     const tabs=[['mine','My Requests']];
-    if(canSeeAll) tabs.push(['all','All Requests']);
+    if(canSeeAll) tabs.push(['all','Request Register']);
     subEl.innerHTML=tabs.map(([k,l])=>
       `<button onclick="hrSetLeaveSubTab('${k}')" style="background:none;border:none;padding:0 0 8px;font-weight:700;font-size:13px;cursor:pointer;color:${_hrLeaveSubTab===k?'var(--gold)':'var(--muted)'};border-bottom:2px solid ${_hrLeaveSubTab===k?'var(--gold)':'transparent'}">${l}</button>`
     ).join('');
@@ -9768,26 +9768,10 @@ async function hrRenderLeaveTable(){
 
   if(isMgmt){
     if(!(hrCanManage()||hrIsPartner())){ _hrLeaveSubTab='mine'; return hrRenderLeaveTab(); }
-    const {data,error}=await safe(sb.from('leave_requests').select('*').is('deleted_at',null).order('created_at',{ascending:false}));
+    const {data,error}=await safe(sb.from('leave_requests').select('*').order('created_at',{ascending:false}));
     _hrAllRequests=data||[];
     if(error){ body.innerHTML='<tr><td class="muted small" style="padding:14px">Could not load requests.</td></tr>'; return; }
-    // Auto-expiry: a rejected request that has sat for 48+ hours since the
-    // rejection decision is soft-deleted automatically, so the list doesn't
-    // accumulate stale rejected entries. Client-triggered (this Supabase
-    // project has no pg_cron), matching the existing diary-reminder pattern
-    // -- fires whenever a partner opens this tab, not on a true background
-    // schedule. Routed through a SECURITY DEFINER RPC (same reasoning as
-    // hrDeleteLeaveRequest) rather than direct client updates -- a direct
-    // UPDATE setting deleted_at trips a spurious RLS error via
-    // leave_request_audit's FK referential-integrity re-check.
-    if(hrIsPartner() && _hrAllRequests.some(r=>r.status==='rejected'&&r.rejected_at&&(Date.now()-new Date(r.rejected_at).getTime())>=48*60*60*1000)){
-      const {data:expiryResult}=await safe(sb.rpc('hr_expire_rejected_leave_requests'));
-      if(expiryResult?.ok && expiryResult.expired_count>0){
-        const {data:refreshed}=await safe(sb.from('leave_requests').select('*').is('deleted_at',null).order('created_at',{ascending:false}));
-        _hrAllRequests=refreshed||_hrAllRequests;
-      }
-    }
-    hrPopulateLeaveEmployeeFilter();
+    // Historical requests remain in the register; no automatic expiry or deletion.\n    hrPopulateLeaveEmployeeFilter();
     const q=(val('hrLeaveSearch')||'').toLowerCase().trim();
     const type=val('hrLeaveFilterType'); const status=val('hrLeaveFilterStatus'); const emp=val('hrLeaveFilterEmployee');
     let rows=_hrAllRequests;
@@ -9802,11 +9786,9 @@ async function hrRenderLeaveTable(){
     body.innerHTML=rows.map(r=>{
       const e=_hrEmployees.find(x=>x.id===r.employee_id);
       const canDecide=hrIsPartner()&&r.status==='pending';
-      const canDelete=hrIsPartner()&&r.status==='rejected';
       const actions=canDecide?`<button class="btn gold small" onclick="hrOpenDecisionModal('${r.id}','approved')">Approve</button>
         <button class="btn out small" onclick="hrOpenDecisionModal('${r.id}','held')">Hold</button>
         <button class="btn red small" onclick="hrOpenDecisionModal('${r.id}','rejected')">Reject</button>`
-        :canDelete?`<button class="btn out small" onclick="hrDeleteLeaveRequest('${r.id}')">Delete</button>`
         :(hrCanManage()&&!hrIsPartner()&&r.status==='pending'?'<span class="muted small">Awaiting Partner Decision</span>':'');
       return `<tr onclick="if(!event.target.closest('button'))hrOpenLeaveRequestDetail('${r.id}')" title="Click to view full request" style="cursor:pointer;border-bottom:1px solid #f0ece6">
         <td style="padding:6px 8px;font-weight:700">${esc(e?e.full_name:'—')}</td>
@@ -9816,14 +9798,14 @@ async function hrRenderLeaveTable(){
         <td style="padding:6px 8px">${esc(r.duration_days||'—')}</td>
         <td style="padding:6px 8px;max-width:180px;white-space:normal">${esc(r.ed_reason||r.handover_notes||'—')}</td>
         <td style="padding:6px 8px">${r.created_at?esc(new Date(r.created_at).toLocaleDateString()):'—'}</td>
-        <td style="padding:6px 8px">${hrStatusPill(r.status)}</td>
+        <td style="padding:6px 8px">${hrStatusPill(r.status)}${r.deleted_at?'<div class="muted small" style="margin-top:3px">Archived record</div>':''}</td>
         <td style="padding:6px 8px">${actions}</td>
       </tr>`;
     }).join('');
   } else {
     const empId=await prGetSelfEmployeeId();
     if(!empId){ body.innerHTML='<tr><td class="muted small" style="padding:14px">No employee record is linked to your account yet — contact HR.</td></tr>'; return; }
-    const {data,error}=await safe(sb.from('leave_requests').select('*').eq('employee_id',empId).is('deleted_at',null).order('created_at',{ascending:false}));
+    const {data,error}=await safe(sb.from('leave_requests').select('*').eq('employee_id',empId).order('created_at',{ascending:false}));
     _hrMyRequests=data||[];
     if(error){ body.innerHTML='<tr><td class="muted small" style="padding:14px">Could not load your requests.</td></tr>'; return; }
     if(!_hrMyRequests.length){ body.innerHTML='<tr><td class="muted small" style="padding:14px">You have not submitted any Leave/ED requests yet.</td></tr>'; return; }
@@ -9835,7 +9817,7 @@ async function hrRenderLeaveTable(){
         <td style="padding:6px 8px">${esc(r.end_date)}</td>
         <td style="padding:6px 8px">${esc(r.duration_days||'—')}</td>
         <td style="padding:6px 8px">${r.created_at?esc(new Date(r.created_at).toLocaleDateString()):'—'}</td>
-        <td style="padding:6px 8px">${hrStatusPill(r.status)}</td>
+        <td style="padding:6px 8px">${hrStatusPill(r.status)}${r.deleted_at?'<div class="muted small" style="margin-top:3px">Archived record</div>':''}</td>
         <td style="padding:6px 8px;max-width:200px;white-space:normal">${decision}</td>
       </tr>`;
     }).join('');
