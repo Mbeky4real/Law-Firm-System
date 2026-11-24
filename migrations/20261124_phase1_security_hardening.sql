@@ -99,6 +99,14 @@ before update of role on public.users
 for each row
 execute function public.fn_prevent_self_role_escalation();
 
+-- Trigger functions are invoked by their registered triggers, not exposed as API RPCs.
+revoke execute on function public.fn_prevent_self_role_escalation() from public, anon, authenticated;
+revoke execute on function public.fn_set_updated_at() from public, anon, authenticated;
+
+-- Future functions created by the application migration owner require explicit EXECUTE grants.
+alter default privileges for role postgres in schema public
+  revoke execute on functions from public, anon, authenticated;
+
 drop policy if exists users_update_admin on public.users;
 create policy users_update_admin
 on public.users
