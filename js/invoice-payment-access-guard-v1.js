@@ -1,7 +1,7 @@
 (function molmsInvoicePaymentAccessGuard(){
   'use strict';
   if(window.MOLMSInvoicePaymentAccessGuardV1)return;
-  const api=window.MOLMSInvoicePaymentAccessGuardV1={version:1,installed:false};
+  const api=window.MOLMSInvoicePaymentAccessGuardV1={version:2,installed:false};
 
   function canRecord(){
     return typeof authRole!=='undefined' && (authRole==='partner'||authRole==='admin');
@@ -13,26 +13,33 @@
     const button=document.getElementById('invBtnRecordPayment');
     if(button)button.style.display=canRecord()?'':'none';
   }
-  function wrap(name,after){
+  function guardPaymentAction(name){
     const original=window[name];
     if(typeof original!=='function'||original.__molmsInvoicePaymentGuard)return;
     const wrapped=function(){
       if(!canRecord()){deny();syncControls();return;}
+      return original.apply(this,arguments);
+    };
+    wrapped.__molmsInvoicePaymentGuard=true;
+    window[name]=wrapped;
+  }
+  function wrapRefreshOnly(name){
+    const original=window[name];
+    if(typeof original!=='function'||original.__molmsInvoicePaymentGuard)return;
+    const wrapped=function(){
       const result=original.apply(this,arguments);
-      if(after){
-        if(result&&typeof result.then==='function')return result.finally(syncControls);
-        syncControls();
-      }
+      if(result&&typeof result.then==='function')return result.finally(syncControls);
+      syncControls();
       return result;
     };
     wrapped.__molmsInvoicePaymentGuard=true;
     window[name]=wrapped;
   }
   function install(){
-    wrap('invRecordPayment',true);
-    wrap('invSubmitPayment',true);
-    wrap('invLockForm',true);
-    wrap('invLoadInvoice',true);
+    guardPaymentAction('invRecordPayment');
+    guardPaymentAction('invSubmitPayment');
+    wrapRefreshOnly('invLockForm');
+    wrapRefreshOnly('invLoadInvoice');
     syncControls();
     if(!api.observer&&typeof MutationObserver!=='undefined'){
       api.observer=new MutationObserver(syncControls);
